@@ -1,17 +1,28 @@
 // ---------- art: room backgrounds and drawing ----------
 const WALL={knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40']};
+// Knight's back-wall door (hides the stairs). Center x 72, bottom at the floor line (y 66).
+const BACKDOOR=[[61,31,22,35,'#1e2030'],[63,33,18,33,'#6a4420'],[69,33,1,33,'#5a3a1e'],[75,33,1,33,'#5a3a1e'],[63,38,18,2,'#3a2a1a'],[63,58,18,2,'#3a2a1a'],[65,49,2,2,'#f2c84a']];
+// Wizard's second bookshelf (slides aside to reveal the spiral staircase). Center x 68, bottom y 66.
+const SHELF2=[[56,30,24,36,'#6a4a2a'],[58,32,20,32,'#3a2410'],[58,47,20,2,'#6a4a2a'],[59,35,4,12,'#c04040'],[64,37,3,10,'#40a0c0'],[68,35,4,12,'#d0b030'],[73,36,4,11,'#40c070'],[59,51,3,13,'#8a5ae0'],[63,52,5,12,'#c04040'],[69,50,3,14,'#40a0c0'],[73,53,4,11,'#d0b030']];
 function bg(id,w){
- if(id==='wizard')return [[10,14,38,42,'#6a4a2a'],[12,18,5,14,'#c04040'],[18,18,5,14,'#40a0c0'],[24,18,5,14,'#d0b030'],[30,18,5,14,'#8a5ae0'],[36,18,5,14,'#40c070'],[10,34,38,3,'#3a2410'],[12,38,5,14,'#d0b030'],[18,38,8,14,'#c04040'],[28,38,5,14,'#40a0c0'],[34,38,6,14,'#8a5ae0']];
- const a=[[12,64,22,3,'#4a4e5a'],[16,60,5,5,'#8a94a8'],[25,60,5,5,'#8a94a8'],[14,44,16,16,'#8a94a8'],[24,44,6,16,'#667088'],[10,44,4,10,'#aab4c8'],[30,44,4,10,'#aab4c8'],[16,28,12,16,'#aab4c8'],[18,34,8,2,O],[21,23,2,5,'#c03030']];
+ if(id==='wizard')return [[10,14,38,42,'#6a4a2a'],[12,18,5,14,'#c04040'],[18,18,5,14,'#40a0c0'],[24,18,5,14,'#d0b030'],[30,18,5,14,'#8a5ae0'],[36,18,5,14,'#40c070'],[10,34,38,3,'#3a2410'],[12,38,5,14,'#d0b030'],[18,38,8,14,'#c04040'],[28,38,5,14,'#40a0c0'],[34,38,6,14,'#8a5ae0'],...SHELF2];
+ const a=[[12,64,22,3,'#4a4e5a'],[16,60,5,5,'#8a94a8'],[25,60,5,5,'#8a94a8'],[14,44,16,16,'#8a94a8'],[24,44,6,16,'#667088'],[10,44,4,10,'#aab4c8'],[30,44,4,10,'#aab4c8'],[16,28,12,16,'#aab4c8'],[18,34,8,2,O],[21,23,2,5,'#c03030'],...BACKDOOR];
  const m={shield:[[40,36,16,20,'#3a5aa8'],[42,38,12,16,'#2a4488'],[46,42,4,8,'#f2c84a']],spear:[[47,14,2,52,'#8a5a2a'],[45,6,6,10,'#cfd6e0'],[47,4,2,4,'#fff']],glaive:[[47,18,2,48,'#8a5a2a'],[47,8,8,12,'#cfd6e0'],[49,10,4,8,'#8a94a8']],longsword:[[46,16,4,36,'#cfd6e0'],[40,52,16,3,'#c0a030'],[46,55,4,9,'#6a4420'],[45,64,6,2,'#c0a030']]};
  return a.concat(m[w||'longsword']);
 }
+// Fill a list of [x,y,w,h,color] rects offset by (ox,oy); with outline=true, a 2px dark outline goes behind
+function rects(c,list,ox,oy,outline){
+ if(outline){c.fillStyle=O;list.forEach(r=>c.fillRect(ox+r[0]-2,oy+r[1]-2,r[2]+4,r[3]+4))}
+ list.forEach(r=>{c.fillStyle=r[4];c.fillRect(ox+r[0],oy+r[1],r[2],r[3])});
+}
 
-// ---------- art ----------
+// ---------- characters ----------
+// Moods: ok, happy, mad (red eyes, only for real anger), hurt (eyes squeezed shut, used when taking damage)
 function drawSprite(c,id,mood,pose){
  const x=c.getContext('2d'),ch=CH[id],f=(a,b,w,h,k)=>{x.fillStyle=k;x.fillRect(a,b,w,h)};
  const R=[...(ch.a?POSE[pose||'none'](ch.a):[]),...ch.p];
  R.forEach(p=>f(p[0]-1,p[1]-1,p[2]+2,p[3]+2,O));R.forEach(p=>f(p[0],p[1],p[2],p[3],p[4]));
+ if(mood==='hurt'){f(5,6,2,1,O);f(9,6,2,1,O);f(7,8,2,1,'#a22');return}
  const e=mood==='mad'?'#e03030':ch.eye;f(6,5,1,2,e);f(9,5,1,2,e);
  if(mood==='happy'){f(7,8,2,1,'#7a2a2a');f(5,7,1,1,'#f08080');f(10,7,1,1,'#f08080')}
  else if(mood==='mad'){f(6,4,2,1,O);f(9,4,2,1,O);f(7,8,2,1,'#a22')}else f(7,8,2,1,'#8a4a4a');
@@ -19,13 +30,16 @@ function drawSprite(c,id,mood,pose){
 const SP={};
 function sprite(id,m,pose){const k=id+m+(pose||'');if(!SP[k]){const c=document.createElement('canvas');c.width=16;c.height=22;drawSprite(c,id,m,pose);SP[k]=c}return SP[k]}
 function spr(c,id,m,cx,fy,face,bob,al,sc,pose){c.save();c.globalAlpha=al==null?1:al;sc=sc||1;c.translate(Math.round(cx),Math.round(fy+bob));c.scale(face<0?-sc:sc,sc);c.drawImage(sprite(id,m,pose),-16,-44,32,44);c.restore()}
+// Sprite name for a unit: Eldritch form, wizard outfit color, or plain id
+const sid=u=>u.form||(u.color?u.id+'_'+u.color:u.id);
 // Which arm pose to show for an activity (act) that has run for `at` seconds
 function poseOf(act,at){
  if(act==='read')return 'hold';
  if(act==='magic')return Math.floor(at*3)%2?'up':'fwd';
- if(act==='prac')return 'grip';
+ if(act==='prac')return 'noR';
  if(act==='learn'||act==='cast')return 'up';
- if(act==='demon')return at<1.6?'both':'none';
+ if(act==='demon')return at<1.6?'both':'up';
+ if(act==='horse')return at>=1&&at<4.6?'fwd':'none';
  return 'none';
 }
 function box(c,id,x,y,w){
@@ -33,9 +47,12 @@ function box(c,id,x,y,w){
  bg(id,w).forEach(d=>{c.fillStyle=d[4];c.fillRect(x+d[0],y+d[1],d[2],d[3])});
  c.strokeStyle='#000';c.lineWidth=4;c.strokeRect(x+2,y+2,CELL-4,CELL-4);
 }
-// Doors/portals/stairs drawn behind the characters.
+
+// ---------- ways between rooms (drawn behind the characters) ----------
+// backdoor and shelf are always part of the room, so only their open state is drawn here.
 function drawFx(f){
- g.save();g.globalAlpha=f.a;const x=f.x,y=f.y,o=f.open,t=f.type;
+ const x=f.x,y=f.y,o=f.open,t=f.type,fixed=t==='backdoor'||t==='shelf';
+ g.save();g.globalAlpha=fixed?1:f.a;
  if(t==='door'){
   // The door sits in the wall line between two rooms, so we only see its edge.
   // Closed = flat against the line (invisible). Opening, it swings out toward the viewer
@@ -46,41 +63,106 @@ function drawFx(f){
    g.fillStyle='#5a3a1e';g.fillRect(d>0?fx-2:fx,top-grow,2,58+grow*2); // the door's outer edge
    if(w>8){g.fillStyle='#f2c84a';g.fillRect(fx-d*5-1,y-30,3,3)}}}
  else if(t==='portal'){const h=58,w=36,c=Math.floor(T*8)%2?'#8fe0ff':'#c890ff';
-  g.fillStyle='#6a4cc2';g.fillRect(x-w/2,y-h,w,h);g.fillStyle=c;g.fillRect(x-w/2+2,y-h+2,Math.max(0,w-4),Math.max(0,h-4));g.fillStyle='#fff';g.fillRect(x-w/2+5,y-h+6,Math.max(0,w-10),Math.max(0,h-12))}
- else if(t==='spiral'||t==='stone'){
-  g.fillStyle='#0e0a18';g.fillRect(x-13,y-40,26,40);g.fillStyle='#000';g.fillRect(x-13,y-40,26,2);
-  if(t==='spiral'){g.fillStyle='#5a5a6a';g.fillRect(x-1,y-38,3,38);for(let i=0;i<6;i++){g.fillStyle=i%2?'#b8a070':'#9a8a5c';g.fillRect(x+Math.round(Math.sin(i*1.2)*7)-5,y-6-i*6,10,3)}}
-  else for(let i=0;i<5;i++){g.fillStyle=i%2?'#7a7f8c':'#8a8f9a';g.fillRect(x-12+i*5,y-7*(i+1),24-5*i,7*(i+1));g.fillStyle='#b8bcc8';g.fillRect(x-12+i*5,y-7*(i+1),24-5*i,1)}}
+  g.fillStyle='#6a4cc2';g.fillRect(x-w/2,y-h,w,h);g.fillStyle=c;g.fillRect(x-w/2+2,y-h+2,w-4,h-4);g.fillStyle='#fff';g.fillRect(x-w/2+5,y-h+6,w-10,h-12)}
+ else if(t==='backdoor'&&o>.02){
+  // dark doorway with stone stairs going up, door panel swinging toward the viewer on its left hinge
+  g.fillStyle='#0b0a14';g.fillRect(x-9,y-33,18,33);
+  for(let i=0;i<4;i++){g.fillStyle=i%2?'#7a7f8c':'#8a8f9a';g.fillRect(x-8+i*4,y-6*(i+1),17-i*4,6*(i+1));g.fillStyle='#b8bcc8';g.fillRect(x-8+i*4,y-6*(i+1),17-i*4,1)}
+  const pw=Math.max(2,Math.round(18*Math.cos(o*1.35))),gr=Math.round(3*Math.sin(o*1.35));
+  g.fillStyle=O;g.fillRect(x-10,y-34-gr,pw+2,35+gr*2);g.fillStyle='#6a4420';g.fillRect(x-9,y-33-gr,pw,33+gr*2);
+  g.fillStyle='#3a2a1a';g.fillRect(x-9,y-28-gr,pw,2);g.fillRect(x-9,y-8+gr,pw,2)}
+ else if(t==='shelf'&&o>.02){
+  // dark opening with a spiral staircase; the bookshelf slides right into the wall
+  const bl=Math.floor(x/CELL)*CELL,top=y-66;
+  g.fillStyle='#0e0a18';g.fillRect(x-12,y-36,24,36);g.fillStyle='#5a5a6a';g.fillRect(x-1,y-34,3,34);
+  for(let i=0;i<5;i++){g.fillStyle=i%2?'#b8a070':'#9a8a5c';g.fillRect(x+Math.round(Math.sin(i*1.2)*6)-5,y-5-i*6,10,3)}
+  g.beginPath();g.rect(bl+4,top,88,70);g.clip();rects(g,SHELF2,bl+Math.round(o*22),top)}
  else if(t==='trap'){g.fillStyle='#050308';g.fillRect(x-10,y-3,20,4);g.fillStyle='#6a4420';g.fillRect(x-11,y-5-o*9,22,4);g.fillStyle='#3a2410';g.fillRect(x-11,y-2-o*9,22,1);g.fillStyle='#f2c84a';g.fillRect(x-1,y-4-o*9,2,2)}
- else if(t==='hatch'){g.fillStyle='#050308';g.fillRect(x-10,y,20,5);g.fillStyle='#6a4420';if(o>.4)g.fillRect(x-11,y+5,22,3);else g.fillRect(x-11,y,22,5)}
  g.restore();
 }
 function heart(c,x,y){c.fillStyle='#e04060';c.fillRect(x-4,y,3,3);c.fillRect(x+1,y,3,3);c.fillRect(x-4,y+2,8,2);c.fillRect(x-2,y+4,4,2);c.fillRect(x-1,y+6,2,1)}
-// Idle/activity overlays. u needs: act, at (seconds), x, y (feet), face, and for the knight weapon/form.
+
+// ---------- weapon practice: the arm swings with the weapon ----------
+const ease=e=>e*e*(3-2*e),lerp=(a,b,e)=>a+(b-a)*e;
+// Arm angle th (0 = hanging down, bigger = rotated forward and up) and body lean dx, for a weapon at time t
+function swing(t,P,rest,up,hit,lean){const p=(t%P)/P;let e;
+ if(p<.45){e=ease(p/.45);return{th:lerp(rest,up,e),dx:lerp(0,-1,e)}}        // wind up overhead
+ if(p<.58){e=(p-.45)/.13;return{th:lerp(up,hit,e),dx:lerp(-1,lean,e)}}      // fast strike down
+ e=ease((p-.58)/.42);return{th:lerp(hit,rest,e),dx:lerp(lean,0,e)}}          // recover
+function thrust(t,P,rest,back,out,lean){const p=(t%P)/P;let e;
+ if(p<.4){e=ease(p/.4);return{th:lerp(rest,back,e),dx:lerp(0,-2,e)}}
+ if(p<.52){e=(p-.4)/.12;return{th:lerp(back,out,e),dx:lerp(-2,lean,e)}}
+ e=ease((p-.52)/.48);return{th:lerp(out,rest,e),dx:lerp(lean,0,e)}}
+function pracAnim(w,t){
+ if(w==='glaive')return swing(t,1.4,.6,3.9,1.3,4);
+ if(w==='spear')return thrust(t,.9,1.35,1.2,1.6,4);
+ if(w==='shield')return thrust(t,1.2,.4,1.2,1.5,4);
+ return swing(t,1,.5,3.5,1.1,3); // longsword and the Eldritch Knight's magic sword
+}
+const weaponOf=u=>u.form==='eknight'?'magic':(u.weapon||'longsword');
+// How far the body leans while practicing (so the sprite and the swinging arm move together)
+const actDx=u=>u.act==='prac'?Math.round(pracAnim(weaponOf(u),u.at).dx)*u.face:0;
+
+// Activity overlays drawn in front of the character. u needs: act, at (seconds), x, y (feet), face, and for the knight weapon/form.
 function drawAct(c,u){
  const f=u.face,a=u.act,t=u.at,x=u.x,y=u.y;
- if(a==='read'){const bx=Math.round(x),by=Math.round(y-20),pf=(t*1.1)%1;
-  c.fillStyle=O;c.fillRect(bx-8,by-5,16,11);c.fillStyle='#7a4a22';c.fillRect(bx-7,by-4,14,9);
-  c.fillStyle='#f2ead0';c.fillRect(bx-6,by-3,6,7);c.fillRect(bx+1,by-3,6,7);c.fillStyle='#b8a878';c.fillRect(bx,by-3,1,7);
-  if(pf<.3){const w=Math.round(Math.sin(pf/.3*Math.PI)*6);c.fillStyle='#fff';c.fillRect(bx+1-w,by-4,w+1,7)}
-  else{c.fillStyle='#9a8a68';c.fillRect(bx-4,by-1,3,1);c.fillRect(bx+2,by-1,4,1);c.fillRect(bx-4,by+1,3,1);c.fillRect(bx+2,by+1,3,1)}}
+ if(a==='read'){
+  // Held up and open toward the wizard: we see the covers and spine, page tops, and pages turning over the top
+  const bx=Math.round(x+f*2),by=Math.round(y-20),pf=(t*.9)%1;
+  c.fillStyle=O;c.fillRect(bx-8,by-7,16,13);
+  c.fillStyle='#f2ead0';c.fillRect(bx-7,by-6,14,2);
+  c.fillStyle='#7a4a22';c.fillRect(bx-7,by-4,7,9);c.fillStyle='#6a3e1c';c.fillRect(bx,by-4,7,9);
+  c.fillStyle='#4a2a12';c.fillRect(bx-1,by-4,2,9);c.fillStyle='#f2c84a';c.fillRect(bx-5,by-1,2,2);c.fillRect(bx+3,by-1,2,2);
+  if(pf<.35){const k=pf/.35,px=Math.round(bx+f*(6-12*k)),py=Math.round(by-6-Math.sin(k*Math.PI)*6);c.fillStyle='#fff';c.fillRect(px-1,py,2,by-5-py)}}
  else if(a==='magic'||a==='learn'){const pur=a==='learn',K=pur?['#c890ff','#e8d0ff','#8a5ae0']:['#2a6af0','#4fb0ff','#bfe8ff'];
   for(let i=0;i<14;i++){const an=t*(pur?3:4)+i*Math.PI*2/14,r=13+5*Math.sin(t*3+i),px=x+Math.cos(an)*r*1.2,py=y-24+Math.sin(an)*r*.8-(i%7)*2.5+8,s=i%3===2?2:3;
    c.fillStyle=K[i%3];c.fillRect(Math.round(px-s/2),Math.round(py-s/2),s,s)}
   if(!pur){const gx=Math.round(x-f*14),gy=Math.round(y-38);c.fillStyle=K[1];c.fillRect(gx-2,gy-2,5,5);c.fillStyle=K[2];c.fillRect(gx-1,gy-1,3,3)}}
- else if(a==='prac'){const w=u.form==='eknight'?'magic':(u.weapon||'longsword'),s=Math.sin(t*8),th=Math.max(0,Math.sin(t*6));
-  c.save();c.translate(Math.round(x+f*10),Math.round(y-20));c.scale(f,1);
-  if(w==='longsword'||w==='magic'){c.rotate(-.6+s*.9);c.fillStyle=w==='magic'?'#c890ff':'#cfd6e0';c.fillRect(-2,-22,3,22);if(w==='magic'){c.fillStyle='#fff';c.fillRect(-1,-20,1,16)}c.fillStyle='#c0a030';c.fillRect(-5,-2,9,2);c.fillStyle='#6a4420';c.fillRect(-1,0,2,4)}
-  else if(w==='glaive'){c.rotate(-.5+s*.9);c.fillStyle='#8a5a2a';c.fillRect(-1,-26,2,36);c.fillStyle='#cfd6e0';c.fillRect(-1,-36,6,11);c.fillStyle='#8a94a8';c.fillRect(1,-34,3,7)}
-  else if(w==='spear'){c.translate(th*10,0);c.fillStyle='#8a5a2a';c.fillRect(-6,-1,30,2);c.fillStyle='#cfd6e0';c.fillRect(24,-3,8,6);c.fillStyle='#fff';c.fillRect(28,-1,4,2)}
-  else{c.translate(th*8,0);c.fillStyle=O;c.fillRect(1,-14,14,26);c.fillStyle='#3a5aa8';c.fillRect(2,-13,12,24);c.fillStyle='#2a4488';c.fillRect(8,-13,6,24);c.fillStyle='#f2c84a';c.fillRect(6,-5,3,8)}
-  c.restore()}
+ else if(a==='prac'){
+  const w=weaponOf(u),A=pracAnim(w,t),col=CH[u.form||'knight'].a,sx=Math.round(x+f*(10+Math.round(A.dx))),sy=Math.round(y-23);
+  c.save();c.translate(sx,sy);c.scale(f,1);c.rotate(-A.th); // from here +y runs down the arm from the shoulder
+  if(w==='longsword'||w==='magic'){c.fillStyle='#6a4420';c.fillRect(-1,9,2,6);c.fillStyle='#c0a030';c.fillRect(-5,13,10,2);
+   c.fillStyle=w==='magic'?'#b080ff':'#cfd6e0';c.fillRect(-2,15,3,22);c.fillStyle='#fff';c.fillRect(-1,w==='magic'?16:33,1,w==='magic'?20:3)}
+  else if(w==='glaive'){c.fillStyle='#8a5a2a';c.fillRect(-1,-10,2,44);c.fillStyle='#cfd6e0';c.fillRect(-1,32,7,12);c.fillStyle='#8a94a8';c.fillRect(1,34,4,8)}
+  else if(w==='spear'){c.fillStyle='#8a5a2a';c.fillRect(-1,-14,2,46);c.fillStyle='#cfd6e0';c.fillRect(-3,32,6,8);c.fillStyle='#fff';c.fillRect(-1,40,2,3)}
+  c.fillStyle=O;c.fillRect(-3,-2,6,15);c.fillStyle=col.bodyD;c.fillRect(-2,-1,4,10);c.fillStyle=col.skin;c.fillRect(-2,9,4,3);
+  c.restore();
+  if(w==='shield'){const hx=Math.round(sx+f*Math.sin(A.th)*10),hy=Math.round(sy+Math.cos(A.th)*10);
+   c.save();c.translate(hx,hy);c.scale(f,1);c.fillStyle=O;c.fillRect(-1,-13,12,25);c.fillStyle='#3a5aa8';c.fillRect(0,-12,10,23);c.fillStyle='#2a4488';c.fillRect(5,-12,5,23);c.fillStyle='#f2c84a';c.fillRect(3,-4,3,6);c.restore()}}
+ else if(a==='horse'&&t>=1&&t<4.6){
+  // a bundle of hay in the outstretched hand, shrinking as the horse eats
+  const hs=1-cl((t-1.8)/2.8,0,1),w=Math.round(8*hs)+2,hx=Math.round(x+f*17),hy=Math.round(y-22);
+  c.fillStyle=O;c.fillRect(hx-w/2-1,hy-4,w+2,7);c.fillStyle='#e8c860';c.fillRect(hx-w/2,hy-3,w,5);
+  c.fillStyle='#b8963a';c.fillRect(hx-w/2+1,hy-2,1,3);if(w>5)c.fillRect(hx+1,hy-1,1,3)}
 }
-function drawDemon(c,d){
- const t=d.t,fade=t>3.2?cl(1-(t-3.2)/.8,0,1):1,gr=cl(t/.8,0,1),col=Math.floor(T*10)%2?'#ff5050':'#a02020',rise=cl((t-.6)/.9,0,1)*fade,lg=Math.sin(cl((t-1.5)/.8,0,1)*Math.PI)*12*d.dir;
- c.save();c.globalAlpha=fade;
- for(let i=0;i<20;i++){const a=i/20*Math.PI*2+t*1.5;c.fillStyle=i%2?col:'#ffb0b0';c.fillRect(Math.round(d.x+Math.cos(a)*22*gr-1),Math.round(d.y-3+Math.sin(a)*6*gr-1),3,3)}
- c.beginPath();c.rect(d.x-34,d.y-90,68,90);c.clip();
- if(rise>0)spr(c,'demon',t>1.5?'mad':'ok',d.x+lg,d.y+(1-rise)*48,d.dir,0,fade,1);
+// Horse head and neck poking in from the right edge of the knight's room. ex = room's right edge, fy = floor y, t = activity time
+function drawHorse(c,ex,fy,t){
+ const e=t<5.2?34*ease(cl(t/1.2,0,1)):34*(1-ease(cl((t-5.2)/1,0,1))),eat=t>1.8&&t<4.6,hb=eat?Math.round(4+2*Math.sin(t*9)):0,x0=Math.round(ex-e);
+ if(e<1)return;
+ c.save();c.beginPath();c.rect(ex-92,fy-84,88,96);c.clip();
+ rects(c,[[x0+10,-46,40,20,'#7a4a2a'],[x0+12,-50,38,5,'#3a2414']],0,fy,true);
+ rects(c,[[x0,-50+hb,16,13,'#7a4a2a'],[x0-4,-40+hb,12,9,'#9a6a44'],[x0+10,-56+hb,4,6,'#6a3e1e']],0,fy,true);
+ rects(c,[[x0+12,-50,4,6,'#3a2414'],[x0+6,-46+hb,2,2,O],[x0-2,-36+hb,2,2,'#3a2414']],0,fy);
  c.restore();
 }
+// Small black cat walking along the back of a room. bx,by = room's top-left, t = time, dir = 1 right / -1 left
+function drawCat(c,bx,by,t,dir){
+ const x=Math.round(dir>0?bx+4+t*16:bx+92-t*16),y=by+70,lg=Math.floor(t*8)%2,k='#0c0a10';
+ c.save();c.beginPath();c.rect(bx+4,by,88,96);c.clip();c.translate(x,y);c.scale(dir,1);
+ c.fillStyle=k;c.fillRect(-6,-8,12,5);c.fillRect(5,-12,6,6);c.fillRect(5,-14,2,2);c.fillRect(9,-14,2,2);c.fillRect(-9,-15,2,9);c.fillRect(-9,-15,4,2);
+ if(lg){c.fillRect(-5,-3,2,3);c.fillRect(3,-3,2,3)}else{c.fillRect(-3,-3,2,3);c.fillRect(1,-3,2,3)}
+ c.fillStyle='#ffd34e';c.fillRect(7,-10,1,1);c.fillRect(9,-10,1,1);
+ c.restore();
+}
+// Demon: summoning circle, rises, grabs the wizard (lunge), then both sink into the floor.
+function drawDemon(c,d){
+ const t=d.t,fade=t>2.9?cl(1-(t-2.9)/.8,0,1):1,gr=cl(t/.8,0,1),col=Math.floor(T*10)%2?'#ff5050':'#a02020',
+  rise=cl((t-.6)/.9,0,1),sink=cl((t-1.9)/1,0,1),lg=Math.round(cl((t-1.5)/.4,0,1)*14)*d.dir;
+ c.save();c.globalAlpha=fade;
+ for(let i=0;i<20;i++){const a=i/20*Math.PI*2+t*1.5;c.fillStyle=i%2?col:'#ffb0b0';c.fillRect(Math.round(d.x+lg/2+Math.cos(a)*24*gr-1),Math.round(d.y-3+Math.sin(a)*6*gr-1),3,3)}
+ c.beginPath();c.rect(d.x-40,d.y-90,80,90);c.clip();
+ if(rise>0&&sink<1)spr(c,'demon',t>1.5?'mad':'ok',d.x+lg,d.y+(1-rise)*48+sink*48,d.dir,0,1,1);
+ c.restore();
+}
+// How far a wizard being dragged down by a demon has sunk (0..1), from the demon activity time
+const sinkOf=at=>cl((at-1.9)/1,0,1);

@@ -15,8 +15,8 @@ A web-based, fantasy-medieval sandbox inspired by the 2000s toy "Cube World". Ea
 Plain script files with no modules, so double-clicking `index.html` still works. They load in this order and share global variables, so the order matters:
 - `index.html`: page layout only.
 - `style.css`: all styling.
-- `data.js`: constants (board size, save key), characters and sprite pixels (`CH`), arm poses (`POSE`), transitions (`TR`), `WEAPONS`, all odds (`ODDS`), Tales of Old dialogue (`TALK`), display names (`NAMES`), and small helpers (`$`, `pick`, `cl`).
-- `art.js`: room walls and backgrounds (`WALL`, `bg`) and all drawing functions (sprites, which pose to use (`poseOf`), rooms, doors/portals/stairs, activities, demon).
+- `data.js`: constants (board size, save key), characters and sprite pixels (`CH`), arm poses (`POSE`), wizard outfits (`WIZ_COLORS`), room transitions (`TR`, `EXIT`), `WEAPONS`, all odds (`ODDS`), Tales of Old dialogue (`TALK`), display names (`NAMES`), and small helpers (`$`, `pick`, `cl`).
+- `art.js`: room walls and backgrounds (`WALL`, `bg`, `BACKDOOR`, `SHELF2`) and all drawing functions (sprites, poses (`poseOf`), rooms, doors/portals/exits, activities, weapon swings (`pracAnim`), horse, cat, demon).
 - `game.js`: game rules, movement and visits, the render loop, drag-and-drop input, the Compendium, and saving/loading.
 All odds live in `ODDS`; the game (`decide`, `startAct`) and the Compendium both read from it, so change odds only there.
 
@@ -25,37 +25,48 @@ All odds live in `ODDS`; the game (`decide`, `startAct`) and the Compendium both
 - Shelf under the board holds unplaced boxes. Drag a box onto the board to place it, onto another box to swap, onto the shelf to delete.
 - Moving a box sends its character home to the middle of the box. Deleting a box makes the character vanish wherever they are. A visitor goes home if their host's box moves or is deleted.
 - Characters: Knight and Wizard so far. The Knight's room gets a random wall weapon when created (shield, spear, glaive, longsword).
-- The Knight (and Eldritch Knight) holds no weapon by default. A weapon is drawn only while he uses it: weapon practice and the orc fight (his room's weapon; the Eldritch Knight uses a magic sword).
+- A Wizard gets a random outfit color when placed (blue, purple or red, equal chances). Saved with the board (save entry: row, col, weapon, form, color).
+- The Knight (and Eldritch Knight) holds no weapon by default. A weapon is drawn only while he uses it: weapon practice, the orc fight and sparring (his room's weapon; the Eldritch Knight uses a magic sword).
+- Characters always move a little during interactions: arm gestures (`gest`), hops, cheers.
+- Taking damage shows a "hurt" face (eyes squeezed shut, no red eyes). Red eyes ("mad") are only for anger (the orc, the Knight glaring at it).
 
-## Transitions between rooms (set per class in `TR`)
-- Knight: door left/right, stone staircase up, trap door down.
-- Wizard: portal left/right, spiral staircase up and down.
-- Doors sit in the wall line between two cells and are seen from the side: invisible when closed, and while a character walks through they swing out toward the viewer into the next room as a narrow side-on panel. Drawn behind characters.
-- Portals appear at full size (fading in), with no small-to-big growth.
+## Transitions between rooms (set per ROOM in `TR`, not per character)
+- Knight room: side door left/right, back-wall door (stone stairs behind it) up, trap door in the floor down.
+- Wizard room: portal left/right, a second bookshelf that slides aside to reveal a spiral staircase, both up and down.
+- Sideways: the room being left decides (door or portal), whoever walks.
+- Up/down: leave by your room's exit, arrive by the other room's exit for the opposite direction (e.g. going up from a Wizard room into a Knight room: through the bookshelf, then climb out of the Knight's trap door).
+- Side doors sit in the wall line between two cells and are seen from the side: invisible when closed, and while a character walks through they swing out toward the viewer into the next room as a narrow side-on panel.
+- The back door and the bookshelf are always part of the room; they open, then close again after use. Portals appear at full size (fading in).
 
 ## Visits (decided every few seconds per idle character)
 - 20% chance to visit a neighbor (45% when the Wizard is left of the Knight).
-- 25% of visits are plain hangouts with no special event. Otherwise the arrangement's interaction plays.
+- 2% of Knight/Wizard visits are Friendly Sparring, in any arrangement, in whichever room the visit goes to.
+- 25% of the other visits are plain hangouts (a wave and a hop). Otherwise the arrangement's interaction plays.
 
 ## Arrangement interactions (Wizard position relative to Knight)
-- Left: Old Friends. Hearts, and they visit more often.
-- Right: Eldritch Awakening. Wizard teaches, Knight becomes the Eldritch Knight permanently (purple armor, horns). Wizard survives.
-- Above: Thunderstruck. Wizard stays in his own room and shoots a lightning bolt down; the Knight dies and his box returns to the shelf.
-- Below: Tales of Old. They trade a few lines about past adventures.
+- Left: Old Friends. Hearts, arms raised, and they visit more often.
+- Right: Eldritch Awakening. Wizard points and teaches, Knight becomes the Eldritch Knight permanently (purple armor, horns). Wizard survives.
+- Above: Thunderstruck. Wizard stays in his own room, raises his arm and shoots a lightning bolt down; the Knight dies and his box returns to the shelf.
+- Below: Tales of Old. They trade a few lines about past adventures, gesturing as they speak.
+- Any: Friendly Sparring. Knight swings his weapon, Wizard casts magic, each lands a light hit, then they cheer.
 
 ## Idle activities
-- Wizard: read a book 60% (holds the book with both hands), practice magic (swirling blue, arm waving) 38%, summon a demon that kills him 2% (both arms raised).
-- Knight: weapon practice with his room's weapon 80% (hand forward gripping it), fight an orc 20% (falls back to practice if no free neighbor). The orc appears first on the far side of the neighbor's room, the Knight glares for a moment, then walks over and stands between the orc and his host to fight.
-- Arm poses (`POSE` in data.js): none, hold, grip, fwd, up, both. `poseOf` in art.js picks one from the activity.
+- Wizard: read a book 60% (holds it up open toward himself; we see the covers and pages turning), practice magic (swirling blue, arm waving) 38%, summon a demon 2% (arms raised; the demon rises, grabs him and drags him down through the floor; he dies).
+- Knight: weapon practice 75%, fight an orc 20% (falls back to practice if no free neighbor), feed a horse 5% (only if there's no room to his right; falls back to practice).
+  - Practice: his right arm is drawn separately and swings with the weapon (`pracAnim`): sword and glaive wind up overhead and strike down, spear thrusts, shield bashes; his body leans into it.
+  - Orc: the orc appears first on the far side of the neighbor's room, the Knight glares, then walks over and stands between the orc and his host to fight.
+  - Horse: a horse's head and neck lean in from the right edge of his room; he walks over and holds out hay, the horse eats it, he hops happily, the horse leaves.
+- Eldritch Knight only: 1% extra chance (`eknightCat`) that a small black cat walks across the back of the Wizard's room (needs a Wizard on the board).
+- Arm poses (`POSE` in data.js): none, hold, noR (right arm drawn by the weapon swing), fwd, up, both. `poseOf` in art.js picks one from the activity.
 
 ## Compendium tab
-Shows every interaction from the start (for development tracking), with no descriptive text: arrangement diagrams and looping animations of each idle activity. Each tile shows its % chance in the top right corner, computed from `ODDS`:
-- Arrangements: chance per idle check that a character starts that interaction (visit chance x not a plain hangout): 34% Old Friends, 15% the others.
-- Idle activities: how the activity is picked (Wizard 60/38/2, Knight 80/20).
+Shows every interaction from the start (for development tracking), with no descriptive text: arrangement diagrams and looping animations of each idle activity. Each tile shows its % chance in the top right corner, computed from `ODDS` (one decimal below 1%):
+- Arrangements: chance per idle check that a character starts that interaction (visit x not sparring x not a hangout): 33% Old Friends, 15% the others; Friendly Sparring 0.4%.
+- Idle activities: how the activity is picked (Wizard 60/38/2, Knight 75/20/5, black cat 1%).
 Whenever an interaction or idle activity is added or changed, update the Compendium to match.
 
 ## Art style
-Pixel art, 16x22 character grid drawn from rectangles with an automatic dark outline. Each room has plain walls and floor plus one background element representing its class. Fantasy medieval theme.
+Pixel art, 16x22 character grid drawn from rectangles with an automatic dark outline. Each room has plain walls and floor, one background element representing its class, and its up/down exit (Knight: back-wall door; Wizard: second bookshelf). Fantasy medieval theme.
 
 ## Planned
 Achievements and unlockables, more character classes, customizable dialogue, more interactions, real pixel art assets.
