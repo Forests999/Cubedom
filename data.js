@@ -507,7 +507,7 @@ const TAG_NAMES={'tag:mage':'a Mage','tag:merchant':'a Merchant','tag:fighter':'
 // tempt = the demon talks the Rogue into it; betray = the Necromancer's sacrifice works; sickDeath = poisoned wine kills when it wears off
 Object.assign(ODDS,{alcMage:.2,promo:.1,haste:.5,twopot:.2,beast:.15,fourMage:.1,tempt:.05,betray:.2,sickDeath:.05,
  dungeon:{coins:.2,artifact:.1,scrolls:.25,potions:.25,secret:.2}});
-const SICK_TIME=60,TINY_TIME=120,DUNGEON_TIME=300,DUNGEON_GOLD=50,ROGUE_BUY=5,STEAL_SHARE=.05;
+const SICK_TIME=60,TINY_TIME=120,DUNGEON_TIME=180,DUNGEON_GOLD=50,ROGUE_BUY=5,STEAL_SHARE=.05;
 // Rogue relative to each character. The Rogue is always the one who visits.
 PAIRS['rogue>apothecary']={right:'nefarious',left:'poisons',below:'wine',above:'rtrip'};
 PAIRS['rogue>merchant']={left:'pinch',right:'pinch',above:'pinch',below:'pinch'};
@@ -586,3 +586,95 @@ Object.assign(DESC,{
  fairies:'Rogue left of the Necromancer. Good fairies attack! Ninja stars and dark magic send them packing.',
  tiny:'Secret: the shrinking potion works if the Rogue has the Mage tag. Tiny and fast for 2 minutes.',
  graveyard:'Secret: put the Rogue next to the Necromancer with both on the bottom row. His room becomes a graveyard.'});
+
+// ---------- Rogue outfits, Druid, Blacksmith, ingots, paladin ----------
+// Rogue outfits: a new Rogue is a ninja, a bandit or a well-dressed con man (ODDS.rogueOutfit); saved in the box's color
+const NJ={body:'#26262e',bodyD:'#1a1a22',pants:'#1a1a22',boot:'#121216',belt:'#8a1a1a'},
+ BD={body:'#6a4a2a',bodyD:'#52381e',pants:'#3a3028',boot:'#2a1a10',belt:'#3a2414'},
+ CN={body:'#7a2a44',bodyD:'#5e1e34',pants:'#3a2a3a',boot:'#2a1a10',belt:'#d8b860'};
+CH.rogue_ninja={name:'Rogue',eye:O,a:arms(NJ),p:[...B(NJ),[4,1,8,2,'#26262e'],[3,3,2,6,'#26262e'],[11,3,2,6,'#26262e'],[5,7,6,2,'#26262e'],[4,3,8,1,'#26262e'],[12,1,2,3,'#8a1a1a'],[11,12,2,1,'#cfd6e0'],[12,11,1,3,'#cfd6e0']]}; // wrapped head and mask, red sash, a ninja star
+CH.rogue_bandit={name:'Rogue',eye:O,a:arms(BD),p:[...B(BD),[4,1,8,2,'#4a3a24'],[3,3,2,5,'#4a3a24'],[11,3,2,5,'#4a3a24'],[5,7,6,2,'#a02a2a'],[11,8,2,2,'#a02a2a'],[5,12,2,2,'#8a6a3a'],[11,12,2,1,'#cfd6e0'],[4,10,1,4,'#3a2414']]}; // brown hood, red bandana, pouch, dagger
+CH.rogue_con={name:'Rogue',eye:O,a:arms(CN),p:[...B(CN),[3,10,1,9,'#2a4a3a'],[4,1,8,2,'#2a4a3a'],[3,3,10,1,'#2a4a3a'],[10,0,4,1,'#f0f0f0'],[12,1,2,1,'#f0f0f0'],[5,9,6,1,'#f0e8d8'],[5,11,6,1,'#f2c84a'],[7,12,2,1,'#f2c84a'],[6,8,4,1,'#3a2a1a']]}; // feathered cap, ruff collar, gold chain, cape, mustache
+// Druid (Mage): a forest room, a brown bear companion, a twisted wooden staff
+const DR={body:'#5a6a3a',bodyD:'#46542c',pants:'#4a3a24',boot:'#3a2a1a',belt:'#8a5a2a'};
+CH.druid={name:'Druid',eye:O,a:arms(DR),p:[...B(DR),[4,10,8,9,DR.body],[10,10,2,9,DR.bodyD],[4,14,8,1,DR.belt],[4,1,8,2,'#7a5a3a'],[4,3,1,4,'#7a5a3a'],[11,3,1,4,'#7a5a3a'],[5,7,6,3,'#8a6a48'],[6,10,4,1,'#8a6a48'],
+ [4,0,2,1,'#4a9a3a'],[7,0,2,1,'#5aba4a'],[10,0,2,1,'#4a9a3a'],[1,6,1,14,'#6a4420'],[0,3,1,4,'#7a5430'],[1,2,3,1,'#7a5430'],[3,3,1,2,'#7a5430'],[2,4,1,1,'#5aba4a']]};
+CLASS.druid='mage';TR.druid={up:'shadow',down:'shadow'};EXIT.shadow={x:68,y:66,ay:70}; // no doors: he slips into the shadow between two trees
+// Blacksmith (Merchant and Fighter): 70% man / 30% woman, black apron, soot
+const BSM={body:'#a08070',bodyD:'#806050',pants:'#4a3a30',boot:'#2a1a10',belt:'#3a2a1a'};
+const smithCH=f=>({name:'Blacksmith',eye:O,a:arms(BSM),p:[...B(BSM),[5,11,6,8,'#24222a'],[5,10,1,1,'#24222a'],[10,10,1,1,'#24222a'],
+ ...(f?[[4,1,8,2,'#3a2418'],[4,3,1,6,'#3a2418'],[11,3,1,6,'#3a2418'],[7,0,3,1,'#3a2418']]:[[5,1,6,2,'#2a1a10'],[5,7,6,2,'#3a2a20']]),[6,5,1,1,'#6a5a50'],[9,7,1,1,'#6a5a50'],[3,12,1,1,'#5a4a40'],[12,11,1,1,'#5a4a40']]});
+CH.blacksmith_m=smithCH(0);CH.blacksmith_f=smithCH(1);CH.blacksmith=CH.blacksmith_m;
+CLASS.blacksmith='merchant';TR.blacksmith={up:'backdoor',down:'backdoor'};
+const EXTRA_CLASS={blacksmith:['fighter']}; // characters with a second built-in tag
+// Paladin: a Knight blessed with holy fire at the forge (Priest + Knight next to the Blacksmith). Shiny armor, golden flame, glowing golden sword.
+const PLC={body:'#c8d0e0',bodyD:'#a0a8c0',pants:'#8890a8',boot:'#4a4a5a',belt:'#f2c84a'};
+CH.paladin={name:'Paladin',eye:O,a:arms(PLC),p:[...B(PLC),[4,1,8,3,'#e8eef8'],[4,4,1,4,'#f2c84a'],[11,4,1,4,'#f2c84a'],[7,0,2,1,'#f2c84a'],[7,11,2,3,'#f2a030'],[6,12,1,2,'#f2c84a'],[9,12,1,2,'#f2c84a'],[7,10,1,1,'#ffe080']]};
+['paladin','blacksmith_m','blacksmith_f','druid'].forEach(b=>{const c=CH[b];for(let i=1;i<SKINS.length;i++){const[s,d]=SKINS[i],m=k=>k===S1?s:k===S2?d:k;CH[b+'~'+i]=Object.assign({},c,{a:Object.assign({},c.a,{skin:m(c.a.skin)}),p:c.p.map(r=>[r[0],r[1],r[2],r[3],m(r[4]),r[5]])})}});
+['rogue_ninja','rogue_bandit','rogue_con'].forEach(b=>{const c=CH[b];for(let i=1;i<SKINS.length;i++){const[s,d]=SKINS[i],m=k=>k===S1?s:k===S2?d:k;CH[b+'~'+i]=Object.assign({},c,{a:Object.assign({},c.a,{skin:m(c.a.skin)}),p:c.p.map(r=>[r[0],r[1],r[2],r[3],m(r[4]),r[5]])})}});
+SKIN_CHARS.push('blacksmith','druid');
+// Green metal mage armor the Blacksmith forges for a Wizard (sprite copies like wizard_blue_arm)
+for(const c in WIZ_COLORS)CH['wizard_'+c+'_arm']=Object.assign({},CH['wizard_'+c],{p:[...CH['wizard_'+c].p,[3,9,3,2,'#3aa86a'],[10,9,3,2,'#2a8a54'],[5,11,6,3,'#4ac87a'],[5,11,6,1,'#8af0b0'],[7,12,2,1,'#2a8a54']]});
+ALL_CHARS.push('druid','blacksmith');NAMES.druid='Druid';NAMES.blacksmith='Blacksmith';NAMES.ingot='Ingot';
+// A fifth Knight weapon: the battle axe
+WEAPONS.push('axe');
+// Ingot: sold by the Blacksmith for INGOT_COST coins; on any character it adds the Fighter tag (reinforced)
+ITEMS.push('ingot');
+const INGOT_COST=100,SMITH_UNLOCK=100,ADVENTURE_TIME=180;
+// druid = his idle activities; spirit = idle chance to commune with a nature spirit (all 4 spaces around him open and empty)
+// adventure = the Blacksmith recruits his Fighter neighbors (needs 2+); adventureDeath = each one's risk; smithtalk = share of Knight visits about smithing (else reforging)
+Object.assign(ODDS,{druid:{grove:.4,animals:.4,weather:.2},spirit:.2,adventure:.2,adventureDeath:.1,advScroll:.1,advArtifact:.02,smithtalk:.6,rogueOutfit:{ninja:.4,bandit:.4,con:.2}});
+// Blacksmith relative to each character (any side = the same scene)
+const SIDES=k=>({left:k,right:k,above:k,below:k});
+PAIRS['blacksmith>necromancer']=SIDES('nscoff');PAIRS['blacksmith>knight']=SIDES('smithk');PAIRS['blacksmith>wizard']=SIDES('metal');PAIRS['blacksmith>merchant']=SIDES('awkjoke');
+PAIRS['blacksmith>apothecary']=SIDES('flirt');PAIRS['blacksmith>alchemist']=SIDES('childhood');PAIRS['blacksmith>priest']=SIDES('holyfire');PAIRS['blacksmith>rogue']=SIDES('rbuy');
+const NSCOFF=[['necromancer','Armor? How quaint.'],['blacksmith','Best steel in the land, friend.'],['necromancer','Steel rusts. Bones are forever.'],['blacksmith','...Bones break, too.'],['necromancer','Death is only the beginning.']];
+const SMITHTALK=[[['blacksmith','I am folding the steel twelve times now.'],['knight','Twelve! My old sword was folded twice.'],['blacksmith','And quenched in oil, not water.'],['knight','Fascinating. Truly the age of wonders.']],
+ [['knight','Have you tried the new fluted plate?'],['blacksmith','Lighter and stronger. Lovely work.'],['knight','I could dance in it!'],['blacksmith','Please do not dance in it.']]];
+const AWKJOKE=[['merchant','Why did the apple go to the forge?'],['blacksmith','...Why?'],['merchant','To get a little... tart-ened!'],['blacksmith','...'],['merchant','...Tempered? Tart? No?']];
+const FLIRT=[['blacksmith','I forged this ring. Matches your eyes.'],['apothecary','It is a horseshoe.'],['blacksmith','A very romantic horseshoe.'],['apothecary','I have potions to brew. Goodbye.']];
+const CHILDHOOD=[[['alchemist','Remember when we blew up the mill?'],['blacksmith','YOU blew up the mill. I just held the bucket.'],['alchemist','We were nine!'],['blacksmith','Best friends since. Even after the mill.']],
+ [['blacksmith','You still owe me for that "gold" you made.'],['alchemist','It was gold! For an hour.'],['blacksmith','My mother wore it to church.'],['alchemist','And it turned her finger green. Good times.']]];
+const RBUY=[['rogue','Twenty daggers and fifty ninja stars, please.'],['blacksmith','Twenty? You bought twenty last week!'],['rogue','I keep... leaving them in people.'],['blacksmith','Ha! Business is business.']];
+const METALTALK=[['wizard','The armor hums at night, you know.'],['blacksmith','Moonsteel does that. It likes you.'],['wizard','A fireball bounced right off it!'],['blacksmith','Told you. Finest work of my life.']];
+Object.assign(NAMES,{grove:'Tending the grove',animals:'Talking to animals',weather:'Predicting the weather',spirit:'Secret: a nature spirit',dpotion:'Potion on Druid: saved for a rainy day',dscroll:'Scroll on Druid: rain storm',drevive:'Scroll on a buried Druid: revived',dburied:'A buried Druid',
+ forgework:'Hammering at the anvil',ingotshop:'Coin in the Blacksmith\'s room: ingot for 100 coins',reinforce:'Ingot on anyone: reinforced (Fighter tag)',adventure:'Adventure (3 min)',
+ nscoff:'Armor? How quaint.',smithk:'Smithing talk',reforge:'A new weapon for the Knight',metal:'Magical metal',greenarmor:'Green mage armor',metaltalk:'Talking about the armor',awkjoke:'An awkward joke',flirt:'Flirting (badly)',childhood:'Childhood friends',holyfire:'Holy fire',paladin:'Secret: the Paladin',rbuy:'Daggers and ninja stars','prac:axe':'Weapon practice: axe'});
+EGGS.push('spirit','paladin');
+COMP_TABS.find(t=>t.id==='knight').idle.splice(4,0,'prac:axe');
+COMP_TABS.push({id:'druid',name:'Druid',pairs:[],idle:['grove','animals','weather','dburied'],items:['dpotion','dscroll','drevive','spirit']},
+ {id:'blacksmith',name:'Blacksmith',pairs:['nscoff','smithk','reforge','metal','greenarmor','metaltalk','awkjoke','flirt','childhood','holyfire','rbuy','adventure'],idle:['forgework'],items:['ingotshop','reinforce','paladin']});
+COMP_TABS.forEach(t=>{const add={necromancer:['nscoff'],knight:['smithk','reforge','adventure'],wizard:['metal','greenarmor','metaltalk'],merchant:['awkjoke'],apothecary:['flirt'],alchemist:['childhood'],priest:['holyfire'],rogue:['rbuy','adventure']}[t.id];if(add)t.pairs.push(...add);
+ if(t.id==='knight')t.items.push('paladin')});
+Object.assign(PAIR_WITH,{nscoff:['blacksmith','necromancer'],smithk:['blacksmith','knight'],reforge:['blacksmith','knight'],metal:['blacksmith','wizard'],greenarmor:['blacksmith','wizard'],metaltalk:['blacksmith','wizard'],
+ awkjoke:['blacksmith','merchant'],flirt:['blacksmith','apothecary'],childhood:['blacksmith','alchemist'],holyfire:['blacksmith','priest'],rbuy:['blacksmith','rogue'],adventure:['blacksmith','tag:fighter']});
+TAG_NOTES.druid='{mage} Mage. Even buried, he still counts as a Mage for his neighbors.';
+TAG_NOTES.blacksmith='{merchant} Merchant and {fighter} Fighter.';
+Object.assign(DESC,{
+ 'prac:axe':'Knight with a battle axe. Big, heavy chops. Firewood for a week.',
+ grove:'The Druid tends his grove of trees. They seem to like him.',
+ animals:'Deer and birds come out of the trees to chat with the Druid. He understands every word.',
+ weather:'The Druid casts green nature magic to predict the weather. Leaves blow everywhere. Results vary.',
+ dburied:'When the Druid dies he does not go back to the shelf: he is buried in his space and a sapling grows. Nobody visits him until he is revived.',
+ dpotion:'Potion on the Druid: he tucks it away for a rainy day. (It is used up.)',
+ dscroll:'Spell scroll on the Druid: a rain storm. Everyone away (dates, crusades, dungeons, adventures) comes home at once, as if the whole time had passed.',
+ drevive:'Spell scroll on the buried Druid\'s space: the sapling glows and the Druid climbs back out.',
+ spirit:'Secret: with all four spaces around him open and empty, 20% of his idle time the Druid communes with a nature spirit and learns a secret (shown in the Compendium).',
+ forgework:'The Blacksmith hammers at the anvil. Sparks fly. So does soot.',
+ ingotshop:'Tap the coin in the Blacksmith\'s room to buy a steel ingot for 100 coins.',
+ reinforce:'Ingot on any character: reinforced! They gain the Fighter tag for good.',
+ adventure:'The Blacksmith next to two or more Fighters, 20%: he sends them on a 3 minute adventure. Each has a 10% risk. Loot: 1-10 coins per Fighter, 10% a scroll per Mage, 2% an artifact per Merchant.',
+ nscoff:'Blacksmith and Necromancer, any side. The Necromancer scoffs at armor. Death is only the beginning, apparently.',
+ smithk:'Blacksmith and Knight, any side, 60%. They nerd out about the newest smithing tricks.',
+ reforge:'Blacksmith and Knight, any side, 40%. The Blacksmith forges the Knight a different weapon.',
+ metal:'Blacksmith and Wizard, any side. The Wizard brings a magical metal. "Can you work this?" Usually: no.',
+ greenarmor:'With Mages on all four sides of the Blacksmith, he CAN work the Wizard\'s magical metal: green metal mage armor!',
+ metaltalk:'Blacksmith and a Wizard in green armor: they talk about how powerful its magic is.',
+ awkjoke:'Blacksmith and Fruit Merchant, any side. A joke the Blacksmith does not get. Awkward silence.',
+ flirt:'Blacksmith and Apothecary, any side. He flirts. She is not interested. At all.',
+ childhood:'Blacksmith and Alchemist, any side. They grew up together and share old stories.',
+ holyfire:'Blacksmith and Priest, any side. The Priest offers holy fire for the forge. The Blacksmith politely declines.',
+ paladin:'Secret: Priest and Knight both next to the Blacksmith. Holy fire is accepted and the Knight is forged into a Paladin.',
+ rbuy:'Blacksmith and Rogue, any side. The Rogue needs more daggers and ninja stars. Again.'});
+DESC.dungeon='Rogue above the Knight. They go dungeon crawling for 3 minutes and come back with coins, an artifact, scrolls, potions or a secret.';
+NAMES.dungeon='Dungeon crawl (3 min)';
