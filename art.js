@@ -136,6 +136,10 @@ function poseOf(act,at){
  if(act==='stash')return at<1.2?'up':'fwd';
  if(act==='forgework')return at<1?'none':(at%.6)<.3?'up':'fwd';
  if(act==='recruit')return 'both';
+ if(act==='smelt'||act==='pour')return at<1?'none':'fwd';
+ if(act==='coal')return at<1?'none':(at%.8)<.4?'fwd':'up';
+ if(act==='leadgold')return at<1?'none':'hold';
+ if(act==='dance')return ['both','wave','up','flex','both','flex2'][Math.floor(at*5)%6]; // flailing arms
  // Alchemist and Rogue
  if(act==='alcbrew')return at<1.2?'none':Math.floor(at*2)%2?'fwd':'up';
  if(act==='research')return 'hold';
@@ -329,6 +333,14 @@ function drawAct(c,u){
  else if(a==='spirit'){const k=cl((t-.6)/.8,0,1)*cl((6-t)/.8,0,1);swirl(c,x,y,t,3,1);if(k>0){c.save();c.globalAlpha=.6*k;spr(c,'ghost','happy',x+f*24,y-10+Math.sin(t*2)*3,-f,0,1,1);c.fillStyle='rgba(120,255,140,.3)';c.fillRect(x+f*24-10,y-46,20,40);c.restore()}}
  else if(a==='stash'){if(t<1.4)drawItem(c,'potion',Math.round(x+f*9),Math.round(y-38+cl((t-.8)/.6,0,1)*24),1);c.fillStyle=O;c.fillRect(Math.round(x+f*8)-4,Math.round(y-16),9,8);c.fillStyle='#8a5a2a';c.fillRect(Math.round(x+f*8)-3,Math.round(y-15),7,6)}
  else if(a==='storm'){swirl(c,x,y,t,4,1)}
+ // Blacksmith: smelting in the furnace (tongs with glowing armor or a sword), shoveling coal, pouring a mold, lead turning to gold
+ else if(a==='smelt'&&t>=1){const hx=Math.round(x+f*12),ex=Math.round(x+f*24),hot=cl((t-1.5)/2.5,0,1),col='rgb('+Math.round(120+135*hot)+','+Math.round(120+20*hot)+','+Math.round(130-100*hot)+')';
+  stick(c,hx,Math.round(y-22),ex,Math.round(y-30),'#5a5a64');c.fillStyle=O;if(u.smeltWhat==='sword'){c.fillRect(ex-1,y-31,f*14+(f>0?2:-2),4);c.fillStyle=col;c.fillRect(f>0?ex:ex+f*14,y-30,14,2)}else{c.fillRect(ex+(f>0?0:-11),y-36,11,10);c.fillStyle=col;c.fillRect(ex+(f>0?1:-10),y-35,9,8)}}
+ else if(a==='coal'&&t>=1){const up=(t%.8)<.4,ex=Math.round(x+f*(up?18:22)),ey=Math.round(y-(up?24:30));stick(c,Math.round(x+f*6),Math.round(y-20),ex,ey,'#8a5a2a');c.fillStyle=O;c.fillRect(ex-3,ey-3,7,5);c.fillStyle='#5a5a64';c.fillRect(ex-2,ey-2,5,3);if(up){c.fillStyle='#1a1a1e';c.fillRect(ex-2,ey-4,4,2)}}
+ else if(a==='pour'&&t>=1){const mx=Math.round(x+f*20),my=Math.round(y-2);c.fillStyle=O;c.fillRect(mx-7,my-4,14,5);c.fillStyle='#3a3a44';c.fillRect(mx-6,my-3,12,3);
+  if(t<3.4){c.fillStyle=O;c.fillRect(Math.round(x+f*12)-4,y-30,8,7);c.fillStyle='#6a6a74';c.fillRect(Math.round(x+f*12)-3,y-29,6,5);c.fillStyle=Math.floor(t*8)%2?'#ff8020':'#ffd040';c.fillRect(Math.round(x+f*15),y-24,2,20);c.fillRect(mx-5,my-3,10,2)}
+  else drawItem(c,'ingot',mx,my-6,1)}
+ else if(a==='leadgold'&&t>=1){const gold=t>3;c.fillStyle=O;c.fillRect(Math.round(x+f*3)-4,y-25,9,7);c.fillStyle=gold?'#f2c84a':'#6a6a74';c.fillRect(Math.round(x+f*3)-3,y-24,7,5);if(t>2.4&&t<3.4)swirl(c,x,y,t,2,1)}
  else if(a==='forgework'&&t>=1){const up=(t%.6)<.3,hx=Math.round(x+f*(up?8:14)),hy=Math.round(y-(up?40:24));stick(c,Math.round(x+f*6),Math.round(y-24),hx,hy,'#8a5a2a');c.fillStyle=O;c.fillRect(hx-4,hy-3,9,6);c.fillStyle='#5a5a64';c.fillRect(hx-3,hy-2,7,4);
   if(!up)drawSparks(c,Math.round(x+f*16),Math.round(y-22),t)}
  else if(a==='scrub'){const up=Math.floor(t*5)%2;c.fillStyle=O;c.fillRect(Math.round(x+f*(up?11:15))-3,Math.round(y-(up?38:26))-2,6,5);c.fillStyle='#d8d0b0';c.fillRect(Math.round(x+f*(up?11:15))-2,Math.round(y-(up?38:26))-1,4,3)} // a rag

@@ -638,12 +638,25 @@ const CHILDHOOD=[[['alchemist','Remember when we blew up the mill?'],['blacksmit
 const RBUY=[['rogue','Twenty daggers and fifty ninja stars, please.'],['blacksmith','Twenty? You bought twenty last week!'],['rogue','I keep... leaving them in people.'],['blacksmith','Ha! Business is business.']];
 const METALTALK=[['wizard','The armor hums at night, you know.'],['blacksmith','Moonsteel does that. It likes you.'],['wizard','A fireball bounced right off it!'],['blacksmith','Told you. Finest work of my life.']];
 Object.assign(NAMES,{grove:'Tending the grove',animals:'Talking to animals',weather:'Predicting the weather',spirit:'Secret: a nature spirit',dpotion:'Potion on Druid: saved for a rainy day',dscroll:'Scroll on Druid: rain storm',drevive:'Scroll on a buried Druid: revived',dburied:'A buried Druid',
- forgework:'Hammering at the anvil',ingotshop:'Coin in the Blacksmith\'s room: ingot for 100 coins',reinforce:'Ingot on anyone: reinforced (Fighter tag)',adventure:'Adventure (3 min)',
+ ingotshop:'Coin in the Blacksmith\'s room: ingot for 100 coins',reinforce:'Ingot on anyone: reinforced (Fighter tag)',adventure:'Adventure (3 min)',
  nscoff:'Armor? How quaint.',smithk:'Smithing talk',reforge:'A new weapon for the Knight',metal:'Magical metal',greenarmor:'Green mage armor',metaltalk:'Talking about the armor',awkjoke:'An awkward joke',flirt:'Flirting (badly)',childhood:'Childhood friends',holyfire:'Holy fire',paladin:'Secret: the Paladin',rbuy:'Daggers and ninja stars','prac:axe':'Weapon practice: axe'});
 EGGS.push('spirit','paladin');
 COMP_TABS.find(t=>t.id==='knight').idle.splice(4,0,'prac:axe');
 COMP_TABS.push({id:'druid',name:'Druid',pairs:[],idle:['grove','animals','weather','dburied'],items:['dpotion','dscroll','drevive','spirit']},
- {id:'blacksmith',name:'Blacksmith',pairs:['nscoff','smithk','reforge','metal','greenarmor','metaltalk','awkjoke','flirt','childhood','holyfire','rbuy','adventure'],idle:['forgework'],items:['ingotshop','reinforce','paladin']});
+ {id:'blacksmith',name:'Blacksmith',pairs:['nscoff','smithk','reforge','metal','greenarmor','metaltalk','awkjoke','flirt','childhood','holyfire','rbuy','adventure'],idle:['forgework','smelt','coal','pour'],items:['ingotshop','reinforce','bpotion','bscroll','paladin','leadgold']});
+// Blacksmith idles: hammering 40%, smelting armor or a sword 40%, stocking the furnace with coal 19%, pouring an ingot mold 1% (+1 ingot).
+// Secret: next to the Alchemist, 15% (rolled first) they turn lead into gold: +5 coins.
+Object.assign(ODDS,{smith:{forgework:.4,smelt:.4,coal:.19,pour:.01},leadgold:.15});
+const LEADGOLD_GAIN=5,DANCE_TIME=15;
+Object.assign(NAMES,{forgework:'Hammering at the anvil',smelt:'Smelting armor or a sword',coal:'Stocking the furnace',pour:'Pouring an ingot mold',bpotion:'Potion on Blacksmith: handed back',bscroll:'Scroll on Blacksmith: uncontrollable dancing',leadgold:'Secret: lead into gold'});
+EGGS.push('leadgold');
+Object.assign(DESC,{forgework:'The Blacksmith hammers at the anvil. Sparks fly everywhere. So does soot.',
+ smelt:'The Blacksmith smelts a piece of armor or a sword (50/50) in the roaring furnace.',
+ coal:'The Blacksmith shovels coal into the furnace. The fire roars.',
+ pour:'1% of the time the Blacksmith pours molten metal into a mold: a free ingot!',
+ bpotion:'Potion on the Blacksmith: "I do not drink that stuff." You get it back.',
+ bscroll:'Spell scroll on the Blacksmith: the spell goes wrong and he dances uncontrollably for 15 seconds.',
+ leadgold:'Secret: with the Alchemist next to the Blacksmith, 15% of his idle time they turn lead into gold. +5 coins.'});
 COMP_TABS.forEach(t=>{const add={necromancer:['nscoff'],knight:['smithk','reforge','adventure'],wizard:['metal','greenarmor','metaltalk'],merchant:['awkjoke'],apothecary:['flirt'],alchemist:['childhood'],priest:['holyfire'],rogue:['rbuy','adventure']}[t.id];if(add)t.pairs.push(...add);
  if(t.id==='knight')t.items.push('paladin')});
 Object.assign(PAIR_WITH,{nscoff:['blacksmith','necromancer'],smithk:['blacksmith','knight'],reforge:['blacksmith','knight'],metal:['blacksmith','wizard'],greenarmor:['blacksmith','wizard'],metaltalk:['blacksmith','wizard'],
@@ -660,7 +673,6 @@ Object.assign(DESC,{
  dscroll:'Spell scroll on the Druid: a rain storm. Everyone away (dates, crusades, dungeons, adventures) comes home at once, as if the whole time had passed.',
  drevive:'Spell scroll on the buried Druid\'s space: the sapling glows and the Druid climbs back out.',
  spirit:'Secret: with all four spaces around him open and empty, 20% of his idle time the Druid communes with a nature spirit and learns a secret (shown in the Compendium).',
- forgework:'The Blacksmith hammers at the anvil. Sparks fly. So does soot.',
  ingotshop:'Tap the coin in the Blacksmith\'s room to buy a steel ingot for 100 coins.',
  reinforce:'Ingot on any character: reinforced! They gain the Fighter tag for good.',
  adventure:'The Blacksmith next to two or more Fighters, 20%: he sends them on a 3 minute adventure. Each has a 10% risk. Loot: 1-10 coins per Fighter, 10% a scroll per Mage, 2% an artifact per Merchant.',
