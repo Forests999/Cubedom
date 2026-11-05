@@ -8,32 +8,44 @@ function bg(id,w){
 }
 
 // ---------- art ----------
-function drawSprite(c,id,mood){
+function drawSprite(c,id,mood,pose){
  const x=c.getContext('2d'),ch=CH[id],f=(a,b,w,h,k)=>{x.fillStyle=k;x.fillRect(a,b,w,h)};
- ch.p.forEach(p=>f(p[0]-1,p[1]-1,p[2]+2,p[3]+2,O));ch.p.forEach(p=>f(p[0],p[1],p[2],p[3],p[4]));
+ const R=[...(ch.a?POSE[pose||'none'](ch.a):[]),...ch.p];
+ R.forEach(p=>f(p[0]-1,p[1]-1,p[2]+2,p[3]+2,O));R.forEach(p=>f(p[0],p[1],p[2],p[3],p[4]));
  const e=mood==='mad'?'#e03030':ch.eye;f(6,5,1,2,e);f(9,5,1,2,e);
  if(mood==='happy'){f(7,8,2,1,'#7a2a2a');f(5,7,1,1,'#f08080');f(10,7,1,1,'#f08080')}
  else if(mood==='mad'){f(6,4,2,1,O);f(9,4,2,1,O);f(7,8,2,1,'#a22')}else f(7,8,2,1,'#8a4a4a');
 }
 const SP={};
-function sprite(id,m){const k=id+m;if(!SP[k]){const c=document.createElement('canvas');c.width=16;c.height=22;drawSprite(c,id,m);SP[k]=c}return SP[k]}
-function spr(c,id,m,cx,fy,face,bob,al,sc){c.save();c.globalAlpha=al==null?1:al;sc=sc||1;c.translate(Math.round(cx),Math.round(fy+bob));c.scale(face<0?-sc:sc,sc);c.drawImage(sprite(id,m),-16,-44,32,44);c.restore()}
+function sprite(id,m,pose){const k=id+m+(pose||'');if(!SP[k]){const c=document.createElement('canvas');c.width=16;c.height=22;drawSprite(c,id,m,pose);SP[k]=c}return SP[k]}
+function spr(c,id,m,cx,fy,face,bob,al,sc,pose){c.save();c.globalAlpha=al==null?1:al;sc=sc||1;c.translate(Math.round(cx),Math.round(fy+bob));c.scale(face<0?-sc:sc,sc);c.drawImage(sprite(id,m,pose),-16,-44,32,44);c.restore()}
+// Which arm pose to show for an activity (act) that has run for `at` seconds
+function poseOf(act,at){
+ if(act==='read')return 'hold';
+ if(act==='magic')return Math.floor(at*3)%2?'up':'fwd';
+ if(act==='prac')return 'grip';
+ if(act==='learn'||act==='cast')return 'up';
+ if(act==='demon')return at<1.6?'both':'none';
+ return 'none';
+}
 function box(c,id,x,y,w){
  const k=WALL[id];c.fillStyle=k[0];c.fillRect(x,y,CELL,CELL);c.fillStyle=k[1];c.fillRect(x,y+66,CELL,30);c.fillStyle='rgba(0,0,0,.3)';c.fillRect(x,y+66,CELL,2);
  bg(id,w).forEach(d=>{c.fillStyle=d[4];c.fillRect(x+d[0],y+d[1],d[2],d[3])});
  c.strokeStyle='#000';c.lineWidth=4;c.strokeRect(x+2,y+2,CELL-4,CELL-4);
 }
-function drawFx(f,pass){
- if(f.type!=='door'&&pass===1)return;
+// Doors/portals/stairs drawn behind the characters.
+function drawFx(f){
  g.save();g.globalAlpha=f.a;const x=f.x,y=f.y,o=f.open,t=f.type;
  if(t==='door'){
-  if(o>.03){
-   if(pass===1){const th=o*1.3,hx=x-20,fx=hx+40*Math.cos(th),sn=Math.sin(th),sc=1+.3*sn,cy=y-29+4*sn,ft=cy-29*sc,fb=cy+29*sc;
-    g.beginPath();g.moveTo(hx,y-58);g.lineTo(fx,ft);g.lineTo(fx,fb);g.lineTo(hx,y);g.closePath();g.fillStyle='#9a6a34';g.fill();g.lineWidth=2;g.strokeStyle=O;g.stroke();
-    g.fillStyle='#7a5226';g.beginPath();g.moveTo(hx,y-30);g.lineTo(fx,(ft+fb)/2-1);g.lineTo(fx,(ft+fb)/2+1);g.lineTo(hx,y-28);g.closePath();g.fill();
-    g.fillStyle='#f2c84a';g.fillRect(fx-4,(ft+fb)/2-3,3,3)}
-   else{g.fillStyle=O;g.fillRect(x-25,y-63,50,63);g.fillStyle='#0b0a14';g.fillRect(x-20,y-58,40,58);g.fillStyle='#5a3a1e';g.fillRect(x-23,y-61,3,61);g.fillRect(x+20,y-61,3,61);g.fillRect(x-23,y-61,46,3)}}}
- else if(t==='portal'){const s=.3+.7*o,h=Math.round(58*s),w=Math.round(36*s),c=Math.floor(T*8)%2?'#8fe0ff':'#c890ff';
+  // The door sits in the wall line between two rooms, so we only see its edge.
+  // Closed = flat against the line (invisible). Opening, it swings out toward the viewer
+  // into the next room (f.dir), so it shows as a narrow panel seen from the side.
+  if(o>.03){const d=f.dir||1,sn=Math.sin(o*1.1),w=Math.max(3,Math.round(22*sn)),fx=x+d*w,top=y-58,grow=Math.round(3*sn);
+   g.beginPath();g.moveTo(x,top);g.lineTo(fx,top-grow);g.lineTo(fx,y+grow);g.lineTo(x,y);g.closePath();g.fillStyle='#9a6a34';g.fill();g.lineWidth=2;g.strokeStyle=O;g.stroke();
+   g.fillStyle='#7a5226';for(const k of [.33,.66]){const py=top+58*k;g.beginPath();g.moveTo(x,py);g.lineTo(fx,py-grow*(1-2*k));g.lineTo(fx,py-grow*(1-2*k)+2);g.lineTo(x,py+2);g.closePath();g.fill()}
+   g.fillStyle='#5a3a1e';g.fillRect(d>0?fx-2:fx,top-grow,2,58+grow*2); // the door's outer edge
+   if(w>8){g.fillStyle='#f2c84a';g.fillRect(fx-d*5-1,y-30,3,3)}}}
+ else if(t==='portal'){const h=58,w=36,c=Math.floor(T*8)%2?'#8fe0ff':'#c890ff';
   g.fillStyle='#6a4cc2';g.fillRect(x-w/2,y-h,w,h);g.fillStyle=c;g.fillRect(x-w/2+2,y-h+2,Math.max(0,w-4),Math.max(0,h-4));g.fillStyle='#fff';g.fillRect(x-w/2+5,y-h+6,Math.max(0,w-10),Math.max(0,h-12))}
  else if(t==='spiral'||t==='stone'){
   g.fillStyle='#0e0a18';g.fillRect(x-13,y-40,26,40);g.fillStyle='#000';g.fillRect(x-13,y-40,26,2);

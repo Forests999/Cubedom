@@ -39,15 +39,15 @@ function mkBolt(s,t){const sx=s.x,sy=s.y-40,ex=t.x,ey=t.y-26,n=Math.max(3,Math.r
  return{p,t:0,cells:[[s.c*CELL,s.r*CELL],[t.c*CELL,t.r*CELL]]}}
 const freeU=x=>x&&!x.hosting&&(x.st==='idle'||x.st==='walk');
 const nbrs=u=>[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filter(h=>freeU(h));
-// Idle activities. Wizard: read 60%, magic 38%, demon 2%. Knight: weapon practice 80%, fight an orc next door 20%.
+// Idle activities; odds are in ODDS (data.js).
 function startAct(u){
  const r=Math.random();u.path=[];
  if(u.id==='wizard'){
-  const a=r<.6?'read':r<.98?'magic':'demon';
+  const W=ODDS.wizard,a=r<W.read?'read':r<W.read+W.magic?'magic':'demon';
   u.st='act';u.act=a;u.at=0;u.ev={};u.dur=a==='read'?4+Math.random()*2:a==='magic'?3.5+Math.random()*1.5:2.6;
   if(a==='demon'){const rc=u.c*CELL,dx=cl(u.x+(u.x<rc+48?30:-30),rc+16,rc+80);u.face=dx>u.x?1:-1;demons.push({x:dx,y:u.y,t:0,dir:dx>u.x?-1:1,owner:u.id})}
   return true}
- if(r>=.8){const o=nbrs(u);if(o.length){visit(u,pick(o),'orc');return true}}
+ if(r>=ODDS.knight.prac){const o=nbrs(u);if(o.length){visit(u,pick(o),'orc');return true}}
  u.st='act';u.act='prac';u.at=0;u.ev={};u.dur=3.5+Math.random()*1.5;return true;
 }
 function acting(u,dt){
@@ -70,7 +70,7 @@ function route(u,r1,c1,r2,c2,fin){
  const t=TR[u.id],dc=c2-c1,dr=r2-r1,ty=dc?t.h:dr<0?t.u:t.d;
  const F=(type,x,y)=>{const f={type,x,y,open:0,want:0,a:0,vis:false,keep:true};u.fxs.push(f);return f};
  if(dc&&ty==='door'){
-  const ex=(dc>0?c1+1:c1)*CELL,yy=r1*CELL+FY,f=F('door',ex,yy);
+  const ex=(dc>0?c1+1:c1)*CELL,yy=r1*CELL+FY,f=F('door',ex,yy);f.dir=dc;
   return [{k:'walk',x:ex-dc*28,y:yy,on:f},{k:'wait',f,w:.5},{k:'walk',x:ex+dc*28,y:yy,sp:40},{k:'walk',x:fin.x,y:fin.y,close:f}];
  }
  if(dc){
@@ -82,12 +82,12 @@ function route(u,r1,c1,r2,c2,fin){
   {k:'walk',x:X2,y:y2+FY,sp:tr?110:34,close:f2,dust:tr},{k:'walk',x:fin.x,y:fin.y,off:f2}];
 }
 function decide(u){
- const kd=kindOf(),P=kd==='friend'?.45:.2,rr=Math.random();
- if(rr>=P&&rr<P+.4&&startAct(u))return;
+ const kd=kindOf(),P=kd==='friend'?ODDS.visitFriend:ODDS.visit,rr=Math.random();
+ if(rr>=P&&rr<P+ODDS.idle&&startAct(u))return;
  if(rr<P){
   const opts=nbrs(u);
   if(opts.length){
-   const hang=Math.random()<.25;
+   const hang=Math.random()<ODDS.hangout;
    if(kd==='bolt'&&!hang&&freeU(U.wizard)&&freeU(U.knight)){cast(U.wizard,U.knight);return}
    if(kd!=='bolt'||hang){visit(u,pick(opts),hang||kd==='bolt'?null:kd);return}
   }
@@ -95,8 +95,13 @@ function decide(u){
  u.st='walk';u.path=[{k:'walk',x:u.c*CELL+16+Math.random()*64,y:u.r*CELL+FY}];
 }
 function visit(u,h,vk){
- const hx=h.c*CELL,dc=h.c-u.c,dest=cl(h.x+(dc!==0?-dc*26:pick([-26,26])),hx+16,hx+80);
+ const hx=h.c*CELL,dc=h.c-u.c;let dest=cl(h.x+(dc!==0?-dc*26:pick([-26,26])),hx+16,hx+80),ox=0;
+ // Orc fight: the orc appears on the far side of the room from the host; the knight stands between them
+ if(vk==='orc'){const left=h.x<hx+48;ox=left?hx+82:hx+14;dest=ox+(left?-28:28)}
  u.vk=vk;u.path=route(u,u.r,u.c,h.r,h.c,{x:dest,y:h.r*CELL+FY});u.st='out';u.target=h.id;h.hosting=u.id;h.path=[];h.st='idle';
+ if(vk==='orc'){// the orc shows up first; the knight notices, then heads over
+  u.orc={x:ox,y:h.r*CELL+FY,blink:0};poof(ox,u.orc.y-20,'#6a9a3a');
+  u.mood='mad';u.mt=.8;u.face=h.c>u.c?1:h.c<u.c?-1:u.face;u.path.unshift({k:'pause',w:.9})}
 }
 function arrive(u){if(u.st==='out'){u.st='talk';u.tt=0;u.ev={};u.kind=u.vk;u.sc2=null}else{u.st='idle';u.wait=2+Math.random()*3}}
 const fin=u=>{u.path.shift();if(!u.path.length)arrive(u)};
@@ -105,7 +110,7 @@ function run(u,dt){
  if(!s.b){s.b=1;s.t=0;if(s.on)show(s.on);if(s.close){s.close.want=0;s.close.closing=true}if(s.k==='wait'){show(s.f);s.f.want=1}
   if(s.k==='vanish')s.f.want=1;
   if(s.k==='appear'){u.x=s.x;u.y=s.y;u.al=0;show(s.f);s.f.want=1}}
- if(s.k==='wait'){s.t+=dt;if(s.t>=s.w)fin(u)}
+ if(s.k==='wait'||s.k==='pause'){s.t+=dt;if(s.t>=s.w)fin(u)}
  else if(s.k==='vanish'){s.t+=dt;const p=cl((s.t-.25)/.35,0,1);u.al=1-p;u.sk=1-.4*p;if(s.m==='trap')u.y+=dt*14;if(s.t>=.65){u.al=0;s.f.want=0;hide(s.f);fin(u)}}
  else if(s.k==='appear'){s.t+=dt;const p=cl((s.t-.25)/.35,0,1);u.al=p;u.sk=s.m==='trap'?1:.6+.4*p;if(s.t>=.65){u.al=1;u.sk=1;fin(u)}}
  else{const dx=s.x-u.x,dy=s.y-u.y,d=Math.hypot(dx,dy),sp=(s.sp||(u.st==='walk'?20:34))*dt;
@@ -123,7 +128,6 @@ function talk(u,dt){
   once('z',2,()=>{K.form='eknight';K.lb.textContent='Eldritch Knight';K.mood='happy';K.mt=2;poof(K.x,K.y-20,'#c890ff');save()});
   once('y',3,()=>{K.act=null})}
  else if(k==='orc'){end=4.6;if(u.orc)u.face=u.orc.x>u.x?1:-1;
-  once('o1',.3,()=>{const rc=h.c*CELL;let ox=u.x+(u.x<rc+48?30:-30);if(ox>rc+84||ox<rc+12)ox=u.x+(u.x<rc+48?-30:30);ox=cl(ox,rc+12,rc+84);u.orc={x:ox,y:u.y,blink:0};poof(ox,u.y-20,'#6a9a3a')});
   once('o2',.5,()=>{u.act='prac';u.at=0});
   once('o3',1.2,()=>{if(u.orc)u.orc.blink=.5});
   once('o4',2,()=>{u.blink=.5;u.mood='mad';u.mt=.7});
@@ -159,15 +163,14 @@ function render(){
  for(const id in U){const u=U[id],x=u.c*CELL,y=u.r*CELL;
   if(id===dm){g.strokeStyle='#5a5590';g.lineWidth=2;g.setLineDash([4,4]);g.strokeRect(x+4,y+4,CELL-8,CELL-8);g.setLineDash([])}else box(g,id,x,y,u.weapon);
   u.lb.style.opacity=id===dm?0:1}
- Object.values(U).forEach(u=>u.fxs.forEach(f=>drawFx(f,0)));
+ Object.values(U).forEach(u=>u.fxs.forEach(f=>drawFx(f)));
  Object.values(U).filter(u=>u.id!==dm).sort((a,b)=>a.y-b.y).forEach(u=>{
   const walking=u.path.length&&u.path[0].k==='walk',hop=u.hop>0?-Math.abs(Math.sin(u.hop/.5*Math.PI))*10:0,bl=u.blink>0&&Math.floor(u.blink*14)%2?.2:1;
-  spr(g,u.form||u.id,u.mood,u.x,u.y,u.face,(walking?Math.sin(u.t*14)*1.5:0)+hop,u.al*bl,scl(u))});
+  spr(g,u.form||u.id,u.mood,u.x,u.y,u.face,(walking?Math.sin(u.t*14)*1.5:0)+hop,u.al*bl,scl(u),poseOf(u.st==='cast'?'cast':u.act,u.st==='cast'?u.tt:u.at))});
  Object.values(U).forEach(u=>{if(u.id===dm)return;
   if(u.orc){const o=u.orc,ob=o.blink>0&&Math.floor(o.blink*14)%2?.2:1;spr(g,'orc','mad',o.x,o.y,u.x>o.x?1:-1,0,ob,1)}
   if(u.act)drawAct(g,u)});
  demons.forEach(d=>drawDemon(g,d));
- Object.values(U).forEach(u=>u.fxs.forEach(f=>drawFx(f,1)));
  parts.forEach(p=>{if(p.k==='h')heart(g,p.x,p.y-p.t*26);else{const k=p.t/p.life,s=Math.max(1,7*(1-k));g.fillStyle=p.c;for(let i=0;i<8;i++){const a=i*Math.PI/4;g.fillRect(p.x+Math.cos(a)*k*28-s/2,p.y+Math.sin(a)*k*28-s/2,s,s)}}});
  bolts.forEach(b=>{const a=1-b.t/.5;g.fillStyle='rgba(255,255,255,'+(a*.6)+')';b.cells.forEach(q=>g.fillRect(q[0],q[1],CELL,CELL));
   [['rgba(140,210,255,'+a+')',6],['#fff',2]].forEach(s=>{g.strokeStyle=s[0];g.lineWidth=s[1];g.beginPath();b.p.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.stroke()})});
@@ -223,25 +226,35 @@ function diagram(k){
  if(k==='bolt'){x.strokeStyle='#fff';x.lineWidth=2;x.beginPath();x.moveTo(52,44);[[44,64],[56,84],[46,106],[48,128]].forEach(q=>x.lineTo(q[0],q[1]));x.stroke()}
  if(k==='chat'){x.fillStyle='#eadcb4';[[40,40],[48,40],[56,40]].forEach(q=>x.fillRect(n[0]+q[0],n[1]+q[1],4,4))}
  return c}
+// A puff of green smoke for Compendium tiles (k goes 0 to 1)
+function poofTile(c,x,y,k){const s=Math.max(1,7*(1-k));c.fillStyle='#6a9a3a';for(let i=0;i<8;i++){const a=i*Math.PI/4;c.fillRect(x+Math.cos(a)*k*28-s/2,y+Math.sin(a)*k*28-s/2,s,s)}}
 function idleTile(kind,wp){
  const[c,x]=mkc(96,96,NAMES[kind]+(wp?' ('+wp+')':''));
  anim.push(t=>{x.clearRect(0,0,96,96);
-  if(kind==='read'||kind==='magic'){box(x,'wizard',0,0);spr(x,'wizard','ok',48,FY,1,0);drawAct(x,{act:kind,at:t,x:48,y:FY,face:1})}
+  if(kind==='read'||kind==='magic'){box(x,'wizard',0,0);spr(x,'wizard','ok',48,FY,1,0,1,1,poseOf(kind,t));drawAct(x,{act:kind,at:t,x:48,y:FY,face:1})}
   else if(kind==='demon'){const tt=t%4.8;box(x,'wizard',0,0);
-   if(tt<2.1)spr(x,'wizard',tt>1.6?'mad':'ok',32,FY,1,0,tt>1.6&&Math.floor(tt*14)%2?.2:1);
+   if(tt<2.1)spr(x,'wizard',tt>1.6?'mad':'ok',32,FY,1,0,tt>1.6&&Math.floor(tt*14)%2?.2:1,1,poseOf('demon',tt));
    drawDemon(x,{x:66,y:FY,t:tt,dir:-1})}
-  else if(kind==='prac'){box(x,'knight',0,0,wp);spr(x,'knight','ok',48,FY,1,0);drawAct(x,{act:'prac',at:t,x:48,y:FY,face:1,weapon:wp})}
-  else{const tt=t%5;box(x,'knight',0,0,'longsword');spr(x,'knight',tt>2&&tt<2.5?'mad':'ok',30,FY,1,0,tt>2&&tt<2.5&&Math.floor(tt*14)%2?.2:1);
-   if(tt>.3&&tt<3.5){const b=(tt>1.2&&tt<1.7)||(tt>2.6&&tt<3.1);spr(x,'orc','mad',68,FY,-1,0,b&&Math.floor(tt*14)%2?.2:1)}
-   if(tt>.5&&tt<3.5)drawAct(x,{act:'prac',at:tt-.5,x:30,y:FY,face:1,weapon:'longsword'})}
+  else if(kind==='prac'){box(x,'knight',0,0,wp);spr(x,'knight','ok',48,FY,1,0,1,1,'grip');drawAct(x,{act:'prac',at:t,x:48,y:FY,face:1,weapon:wp})}
+  else{// orc appears first, then the knight walks in from the left and fights
+   const tt=t%5.4,fight=tt>1.3&&tt<3.9,kx=tt<.8?null:Math.min(30,4+(tt-.8)*52),mad=tt>2.4&&tt<2.9;box(x,'knight',0,0,'longsword');
+   if(tt<3.9){const b=(tt>1.6&&tt<2.1)||(tt>3&&tt<3.5);spr(x,'orc','mad',68,FY,-1,0,b&&Math.floor(tt*14)%2?.2:1)}
+   if(tt<.4)poofTile(x,68,FY-20,tt/.4);
+   if(kx!=null)spr(x,'knight',mad?'mad':'ok',kx,FY,1,fight||kx>=30?0:Math.sin(tt*14)*1.5,mad&&Math.floor(tt*14)%2?.2:1,1,fight?'grip':'none');
+   if(fight)drawAct(x,{act:'prac',at:tt-1.3,x:30,y:FY,face:1,weapon:'longsword'})}
  });
  return c}
 function buildRef(){
  const b=$('#refs');b.innerHTML='';
  const sec=(t,items)=>{const h=document.createElement('h2');h.className='sec';h.textContent=t;const d=document.createElement('div');d.className='cg';items.forEach(i=>d.appendChild(i));b.append(h,d)};
- sec('Arrangements',['friend','learn','bolt','chat'].map(k=>diagram(k)));
- sec('Wizard idle',[idleTile('read'),idleTile('magic'),idleTile('demon')]);
- sec('Knight idle',[...WEAPONS.map(w=>idleTile('prac',w)),idleTile('orc')]);
+ // Wrap a tile with its % chance in the top right corner
+ const pc=(c,p)=>{const d=document.createElement('div');d.className='tile';const s=document.createElement('span');s.className='pct';s.textContent=Math.round(p*100)+'%';d.append(c,s);return d};
+ // Arrangements: chance per idle check that a character starts that interaction (visit chance x not a plain hangout)
+ const ev=1-ODDS.hangout,arr=k=>(k==='friend'?ODDS.visitFriend:ODDS.visit)*ev;
+ sec('Arrangements',['friend','learn','bolt','chat'].map(k=>pc(diagram(k),arr(k))));
+ const W=ODDS.wizard,K=ODDS.knight;
+ sec('Wizard idle',[pc(idleTile('read'),W.read),pc(idleTile('magic'),W.magic),pc(idleTile('demon'),W.demon)]);
+ sec('Knight idle',[...WEAPONS.map(w=>pc(idleTile('prac',w),K.prac)),pc(idleTile('orc'),K.orc)]);
 }
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
