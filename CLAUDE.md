@@ -7,7 +7,8 @@ A web-based, fantasy-medieval sandbox inspired by the 2000s toy "Cube World". Ea
 - Works on desktop and mobile (touch drag, responsive layout, web app manifest `manifest.webmanifest` + `icon.svg`).
 - Hosted on GitHub Pages from `main`: https://forests999.github.io/Cubedom/ (pushing to `main` updates the live site).
 - Pixel art must stay crisp: `image-rendering: pixelated` and `imageSmoothingEnabled = false`.
-- Text labels (names) are regular HTML over the canvas so they stay sharp.
+- Text labels (names) are regular HTML over the canvas so they stay sharp. Each name label shrinks its font to fit inside its square (`fitLabel`, on load, resize and returning to the Board tab), so names never overlap on phones.
+- Font: Tiny5 (Google Fonts) for all text, chosen because its numbers are easy to read; the big "Cubedom" title keeps Pixelify Sans. Text drawn on canvases uses `GAME_FONT` (data.js).
 - Progress saves in `localStorage` (key `cubehold-v4`, kept from the old name so saves survive).
 - Keep game rules and data (characters, interactions, odds) separate from drawing code.
 
@@ -15,18 +16,19 @@ A web-based, fantasy-medieval sandbox inspired by the 2000s toy "Cube World". Ea
 Plain script files with no modules, so double-clicking `index.html` still works. They load in this order and share global variables, so the order matters:
 - `index.html`: page layout only (board, character shelf `#tray`, item tray `#items`, Reset button, `#toast` message, `#modal` purchase popup). File links carry a release number `?v=`.
 - `style.css`: all styling.
-- `data.js`: constants, characters and sprite pixels (`CH`), arm poses (`POSE`), classes and tag icons (`CLASS`, `TAG_ICON`), wizard outfits (`WIZ_COLORS`), shelf characters (`SHELF_CHARS`), items (`ITEMS`), room exits (`TR`, `EXIT`), `WEAPONS`, the neighbor interaction table (`PAIRS`), potion-teleport scenes (`POTION_KINDS`), all odds (`ODDS`), timers and prices (constants like `SLEEP_TIME`, `APOTH_COST`), dialogue (`TALK`, `GOSSIP`, `PRAYERS`, `NECRO_TALK`, `DEBATE`, `MERCH_ADS`, `JOKES`, `FARM_PRAYER`), display names (`NAMES`), Compendium tabs (`COMP_TABS`, `EGGS`, `PAIR_WITH`), and small helpers (`$`, `pick`, `cl`).
-- `art.js`: room walls and backgrounds (`WALL`, `bg`, `BACKDOOR`, `BACKDOOR_L`, `SHELF2`, `WINDOW`) and all drawing functions (sprites, `poseOf`, rooms, exits, activities, weapon swings `pracAnim`, creatures, effects, item icons `drawItem`).
+- `data.js`: constants, characters and sprite pixels (`CH`), arm poses (`POSE`), classes and tag icons (`CLASS`, `TAG_ICON`), wizard outfits (`WIZ_COLORS`), shelf characters (`SHELF_CHARS`), items (`ITEMS`), room exits (`TR`, `EXIT`), `WEAPONS`, the neighbor interaction table (`PAIRS`), potion-teleport scenes (`POTION_KINDS`), all odds (`ODDS`), timers and prices (constants like `SLEEP_TIME`, `APOTH_COST`), dialogue (`TALK`, `GOSSIP`, `PRAYERS`, `NECRO_TALK`, `DEBATE`, `MERCH_ADS`, `JOKES`, `FARM_PRAYER`), display names (`NAMES`), Compendium tabs and tile descriptions (`COMP_TABS`, `EGGS`, `PAIR_WITH`, `DESC`), skin tones (`SKINS`, `SKIN_CHARS`), board spaces (`START_CELLS`, `CELL_PRICE`), business talk (`BIZ_SLOW`, `BIZ_WELL`), the canvas font (`GAME_FONT`), and small helpers (`$`, `pick`, `cl`).
+- `art.js`: room walls and backgrounds (`WALL`, `bg`, `BACKDOOR`, `BACKDOOR_L`, `SHELF2`, `WINDOW`) and all drawing functions (sprites with walking legs `stepLegs` and blinking `blinkMood`, `poseOf`, rooms, room life `drawRoomLife`, exits, activities, weapon swings `pracAnim`, tools `stick`, creatures, effects, item icons `drawItem`, locked spaces `drawLocked`, shop coin button `drawShopCoin`).
 - `game.js`: rules, decisions (`decide`, `startAct`, `acting`), movement (`route`, `run`), interaction scenes (`talk`), items (`useItem`), shops, the render loop, input, the shelf (`buildShelf`), the Compendium (`buildRef`), and saving/loading.
 All odds live in `ODDS`; the game and the Compendium both read from it, so change odds only there.
 
 ## Board, boxes and saving
 - Board: 5 columns x 4 rows, 96px cells. Neighbors are the 4 edge-sharing cells (no diagonals).
+- Locked spaces: only the middle 3x3 (rows 1-3 from the top, columns 2-4) is open at the start (`START_CELLS`). The left and right columns and the bottom row are locked: dark, with a padlock and the price. Tap one to buy it (asks first): the first costs 10 coins, each next one 10 more (`CELL_PRICE`, `cellPrice`, `buyCell`). Boxes can't be dropped on locked spaces; tapping a shelf box, the Farmer and everything else only use open spaces. Bought spaces are saved (`S.cells`, `S.bought`). An older save that already had boxes on now-locked spaces keeps those spaces open for free.
 - The shelf under the board holds unplaced boxes. Drag a box onto the board to place it (or tap it to drop it in the first free cell), onto another box to swap, onto the shelf to remove it.
 - Moving a box sends its character home to the middle of the box. Removing a box makes the character vanish wherever they are. A visitor goes home if their host's box moves or is removed. Anyone with a doorway, stairs or portal open in a moved/removed room is also sent home (`clearRooms`), so no exit is left behind.
 - When a character dies their box is removed and returns to the shelf (except the Necromancer destroyed by an artifact, see Easter eggs).
 - Reset game (under the item tray): tap once to arm ("Tap again to reset", red), tap again within 4 s. Wipes the save: default board (Knight + Wizard), 0 coins, no items, nothing unlocked, Compendium cleared. Saving is switched off during the reset.
-- Save entry per box: row, col, weapon, form, color, backwards-speech flag. Also saved: unlocks `S.un`, `coins`, item inventory `S.inv`, Compendium record `S.seen`, rewards paid `S.rewarded`. Not saved: monkey form, crusades in progress, the temporary Farmer.
+- Save entry per box: row, col, weapon, form, color, backwards-speech flag, skin tone. Also saved: unlocks `S.un`, `coins`, item inventory `S.inv`, Compendium record `S.seen`, rewards paid `S.rewarded`, bought spaces `S.cells` and how many were bought `S.bought`. Not saved: monkey form, crusades in progress, the temporary Farmer.
 
 ## Characters
 | Character | Class | Look and room | How you get it |
@@ -37,7 +39,9 @@ All odds live in `ODDS`; the game and the Compendium both read from it, so chang
 | Necromancer | Mage | Dark green hood, pale skin, skull staff. Room: skull shelves (set lower, below the name label), green candles, back-wall door. | 25% chance whenever a Priest dies (`ODDS.necro`) |
 | Fruit Merchant | Merchant (coin tag) | Apron and red cap. Room: red and white striped awning (just below the name label), fruit crates, back-wall door. | Hold 30 coins at once (`MERCHANT_COINS`) |
 | Apothecary | Merchant | A woman with long auburn hair, green robe. Room: a window with blue sky, herb planters, potion shelves and counter, back door on the LEFT. Placing her box costs 20 coins (asks first). | Place any Merchant next to any Mage |
-| Farmer | Merchant | Straw hat. Room: sky, fence, a growing field. Temporary (not on the shelf, not saved). | Fruit Merchant left of Apothecary, 3% |
+| Farmer | Merchant | Straw hat. Room: sky, fence, a growing field. Temporary (not on the shelf, not saved). | Fruit Merchant left of Apothecary, 1.5% |
+
+Skin tones: every new Knight, Fruit Merchant and Priest gets one of 3 skin tones at random when placed (`SKINS`, `SKIN_CHARS`; sprite copies named like `priest_f~2`, picked by `sid`). It is saved with the box. Boxes from older saves keep the original light tone.
 
 Forms that replace a character for a while: Eldritch Knight (permanent, purple armor), Death Knight (permanent until cleansed, skeleton in dark armor; only follows the Necromancer), Monkey (Fruit Merchant, 2 minutes; only hops around and eats bananas). Death Knights and monkeys take no part in interactions, idles or items, and nobody visits them.
 
@@ -72,6 +76,7 @@ Visitors who are not boxes: commoner customer, farmer, possessed farmer, ghost, 
 - Priest right: **Praying together.** Both kneel.
 - Priest above: **Zeal.** No scene; the Knight visits 60% more often. 2% of their visit rolls (`ODDS.crusade`): **Holy crusade** - they fade away together for 2 minutes and come back with 10 coins (70%) or an artifact (30%).
 - Priest below: **Holy water.** The Priest sprinkles the Knight, who glows.
+- Any side, 5% of their visits (`ODDS.braver`; works for any Fighter): **"You're braver than I."** The Priest says it; the Knight flexes and answers modestly.
 
 ### Necromancer & Knight (Necromancer relative to Knight)
 - Necromancer left: **Sleep spell** (cast). A lavender wave rolls right along his row; everyone in that row to his right sleeps for 60 s (no interactions, no idles; a potion on a sleeper wakes them without its normal effect).
@@ -106,8 +111,9 @@ Visitors who are not boxes: commoner customer, farmer, possessed farmer, ghost, 
 
 ### Apothecary & Fruit Merchant
 - Apothecary left of Merchant: **A gift.** She gives him a potion; it has its usual effect on him (backwards speech toggles).
-- Merchant left of Apothecary: 97% **Trading wares** (apples for potions); 3% (`ODDS.farm`) **A farm appears**: a temporary Farmer box on the nearest empty cell grows wheat (80%) or apples (20%) for 3 minutes, then harvests for +30 coins (halved to 15 if the Necromancer is next to the Farmer on any side) and disappears.
-- Above / below: hangouts only.
+- Merchant left of Apothecary: 98.5% **Trading wares** (apples for potions); 1.5% (`ODDS.farm`) **A farm appears**: a temporary Farmer box on the nearest empty open cell grows wheat (80%) or apples (20%) for 3 minutes, then harvests for +30 coins (halved to 15 if the Necromancer is next to the Farmer on any side) and disappears.
+- Apothecary above Merchant: **Golden apples.** She mixes a bubbling reaction; the apples on his crates turn gold for 60 s (`GOLD_TIME`, `drawGold`; looks only, not saved).
+- Apothecary below Merchant: **Talking business** (`BIZ_SLOW`, `BIZ_WELL`). Business is slow (50%, `ODDS.bizSlow`; they end glum) or going well (they end happy).
 
 ### Pairs with only hangouts
 Knight & Fruit Merchant, Knight & Apothecary, Wizard & Apothecary, Priest & Apothecary, Necromancer & Fruit Merchant, Necromancer & Apothecary, and anyone & the Farmer.
@@ -116,13 +122,14 @@ Knight & Fruit Merchant, Knight & Apothecary, Wizard & Apothecary, Priest & Apot
 - **Great prayer:** a Priest with all four neighbors free, 5% of his rolls (`ODDS.massPrayer`). All four come to his room, everyone kneels for 20 s under a holy glow, then they go home.
 
 ## Idle activities
+- **Anyone:** 10% of idle activities (`ODDS.wave`, rolled first) the character waves to a neighbor (any side); a free neighbor waves back. The percentages below share the other 90%.
 - **Knight:** weapon practice 75% (walks to the middle first; the arm swings with the weapon; with a shield, a squire comes in and spars with a wooden sword while he blocks), fight an orc in a neighbor's room 20%, feed a horse 5% (needs no box to his right). Eldritch Knight only: 1% a black cat walks through the Wizard's room.
 - **Wizard:** read 60%, practice magic 38%, summon a demon 2% (it drags him down; he dies). Next to a Merchant with 5 coins: 1% he brews a potion (-5 coins, +1 potion).
 - **Priest:** kneel and pray 50% (golden ceiling light), bless a farmer 35%, tithe prayer 10% (+5 coins), exorcism 5%.
 - **Necromancer:** commune with spirits 50%, candles and chalk circle 25%, red lightning 24%, raise a skeleton in another character's room 1% (Fighters and Mages beat it; anyone else dies).
 - **Fruit Merchant:** a customer comes in 15% (a commoner walks in through his back door and buys fruit, +2 coins `CUSTOMER_FRUIT`; nothing while his fruit is rotten), call out adverts 55%, sell apples to a neighbor 29% (+2 coins), a mob of farmers pelts him with fruit 1%.
 - **Apothecary:** a customer comes in 15% (a commoner walks in through her left door and buys a remedy, +5 coins `CUSTOMER_REMEDY`), trip 5%, trip and smash a potion 5%, brew potions 35% (just for show), water and pick herbs 40%.
-- **Farmer:** tends his field until harvest.
+- **Farmer:** until harvest, 50% he whistles (music notes) while hoeing, 50% he carries a pitchfork across his field. (The Farmer has no Compendium tab, so these have no tiles.)
 
 ## Items, coins and shops
 - Items are a counted inventory (`S.inv`), not infinite: you start with none and earn them in the game. Drag one onto a room; it works only if the owner is home and not busy. If it does nothing it is not used up (grey puff).
@@ -131,7 +138,8 @@ Knight & Fruit Merchant, Knight & Apothecary, Wizard & Apothecary, Priest & Apot
 - **Artifact:** only the Priest easter egg uses it so far.
 - **Coins:** +1 every 30 s while the game is open (up to 4 during the Wizard's advertising). Also from scenes (tithe, sales, customers, starfruit, durian, crusade, farm) and Compendium rewards.
 - **Where items come from:** scrolls from Necromancer + Wizard crafting (20 coins), their 1% joint making, or the Wizard's writing desk (50 coins; 30 for the black Wizard); potions from the Apothecary (30 coins), the Wizard brewing next to a Merchant (5 coins), the joint making, or a scroll on the Apothecary; artifacts from the crusade.
-- **Shops:** tap the Apothecary's room to buy a potion; tap the Wizard's room while his writing desk shows (a Merchant AND another Mage next to him) to buy a scroll. Shop rooms have a thin silver border. Every purchase asks first in the in-page popup (`ask`; not the browser pop-up).
+- **Shops:** a shop room shows a gold coin button in its bottom-right corner (`drawShopCoin`, drawn on top of everything; `onShopCoin` checks taps). Tap it in the Apothecary's room to buy a potion; in the Wizard's room while his writing desk shows (a Merchant AND another Mage next to him) to buy a scroll. It works any time: if the Wizard is busy or away, the scroll is ready straight away instead of him writing it. Tapping elsewhere in the room just makes the character hop. Every purchase asks first in the in-page popup (`ask`; not the browser pop-up); not enough coins shows a message.
+- **Board spaces** are also bought with coins (see Board, boxes and saving).
 
 ## Transitions between rooms
 - Left/right: the Wizard always uses portals; everyone else walks through the side door (seen edge-on, it swings out into the next room).
@@ -141,7 +149,7 @@ Knight & Fruit Merchant, Knight & Apothecary, Wizard & Apothecary, Priest & Apot
 ## Unlocks and easter eggs
 - Necromancer: 25% when a Priest dies. Fruit Merchant: hold 30 coins. Apothecary: any Merchant next to any Mage. Unlocks last until Reset.
 - Easter eggs (hidden in the Compendium until found, counted in totals; `EGGS`, `checkEggs`):
-  - **Black Wizard:** a Wizard dragged onto the top-left cell on his first placement wears black with a red orb (tapping the shelf never does this).
+  - **Black Wizard:** a Wizard dragged onto the top-left cell on his first placement wears black with a red orb (tapping the shelf never does this). That cell starts locked, so it has to be bought first.
   - **Bronze Knight:** 1% of Knights get bronze armor.
   - **Skulls:** the Necromancer's floor is littered with skulls while his box is on the bottom row.
   - **Artifact on the Priest** while the Necromancer is his neighbor: the Necromancer is destroyed AND removed from the shelf; he must be unlocked again by a Priest dying.
@@ -151,13 +159,16 @@ Knight & Fruit Merchant, Knight & Apothecary, Wizard & Apothecary, Priest & Apot
 - With neighbors is split into one sub-section per neighbor ("with the Knight", ...), in alphabetical order. Who takes part in each neighbor scene comes from `PAIR_WITH` (data.js); add new pair scenes there too.
 - Secrets (easter eggs) are their own group at the bottom of a tab: hidden until found ("Not found yet" until then), but always counted.
 - Tiles show the chance in the top right (from `ODDS`), icons in the bottom left for anything a scene gives you (`GAINS`), and a gold border once it has happened (`markSeen`, `S.seen`). Found easter eggs get a purple dashed outline.
+- Hover over a tile (mouse) or tap it (phones) for a short description from `DESC` (data.js) in a bubble (`showTip`); tap again or anywhere else to close. Descriptions say where the boxes go and what happens, with a little humor.
 - Every 5 different discoveries pay 10 coins (`DISCOVER_EVERY`, `DISCOVER_REWARD`, `S.rewarded`).
-- Whenever an interaction, idle activity or item effect is added or changed: add it to `COMP_TABS` (and `PAIR_WITH` for neighbor scenes), give it a tile in `buildRef`/`idleTile`/`pairDiagram`, and make sure the game calls `markSeen` for it.
+- Whenever an interaction, idle activity or item effect is added or changed: add it to `COMP_TABS` (and `PAIR_WITH` for neighbor scenes), write its `DESC` text, give it a tile in `buildRef`/`idleTile`/`pairDiagram`, and make sure the game calls `markSeen` for it.
 
 ## Drawing and animation conventions
 - Pixel art: 16x22 character grid drawn from rectangles with an automatic dark outline. Rooms have plain walls and floor, a background element for the class, and their up/down exit. Fantasy medieval theme.
-- Arms come from poses (`POSE`: none, hold, noR, fwd, up, both, pray, flex, flex2); `poseOf` picks one per activity. Short gestures use `gest`.
-- Moods: ok, happy, mad (red eyes; real anger and monsters only), hurt (eyes shut; taking damage), shock (wide eyes; surprise), sleep. Never use red eyes for surprise.
+- Arms come from poses (`POSE`: none, hold, noR, fwd, up, wave, both, pray, flex, flex2); `poseOf` picks one per activity. Short gestures use `gest`. Anyone kneeling uses `pray`: palms pressed together in front of the chest, outlined so they stand out.
+- Walking: legs and boots step apart in two frames (`stepLegs`, `stepOf`; the last argument of `spr`). Used for characters, visiting farmers, crowds and walking Compendium tiles.
+- Moods: ok, happy, mad (red eyes; real anger and monsters only), hurt (eyes shut; taking damage), shock (wide eyes; surprise), sleep. Never use red eyes for surprise. Characters blink now and then (`blinkMood` briefly shows the sleep face).
+- Rooms have small moving details (`drawRoomLife`): flickering candle flames (Priest, Necromancer), a cloud drifting past the Apothecary's window, a sparkle on the Wizard's books.
 - Visitors stand at least 30px beside their host (`standBy`). Hops start from the ground (`u.hd`). Facing only flips when the other is clearly to one side.
 - Knight weapons are only drawn while used, and are clipped to his room.
 - Extra people in a scene live in `u.crowd`; a single helper in `u.npc`.

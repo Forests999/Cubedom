@@ -43,9 +43,12 @@ function rects(c,list,ox,oy,outline){
 // Small class symbol image (data URL) for name labels, from TAG_ICON in data.js
 const TAGURL={};
 function tagURL(cls){if(!TAGURL[cls]){const c=document.createElement('canvas');c.width=7;c.height=7;const x=c.getContext('2d');TAG_ICON[cls].forEach(r=>{x.fillStyle=r[4];x.fillRect(r[0],r[1],r[2],r[3])});TAGURL[cls]=c.toDataURL()}return TAGURL[cls]}
-function drawSprite(c,id,mood,pose){
+// leg = walking step (0 standing, 1 or 2 = the two steps): legs and boots slide apart and the back foot lifts
+function stepLegs(p,leg){if(!leg)return p;const s=leg===1?1:-1;
+ return p.map(r=>{if(r[1]<15)return r;const L=r[0]<8,dx=L?-s:s,lift=(L?s<0:s>0)&&r[1]>=19?1:0;return[r[0]+dx,r[1]-lift,r[2],r[3],r[4],r[5]]})}
+function drawSprite(c,id,mood,pose,leg){
  const x=c.getContext('2d'),ch=CH[id],f=(a,b,w,h,k)=>{x.fillStyle=k;x.fillRect(a,b,w,h)};
- const A=ch.a?POSE[pose||'none'](ch.a):[],R=[...A.filter(r=>!r[5]),...ch.p,...A.filter(r=>r[5])]; // front-of-body arm pieces last
+ const A=ch.a?POSE[pose||'none'](ch.a):[],R=[...A.filter(r=>!r[5]),...stepLegs(ch.p,leg),...A.filter(r=>r[5])]; // front-of-body arm pieces last
  R.forEach(p=>f(p[0]-1,p[1]-1,p[2]+2,p[3]+2,O));R.forEach(p=>f(p[0],p[1],p[2],p[3],p[4]));
  if(mood==='hurt'){f(5,6,2,1,O);f(9,6,2,1,O);f(7,8,2,1,'#a22');return}
  if(mood==='sleep'){f(5,6,2,1,O);f(9,6,2,1,O);f(7,8,2,1,'#8a4a4a');return} // eyes closed, calm
@@ -55,10 +58,14 @@ function drawSprite(c,id,mood,pose){
  else if(mood==='mad'){f(6,4,2,1,O);f(9,4,2,1,O);f(7,8,2,1,'#a22')}else f(7,8,2,1,'#8a4a4a');
 }
 const SP={};
-function sprite(id,m,pose){const k=id+m+(pose||'');if(!SP[k]){const c=document.createElement('canvas');c.width=16;c.height=22;drawSprite(c,id,m,pose);SP[k]=c}return SP[k]}
-function spr(c,id,m,cx,fy,face,bob,al,sc,pose){c.save();c.globalAlpha=al==null?1:al;sc=sc||1;c.translate(Math.round(cx),Math.round(fy+bob));c.scale(face<0?-sc:sc,sc);c.drawImage(sprite(id,m,pose),-16,-44,32,44);c.restore()}
-// Sprite name for a unit: Eldritch form, wizard outfit color, or plain id
-const sid=u=>u.form||(u.color?u.id+'_'+u.color:u.id);
+function sprite(id,m,pose,leg){const k=id+m+(pose||'')+(leg||'');if(!SP[k]){const c=document.createElement('canvas');c.width=16;c.height=22;drawSprite(c,id,m,pose,leg);SP[k]=c}return SP[k]}
+function spr(c,id,m,cx,fy,face,bob,al,sc,pose,leg){c.save();c.globalAlpha=al==null?1:al;sc=sc||1;c.translate(Math.round(cx),Math.round(fy+bob));c.scale(face<0?-sc:sc,sc);c.drawImage(sprite(id,m,pose,leg),-16,-44,32,44);c.restore()}
+// Walking step for time t (alternates 1, 2); eyes blink now and then (a short 'sleep' face), different timing per name
+const stepOf=t=>1+Math.floor(t*7)%2;
+const blinkMood=(m,seed,t)=>m==='ok'&&((t+seed*1.37)%4.3)<.13?'sleep':m;
+const seedOf=s=>{let h=0;for(const ch of String(s))h=(h*31+ch.charCodeAt(0))%997;return h};
+// Sprite name for a unit: Eldritch form, wizard outfit color, or plain id; plus its skin tone (e.g. priest_f~2)
+const sid=u=>{const b=u.form||(u.color?u.id+'_'+u.color:u.id);return u.skin&&CH[b+'~'+u.skin]?b+'~'+u.skin:b};
 // Which arm pose to show for an activity (act) that has run for `at` seconds
 function poseOf(act,at){
  if(act==='read'||act==='tome'||act==='holy')return 'hold';
@@ -86,6 +93,10 @@ function poseOf(act,at){
  if(act==='herbs')return at>1.2?'fwd':'none';
  if(act==='harvest')return Math.floor(at*3)%2?'fwd':'up';
  if(act==='tend')return 'fwd';
+ if(act==='hoe')return (at*1.6)%1<.45?'up':'fwd';   // Farmer: hoe raised, then down into the soil
+ if(act==='fork')return 'none';                     // Farmer carrying a pitchfork
+ if(act==='wave')return Math.floor(at*5)%2?'wave':'up';
+ if(act==='goldmix')return Math.floor(at*2)%2?'fwd':'up';
  if(act==='eatbanana')return 'up';
  if(act==='advert')return Math.floor(at*1.5)%2?'both':'up';
  if(act==='write')return 'fwd';
@@ -229,12 +240,42 @@ function drawAct(c,u){
   c.restore();
   if(w==='shield'){const hx=Math.round(x+f*(5+A.dx)),hy=Math.round(y-21); // shield held close in front of the body
    c.save();c.translate(hx,hy);c.scale(f,1);c.fillStyle=O;c.fillRect(-1,-13,12,25);c.fillStyle='#3a5aa8';c.fillRect(0,-12,10,23);c.fillStyle='#2a4488';c.fillRect(5,-12,5,23);c.fillStyle='#f2c84a';c.fillRect(3,-4,3,6);c.restore()}}
+ else if(a==='hoe'){ // Farmer's hoe: raised over the shoulder, then chopped into the soil
+  const up=(t*1.6)%1<.45,hx=Math.round(x+f*(up?8:14)),hy=Math.round(y-(up?34:24)),ex=Math.round(x+f*(up?2:26)),ey=Math.round(y-(up?50:2));
+  stick(c,hx,hy,ex,ey,'#8a5a2a');c.fillStyle=O;c.fillRect(ex-3,ey-2,7,5);c.fillStyle='#8a94a8';c.fillRect(ex-2,ey-1,5,3);
+  if(!up&&(t*1.6)%1<.6){c.fillStyle='#6a4a24';c.fillRect(ex+f*4,ey-3,2,2);c.fillRect(ex-f*3,ey-5,2,2)}}
+ else if(a==='fork'){ // Farmer carrying a pitchfork upright
+  const hx=Math.round(x+f*9);stick(c,hx,Math.round(y-2),hx,Math.round(y-44),'#8a5a2a');c.fillStyle=O;c.fillRect(hx-5,Math.round(y-46),11,3);c.fillRect(hx-5,Math.round(y-52),3,7);c.fillRect(hx-1,Math.round(y-53),3,8);c.fillRect(hx+3,Math.round(y-52),3,7);
+  c.fillStyle='#cfd6e0';c.fillRect(hx-4,Math.round(y-45),9,1);c.fillRect(hx-4,Math.round(y-51),1,6);c.fillRect(hx,Math.round(y-52),1,7);c.fillRect(hx+4,Math.round(y-51),1,6)}
+ else if(a==='goldmix'){swirl(c,x,y,t,2,1)} // Apothecary and Merchant brewing golden apples
  else if(a==='horse'&&t>=1&&t<4.6){
   // a bundle of hay in the outstretched hand, shrinking as the horse eats
   const hs=1-cl((t-1.8)/2.8,0,1),w=Math.round(8*hs)+2,hx=Math.round(x+f*17),hy=Math.round(y-22);
   c.fillStyle=O;c.fillRect(hx-w/2-1,hy-4,w+2,7);c.fillStyle='#e8c860';c.fillRect(hx-w/2,hy-3,w,5);
   c.fillStyle='#b8963a';c.fillRect(hx-w/2+1,hy-2,1,3);if(w>5)c.fillRect(hx+1,hy-1,1,3)}
 }
+// A 2px-wide pixel stick (tool handle) from (x1,y1) to (x2,y2), with a dark outline
+function stick(c,x1,y1,x2,y2,col){const n=Math.max(Math.abs(x2-x1),Math.abs(y2-y1))||1;
+ c.fillStyle=O;for(let i=0;i<=n;i++)c.fillRect(Math.round(lerp(x1,x2,i/n))-2,Math.round(lerp(y1,y2,i/n))-2,4,4);
+ c.fillStyle=col;for(let i=0;i<=n;i++)c.fillRect(Math.round(lerp(x1,x2,i/n))-1,Math.round(lerp(y1,y2,i/n))-1,2,2)}
+// Music note (the Farmer whistling)
+function drawNote(c,x,y,a){c.save();c.globalAlpha=a;c.fillStyle=O;c.fillRect(x-1,y-1,4,4);c.fillRect(x+1,y-7,3,8);c.fillRect(x+1,y-8,5,3);c.fillStyle='#f2e8a0';c.fillRect(x,y,2,2);c.fillRect(x+2,y-6,1,7);c.fillRect(x+2,y-7,3,1);c.restore()}
+// Locked board space: dark, with a padlock and its price
+function drawLocked(c,x,y,price,can){c.fillStyle='#15122a';c.fillRect(x+1,y+1,CELL-2,CELL-2);c.strokeStyle='#2c2850';c.lineWidth=2;c.setLineDash([4,4]);c.strokeRect(x+6,y+6,CELL-12,CELL-12);c.setLineDash([]);
+ const lx=x+48,ly=y+40;c.fillStyle=O;c.fillRect(lx-9,ly-14,18,8);c.fillRect(lx-11,ly-7,22,18);c.fillStyle='#8a8070';c.fillRect(lx-7,ly-12,3,6);c.fillRect(lx+4,ly-12,3,6);c.fillRect(lx-7,ly-13,14,2);
+ c.fillStyle=can?'#d8a030':'#6a6060';c.fillRect(lx-10,ly-6,20,16);c.fillStyle=O;c.fillRect(lx-1,ly-2,3,6);
+ drawItem(c,'coin',x+34,y+68,1);c.font='600 15px '+GAME_FONT;c.fillStyle=can?'#f2c84a':'#9a8f7a';c.fillText(String(price),x+42,y+73)}
+// Coin button in the bottom-right of a shop room: tap it to buy
+function drawShopCoin(c,x,y,t){const cx=x+80,cy=y+80,b=Math.round(Math.sin(t*3)*1);c.fillStyle='rgba(10,8,20,.7)';c.fillRect(cx-12,cy-12+b,24,24);c.strokeStyle='#f2c84a';c.lineWidth=2;c.strokeRect(cx-12,cy-12+b,24,24);drawItem(c,'coin',cx,cy+b,2)}
+// Golden apples on the Fruit Merchant's crates (Apothecary above him)
+function drawGold(c,bx,by,t){c.fillStyle='#f2c84a';[[11,42,4,4],[16,41,4,4],[21,42,4,4],[13,38,4,4]].forEach(r=>c.fillRect(bx+r[0],by+r[1],r[2],r[3]));c.fillStyle='#fff6c0';[[12,42],[17,41],[22,42],[14,38]].forEach(q=>c.fillRect(bx+q[0],by+q[1],1,1));
+ if(Math.floor(t*3)%2){c.fillStyle='#fffbe0';c.fillRect(bx+10+Math.floor(t*3)%14,by+36,2,2)}}
+// Little bits of life in the rooms: flickering candle flames, a cloud drifting past the Apothecary's window
+function drawRoomLife(c,id,bx,by,t){const fl=(k)=>Math.floor(t*8+k)%3;
+ if(id==='priest'){const h=2+fl(0);c.fillStyle='#4a4458';c.fillRect(bx+48,by+44,4,6);c.fillStyle='#ffd060';c.fillRect(bx+49,by+50-h,2,h);c.fillStyle='#fff6c0';c.fillRect(bx+49,by+49,1,1)}
+ if(id==='necromancer'){[[40,23],[16,41]].forEach((q,i)=>{const h=2+fl(i*2);c.fillStyle='#26262c';c.fillRect(bx+q[0],by+q[1]-2,3,3);c.fillStyle='#7aff7a';c.fillRect(bx+q[0],by+q[1]+3-h,3,h)})}
+ if(id==='apothecary'){c.save();c.beginPath();c.rect(bx+39,by+26,20,6);c.clip();c.fillStyle='#8ac8f0';c.fillRect(bx+39,by+26,20,6);const cx=bx+39+((t*4)%34)-8;c.fillStyle='#ffffff';c.fillRect(Math.round(cx),by+28,7,3);c.fillRect(Math.round(cx)+2,by+27,4,1);c.restore()}
+ if(id==='wizard'&&Math.floor(t*2)%5===0){c.fillStyle='#e8d0ff';c.fillRect(bx+14+Math.floor(t*2)%30,by+26,1,1)}}
 // Horse head and neck poking in from the right edge of the knight's room. ex = room's right edge, fy = floor y, t = activity time
 function drawHorse(c,ex,fy,t){
  const e=t<5.2?34*ease(cl(t/1.2,0,1)):34*(1-ease(cl((t-5.2)/1,0,1))),eat=t>1.8&&t<4.6,hb=eat?Math.round(4+2*Math.sin(t*9)):0,x0=Math.round(ex-e);
@@ -276,6 +317,7 @@ function drawItem(c,kind,x,y,s){
   :kind==='banana'?[[-4,-1,2,3,'#f2d040'],[-3,1,6,2,'#f2d040'],[2,-2,2,3,'#f2d040'],[3,-3,1,1,'#6a4420'],[-2,2,4,1,'#c8a020']]
   :kind==='starfruit'?[[-1,-4,2,8,'#f8d840'],[-4,-1,8,2,'#f8d840'],[-2,-2,4,4,'#ffe868'],[-3,2,2,2,'#f8d840'],[1,2,2,2,'#f8d840']]
   :kind==='durian'?[[-3,-3,6,6,'#8a9a3a'],[-4,-1,1,2,'#6a7a2a'],[3,-1,1,2,'#6a7a2a'],[-1,-4,2,1,'#6a7a2a'],[-1,3,2,1,'#6a7a2a'],[-2,-2,1,1,'#aaba5a'],[1,0,1,1,'#aaba5a']]
+  :kind==='goldapple'?[[-3,-2,6,5,'#f2c84a'],[-2,-3,4,1,'#f2c84a'],[0,-5,1,2,'#6a4420'],[1,-5,2,1,'#4a9a3a'],[-2,-1,1,1,'#fff6c0'],[1,1,2,2,'#d8a030']]
   :kind==='apple'?[[-3,-2,6,5,'#d83030'],[-2,-3,4,1,'#d83030'],[0,-5,1,2,'#6a4420'],[1,-5,2,1,'#4a9a3a'],[-2,-1,1,1,'#ff9090']]
   :kind==='orange'?[[-3,-2,6,5,'#f08a20'],[-2,-3,4,1,'#f08a20'],[0,-4,1,1,'#4a9a3a'],[-2,-1,1,1,'#ffc080']]
   :kind==='coin'?[[-2,-4,5,1,'#f2c84a'],[-3,-3,7,7,'#f2c84a'],[-2,4,5,1,'#f2c84a'],[-4,-2,1,5,'#f2c84a'],[4,-2,1,5,'#f2c84a'],[0,-2,1,5,'#b8862a'],[-2,-2,1,1,'#fff6c0']]

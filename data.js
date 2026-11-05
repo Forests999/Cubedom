@@ -1,5 +1,6 @@
 // ---------- data: constants, characters, rules data ----------
 const CELL=96,COLS=5,ROWS=4,FY=84,KEY='cubehold-v4',O='#1a1226',S1='#f0c8a0',S2='#d8a880';
+const GAME_FONT='"Tiny5","Pixelify Sans",monospace'; // font for numbers and text drawn on the canvas (the page font is set in style.css)
 // Body without arms. Arms come from POSE so they can move.
 const B=o=>[[4,19,3,2,o.boot||'#3a2a1a'],[9,19,3,2,o.boot||'#3a2a1a'],[5,16,2,3,o.pants||'#4a4a5a'],[9,16,2,3,o.pants||'#4a4a5a'],[4,10,8,6,o.body],[10,10,2,6,o.bodyD],[4,14,8,1,o.belt||'#5a3a1e'],[5,3,6,6,o.skin||S1],[9,3,2,6,o.skinD||S2]];
 // Arm poses on the 16x22 grid (facing right). a = colors {body, bodyD, skin}.
@@ -11,7 +12,8 @@ const POSE={
  fwd:a=>[[2,10,2,5,a.body],[12,10,3,2,a.bodyD],[2,15,2,1,a.skin],[15,10,1,2,a.skin]],  // right arm straight out
  up:a=>[[2,10,2,5,a.body],[12,6,2,5,a.bodyD],[2,15,2,1,a.skin],[12,5,2,1,a.skin]],     // right arm raised
  both:a=>[[2,6,2,5,a.body],[12,6,2,5,a.bodyD],[2,5,2,1,a.skin],[12,5,2,1,a.skin]],     // both arms raised
- pray:a=>[[2,10,2,3,a.body],[12,10,2,3,a.bodyD],[4,12,3,1,a.body,1],[9,12,3,1,a.bodyD,1],[7,11,2,2,a.skin,1]], // hands together
+ pray:a=>[[2,10,2,3,a.body],[12,10,2,3,a.bodyD],[3,12,4,2,O,1],[9,12,4,2,O,1],[6,9,4,6,O,1],[4,12,3,1,a.body,1],[9,12,3,1,a.bodyD,1],[7,10,2,4,a.skin,1]], // palms pressed together at the chest, fingers up (outlined so they stand out)
+ wave:a=>[[2,10,2,5,a.body],[13,6,2,5,a.bodyD],[2,15,2,1,a.skin],[14,4,2,2,a.skin]],   // right arm raised and tilted out (waving, alternates with up)
  flex:a=>[[0,10,3,2,a.body],[0,7,2,3,a.body],[0,6,2,1,a.skin],[13,10,3,2,a.bodyD],[14,7,2,3,a.bodyD],[14,6,2,1,a.skin]],          // showing muscles
  flex2:a=>[[0,10,3,2,a.body],[0,7,2,3,a.body],[1,8,2,2,a.body],[0,6,2,1,a.skin],[13,10,3,2,a.bodyD],[14,7,2,3,a.bodyD],[13,8,2,2,a.bodyD],[14,6,2,1,a.skin]] // bigger bulge
 };
@@ -241,3 +243,127 @@ const PAIR_WITH={friend:['knight','wizard'],learn:['knight','wizard'],bolt:['kni
  apple:['priest','merchant'],slip:['priest','merchant'],feast:['priest','merchant'],fruitfall:['priest','merchant'],starfruit:['priest','merchant'],curse:['priest','merchant'],
  banana:['wizard','merchant'],durian:['wizard','merchant'],jokes:['wizard','merchant'],murder:['wizard','merchant'],advertW:['wizard','merchant'],
  apgift:['apothecary','merchant'],mtrade:['apothecary','merchant'],farm:['apothecary','merchant']};
+
+// ---------- skin tones, locked board spaces, more scenes ----------
+// Skin tones: new Knights, Fruit Merchants and Priests get one of these at random (saved per box). 0 = the original light tone.
+const SKINS=[[S1,S2],['#c8885a','#a86c42'],['#8a5a3a','#6c4228']];
+const SKIN_CHARS=['knight','merchant','priest'];
+// Sprite copies with the skin colors swapped: e.g. CH['priest_f~2']
+['knight','knight_steel','knight_bronze','eknight','priest','priest_m','priest_f','merchant'].forEach(b=>{const c=CH[b];
+ for(let i=1;i<SKINS.length;i++){const[s,d]=SKINS[i],m=k=>k===S1?s:k===S2?d:k;
+  CH[b+'~'+i]=Object.assign({},c,{a:c.a&&Object.assign({},c.a,{skin:m(c.a.skin)}),p:c.p.map(r=>[r[0],r[1],r[2],r[3],m(r[4]),r[5]])})}});
+// Board: only the middle 3x3 is open at the start. The side columns and the bottom row are bought with coins:
+// the first extra space costs CELL_PRICE, each one after that CELL_PRICE more (10, 20, 30, ...).
+const START_CELLS=[];for(let r=0;r<3;r++)for(let c=1;c<4;c++)START_CELLS.push(r+','+c);
+const CELL_PRICE=10;
+// braver = share of Priest + Fighter visits (any side) where the Priest admits "You're braver than I."
+// wave = share of idle activities where a character just waves to a neighbor
+Object.assign(ODDS,{braver:.05,wave:.1,farm:.015,bizSlow:.5});
+const GOLD_TIME=60; // Apothecary above the Fruit Merchant: his apples shine gold this long
+// Apothecary above / below the Fruit Merchant
+PAIRS['apothecary>merchant']={left:'apgift',above:'goldapple',below:'business'};
+const BIZ_SLOW=[
+ [['merchant','Business is slow. Three apples all week.'],['apothecary','Same here. Nobody is sick enough.'],['merchant','We could ask the Necromancer to help with that.'],['apothecary','Do not even joke about it.']],
+ [['apothecary','How is trade?'],['merchant','A crow bought one grape and left no tip.'],['apothecary','I sold a single tonic. To myself.'],['merchant','Hard times, friend. Hard times.']]];
+const BIZ_WELL=[
+ [['apothecary','Business is booming! I sold out of tonics.'],['merchant','My apples fly off the crates!'],['apothecary','The Knight bought twelve healing potions.'],['merchant','He keeps walking into the door.']],
+ [['merchant','Best week ever! I had to hire a second crate.'],['apothecary','Everyone wants my sleeping draught.'],['merchant','Is that because of the Necromancer?'],['apothecary','Do not ask. Just count the coins.']]];
+Object.assign(NAMES,{braver:'"You\'re braver than I."',goldapple:'Golden apples',business:'Talking business',wave:'Waving to a neighbor',
+ apoth:'Coin in the Apothecary\'s room: potion for 30 coins',desk:'Coin in the Wizard\'s room (Merchant + Mage next door): scroll for 50 coins',farm:'A farm appears (3 min, +30 coins)'});
+COMP_TABS.forEach(t=>{t.idle.push('wave');if(t.id==='knight'||t.id==='priest')t.pairs.push('braver');if(t.id==='merchant'||t.id==='apothecary')t.pairs.push('goldapple','business')});
+Object.assign(PAIR_WITH,{braver:['knight','priest'],goldapple:['apothecary','merchant'],business:['apothecary','merchant']});
+
+// ---------- Compendium descriptions (shown when you hover over or tap a tile) ----------
+const DESC={
+ friend:'Wizard left of the Knight. Old Friends: hearts, cheering, and far too many visits.',
+ learn:'Wizard right of the Knight. The Knight reads a spellbook he really should not have, and turns Eldritch. Forever.',
+ bolt:'Wizard above the Knight. A lightning bolt "by accident". The Knight does not survive the accident.',
+ chat:'Wizard below the Knight. Tales of old adventures, each one more exaggerated than the last.',
+ spar:'Knight and Wizard, any side, 2%. Sword versus magic shield. Nobody wins, everybody sweats.',
+ study:'Priest right of the Wizard. A holy book and a spellbook, read side by side in respectful silence.',
+ gossip:'Priest left of the Wizard. They whisper about the neighbors. Mostly the Knight.',
+ undead:'Priest below the Wizard. A skeleton pops up by accident. Teamwork puts it back down.',
+ light:'Priest above the Wizard. Holy light so bright the Wizard snuffs it out with pure darkness.',
+ zeal:'Priest above the Knight. No scene, just a fired-up Knight who visits 60% more often.',
+ crusade:'Priest above the Knight, 2%. They march off for 2 minutes and come back with coins or an artifact.',
+ pray:'Priest right of the Knight. Both kneel and pray. Very quietly. Very holy.',
+ bless:'Priest below the Knight. A splash of holy water. The Knight glows, mostly from the attention.',
+ sermon:'Priest left of the Knight. A short prayer for the Knight, who listens with hands folded.',
+ tentacle:'Priest left of the Knight, 10%. Eldritch tentacles smash the Priest\'s window. The Knight sorts it out.',
+ braver:'Priest and Knight, any side, 5%. The Priest admits the Knight is braver. The Knight pretends not to blush.',
+ sleep:'Necromancer left of the Knight. A sleep spell rolls right along the row. Everyone naps for a minute.',
+ dknight:'Necromancer above the Knight. The Knight becomes a Death Knight and follows him everywhere. Awkward.',
+ horde:'Necromancer right of the Knight. Three skeletons for target practice. 5% the targets win.',
+ nchat:'Necromancer below the Knight. Old war stories. Some of the soldiers in them were already dead.',
+ purge:'Necromancer below the Priest. Ghosts or zombies appear; the Priest cleans house with holy light.',
+ debate:'Necromancer above the Priest. Holy versus unholy. Nobody changes their mind. Everybody gets cross.',
+ cleanse:'Priest and Necromancer, any side, while a Death Knight exists. The Priest turns him back into a Knight.',
+ duel:'Necromancer above the Wizard, 50%. Black lightning versus blue lightning. It is all in good fun. Probably.',
+ craft:'Necromancer above the Wizard, 50%. Together they craft a spell scroll for 20 coins (or show off if broke).',
+ golem:'Necromancer left of the Wizard. A clay golem wakes up, panics and bursts through the back wall.',
+ tomes:'Necromancer right of the Wizard. Two dusty tomes, two happy nerds.',
+ swap:'Necromancer below the Wizard. A spell swaps their whole rooms. Nobody asked the furniture.',
+ forge:'Wizard and Necromancer, any side, 1%. They conjure a free scroll or potion out of thin air.',
+ apple:'Priest left of the Fruit Merchant. A dropped apple, sold for 1 coin. 95% of the time, anyway.',
+ slip:'Priest left of the Fruit Merchant, rare. The Priest steps on the apple. It does not end well.',
+ feast:'Priest left of the Fruit Merchant, 50%. A table of food appears and two nobles invite themselves.',
+ fruitfall:'Fruit Merchant above the Priest, 50%. Fruit rains down on the Priest. The Merchant thinks it is hilarious.',
+ starfruit:'Fruit Merchant above the Priest, 50%. A starfruit fit for a saint. +5 coins.',
+ curse:'Fruit Merchant below the Priest. The Priest curses his fruit; it rots for a minute and earns nothing.',
+ banana:'Fruit Merchant above the Wizard. "Can you make it bigger?" The Wizard can. Much bigger.',
+ durian:'Fruit Merchant below the Wizard. A durian sale, +10 coins. The Wizard regrets having a nose.',
+ jokes:'Fruit Merchant right of the Wizard. Fruit puns. The Wizard laughs to be polite.',
+ murder:'Fruit Merchant right of the Wizard, 0.5%. The joke goes very, very wrong. The Wizard dies.',
+ advertW:'Fruit Merchant left of the Wizard. Magic-blessed fruit! Coins come faster, up to 4 every 30 seconds.',
+ apgift:'Apothecary left of the Fruit Merchant. A free potion for him. He talks backwards until the next one.',
+ mtrade:'Fruit Merchant left of the Apothecary. Apples for potions. Everybody thinks they got the better deal.',
+ farm:'Fruit Merchant left of the Apothecary, 1.5%. They hire a Farmer who grows a field for 3 minutes, then pays 30 coins.',
+ goldapple:'Apothecary above the Fruit Merchant. A bubbling reaction turns all his apples to gold for a minute. Shiny!',
+ business:'Apothecary below the Fruit Merchant. Shop talk. Business is either slow or booming (50/50).',
+ wave:'10% of idle time, anyone waves to a neighbor. Neighbors who are free wave back.',
+ read:'The Wizard reads. Pages turn by themselves, because of course they do.',
+ magic:'The Wizard practices spells. Sparkles everywhere, nothing on fire. Usually.',
+ demon:'The Wizard summons a demon, 2%. The demon drags him through the floor. He dies.',
+ brew:'Next to a Merchant, 1%: the Wizard spends 5 coins to brew a potion.',
+ 'prac:shield':'Knight with a shield. A squire comes to spar with a wooden sword while the Knight blocks.',
+ 'prac:spear':'Knight with a spear. Poke, poke, poke. Very serious poking.',
+ 'prac:glaive':'Knight with a glaive. Big sweeping swings. Stand back.',
+ 'prac:longsword':'Knight with a longsword. Classic swordplay against an invisible foe.',
+ orc:'The Knight spots an orc in a neighbor\'s room and charges over to deal with it.',
+ horse:'The Knight feeds hay to his horse (needs an empty space to his right).',
+ cat:'Eldritch Knight only, 1%. A black cat strolls through the Wizard\'s room. Spooky.',
+ pray1:'The Priest kneels and prays under a warm ceiling light.',
+ farmer:'A farmer visits and the Priest blesses him with holy water.',
+ tithe:'The Priest prays for fortune. Fortune answers: +5 coins.',
+ exorcise:'A possessed farmer shows up. The Priest drives the demon out. The farmer feels much better.',
+ massprayer:'A Priest with all four neighbors free, 5%. Everyone squeezes into his room to pray for 20 seconds.',
+ spirits:'The Necromancer chats with spirits. They are good listeners.',
+ candles:'The Necromancer lights candles and draws a chalk circle. Very atmospheric.',
+ lightning:'The Necromancer reads a black book and crackles with red lightning.',
+ raise:'The Necromancer, 1%, raises a skeleton in someone\'s room. Fighters and Mages win; Merchants do not.',
+ advert:'The Fruit Merchant shouts about his fruit to anyone who will listen.',
+ sell:'The Fruit Merchant walks next door and sells apples. +2 coins.',
+ mob:'The Fruit Merchant, 1%. An angry farmer mob pelts him with his own fruit.',
+ mcust:'A customer walks in and buys some fruit. +2 coins (nothing while the fruit is rotten).',
+ trip:'The Apothecary trips over her own robe. She is fine.',
+ tripbreak:'The Apothecary trips and smashes a potion. She is fine. The potion is not.',
+ abrew:'The Apothecary brews potions just for show. Bubbles!',
+ herbs:'The Apothecary waters and picks her herbs.',
+ acust:'A customer comes in for a remedy. +5 coins.',
+ glow:'Spell scroll on the Knight: golden armor for 30 seconds. Very shiny, very proud.',
+ flex:'Potion on the Knight: he drinks it and flexes. Nothing else happens. He feels great.',
+ fireball:'Spell scroll on the Wizard: a fireball destroys a random neighboring room, and everyone in it.',
+ teleport:'Potion on the Wizard: he teleports to a random character, does a scene with them, then portals home.',
+ desk:'With a Merchant and another Mage next to him, the Wizard has a desk. Tap the coin to buy a scroll.',
+ banish:'Spell scroll on the Priest: he banishes a ghost. Boo.',
+ wings:'Potion on the Priest: angel wings for 30 seconds.',
+ relic:'Artifact on the Priest with the Necromancer next door: the Necromancer is destroyed for good.',
+ sniff:'Potion on the Necromancer: one sniff and he smashes it against the wall.',
+ monkey:'Spell scroll on the Fruit Merchant: he is a monkey for 2 minutes. He does not mind.',
+ backwards:'Potion on the Fruit Merchant: everything he says comes out backwards until the next potion.',
+ apoth:'Tap the coin in the Apothecary\'s room to buy a potion for 30 coins.',
+ apcoins:'Potion on the Apothecary: she buys it back for 10 coins.',
+ appotion:'Spell scroll on the Apothecary: she brews it into a potion.',
+ blackwiz:'Secret: drag a brand new Wizard onto the top-left space. Black robes, red orb, cheaper scrolls.',
+ bronze:'Secret: 1% of Knights come in bronze armor.',
+ skulls:'Secret: put the Necromancer on the bottom row and his floor fills with skulls.'};
