@@ -677,7 +677,12 @@ function showCoins(){coinBox.lastChild.textContent=(S.coins||0)+' coins'}
 function showItems(){itemsEl.querySelectorAll('.item').forEach(b=>{const k=b.dataset.item,n=S.inv[k]||0;b.lastChild.textContent=NAMES[k]+' x'+n;b.classList.toggle('used',n<=0)})}
 $('#clr').onclick=()=>{Object.keys(U).forEach(i=>removeUnit(i,true));save()};
 // Reset: wipe the save and start a brand new game (default board, 0 coins, no items, nothing unlocked, Compendium cleared)
-$('#reset').onclick=()=>{if(!confirm('Reset everything? Coins, items, unlocked characters and the Compendium will all be wiped.'))return;try{localStorage.removeItem(KEY)}catch(e){}location.reload()};
+// Reset: tap once to arm (the button asks you to tap again), tap again within 4 seconds to wipe everything.
+// No browser pop-up (some browsers and phone apps block them). Saving is switched off first so nothing can write the old game back.
+let resetArm=0,resetting=false;
+$('#reset').onclick=()=>{const b=$('#reset');
+ if(Date.now()-resetArm>4000){resetArm=Date.now();b.textContent='Tap again to reset';b.classList.add('arm');setTimeout(()=>{if(Date.now()-resetArm>=4000){b.textContent='Reset game';b.classList.remove('arm')}},4100);return}
+ resetting=true;try{localStorage.removeItem(KEY)}catch(e){}b.textContent='Resetting...';location.reload()};
 
 // ---------- compendium ----------
 const anim=[],tabRef=$('#tab-ref');
@@ -848,7 +853,7 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
 
 // ---------- state ----------
 function ui(){document.querySelectorAll('.it[data-id]').forEach(b=>b.classList.toggle('used',!!U[b.dataset.id]))}
-function save(){try{const b={};for(const i in U)b[i]=[U[i].r,U[i].c,U[i].weapon,U[i].form,U[i].color];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,inv:S.inv,seen:S.seen}))}catch(e){}}
+function save(){if(resetting)return;try{const b={};for(const i in U)b[i]=[U[i].r,U[i].c,U[i].weapon,U[i].form,U[i].color];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,inv:S.inv,seen:S.seen}))}catch(e){}}
 function load(){let d=null;try{d=JSON.parse(localStorage.getItem(KEY))}catch(e){}
  if(d){S.un=d.un||{};S.coins=d.coins||0;S.inv=Object.assign({scroll:0,potion:0,artifact:0},d.inv);S.seen=d.seen||{}}
  showCoins();showItems();checkUnlocks();

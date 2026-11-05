@@ -67,3 +67,4 @@ button{touch-action:manipulation}
 /* Compendium: a thin gold border on everything that has happened at least once */
 .tile.seen>canvas{border-color:#f2c84a}
 #reset{background:#4a2630}
+#reset.arm{background:#b03030;color:#fff}

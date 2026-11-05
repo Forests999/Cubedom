@@ -123,7 +123,7 @@ Whenever an interaction, idle activity or item effect is added or changed, updat
 
 
 ## Reset, unlocks, variants and easter eggs
-- Reset game button (next to Clear board): asks to confirm, then wipes the save and starts fresh: default board (Knight + Wizard), 0 coins, no items, nothing unlocked, Compendium record cleared.
+- Reset game button (next to Clear board): tap once to arm it ("Tap again to reset", red), tap again within 4 seconds to confirm. No browser pop-up (some browsers and phone apps block them). Saving is switched off during the reset so nothing writes the old game back. It wipes the save and starts fresh: default board (Knight + Wizard), 0 coins, no items, nothing unlocked, Compendium record cleared.
 - Fruit Merchant (class Merchant, coin tag): unlocked by holding `MERCHANT_COINS` (30) coins at once (`checkUnlocks`, saved in `S.un.merchant`, lasts until reset). Room: striped awning and fruit crates, back-wall door. No idles or special interactions yet (wanders and hangs out).
 - Knight armor: steel normally, bronze 1% of the time when placed (easter egg, `ODDS.bronze`, stored in the unit's color: 'steel'/'bronze').
 - Priest: 50% male (short hair) / 50% female (long hair) when placed (color 'm'/'f').
