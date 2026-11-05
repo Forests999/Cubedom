@@ -26,15 +26,15 @@ All odds live in `ODDS`; the game (`decide`, `startAct`) and the Compendium both
 - Moving a box sends its character home to the middle of the box. Deleting a box makes the character vanish wherever they are. A visitor goes home if their host's box moves or is deleted.
 - Characters: Knight and Wizard so far. The Knight's room gets a random wall weapon when created (shield, spear, glaive, longsword).
 - A Wizard gets a random outfit color when placed (blue, purple or red, equal chances). Saved with the board (save entry: row, col, weapon, form, color).
+- Hidden easter egg (not shown in the Compendium): a Wizard whose first placement is a drag onto the top-left cell wears a black outfit with a red staff orb (and a red glow when practicing magic). Tapping the shelf to auto-place never triggers it.
 - The Knight (and Eldritch Knight) holds no weapon by default. A weapon is drawn only while he uses it: weapon practice, the orc fight and sparring (his room's weapon; the Eldritch Knight uses a magic sword).
 - Characters always move a little during interactions: arm gestures (`gest`), hops, cheers.
 - Taking damage shows a "hurt" face (eyes squeezed shut, no red eyes). Red eyes ("mad") are only for anger (the orc, the Knight glaring at it).
 
-## Transitions between rooms (set per ROOM in `TR`, not per character)
-- Knight room: side door left/right, back-wall door (stone stairs behind it) up, trap door in the floor down.
-- Wizard room: portal left/right, a second bookshelf that slides aside to reveal a spiral staircase, both up and down.
-- Sideways: the room being left decides (door or portal), whoever walks.
-- Up/down: leave by your room's exit, arrive by the other room's exit for the opposite direction (e.g. going up from a Wizard room into a Knight room: through the bookshelf, then climb out of the Knight's trap door).
+## Transitions between rooms
+- Left/right: the Wizard always uses his portals (one in each room); everyone else walks through the side door, whichever room they're in.
+- Up/down are set per ROOM in `TR`: Knight room = back-wall door (stone stairs behind it) for both up and down; Wizard room = a second bookshelf that slides aside to reveal a spiral staircase, for both. No trapdoor.
+- Up/down: leave by your room's exit, arrive by the other room's exit (e.g. the Wizard going down: through his bookshelf, then out of the Knight's back door).
 - Side doors sit in the wall line between two cells and are seen from the side: invisible when closed, and while a character walks through they swing out toward the viewer into the next room as a narrow side-on panel.
 - The back door and the bookshelf are always part of the room; they open, then close again after use. Portals appear at full size (fading in).
 
@@ -45,14 +45,14 @@ All odds live in `ODDS`; the game (`decide`, `startAct`) and the Compendium both
 
 ## Arrangement interactions (Wizard position relative to Knight)
 - Left: Old Friends. Hearts, arms raised, and they visit more often.
-- Right: Eldritch Awakening. Wizard points and teaches, Knight becomes the Eldritch Knight permanently (purple armor, horns). Wizard survives.
+- Right: Eldritch Awakening. Always the Knight who visits the Wizard's room. The Wizard hands him a spellbook, the Knight reads the glowing purple tome (`tome` activity) and becomes the Eldritch Knight permanently (purple armor, horns), then cheers. Wizard survives.
 - Above: Thunderstruck. Wizard stays in his own room, raises his arm and shoots a lightning bolt down; the Knight dies and his box returns to the shelf.
 - Below: Tales of Old. They trade a few lines about past adventures, gesturing as they speak.
-- Any: Friendly Sparring. Knight swings his weapon, Wizard casts magic, each lands a light hit, then they cheer.
+- Any: Friendly Sparring. Knight swings his weapon, Wizard casts magic and raises a magic shield bubble around himself (`drawWard`); the Wizard's spell lands a light hit on the Knight, the Knight's hit is blocked by the shield (it flashes), then they cheer.
 
 ## Idle activities
 - Wizard: read a book 60% (holds it up open toward himself; we see the covers and pages turning), practice magic (swirling blue, arm waving) 38%, summon a demon 2% (arms raised; the demon rises, grabs him and drags him down through the floor; he dies).
-- Knight: weapon practice 75%, fight an orc 20% (falls back to practice if no free neighbor), feed a horse 5% (only if there's no room to his right; falls back to practice).
+- Knight: weapon practice 75%, fight an orc 20% (falls back to practice if no free neighbor), feed a horse 5% (needs open space to his right, meaning no box in the next cell, in any column or at the board edge; otherwise falls back to practice).
   - Practice: his right arm is drawn separately and swings with the weapon (`pracAnim`): sword and glaive wind up overhead and strike down, spear thrusts, shield bashes; his body leans into it.
   - Orc: the orc appears first on the far side of the neighbor's room, the Knight glares, then walks over and stands between the orc and his host to fight.
   - Horse: a horse's head and neck lean in from the right edge of his room; he walks over and holds out hay, the horse eats it, he hops happily, the horse leaves.

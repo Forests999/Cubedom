@@ -34,7 +34,7 @@ function spr(c,id,m,cx,fy,face,bob,al,sc,pose){c.save();c.globalAlpha=al==null?1
 const sid=u=>u.form||(u.color?u.id+'_'+u.color:u.id);
 // Which arm pose to show for an activity (act) that has run for `at` seconds
 function poseOf(act,at){
- if(act==='read')return 'hold';
+ if(act==='read'||act==='tome')return 'hold';
  if(act==='magic')return Math.floor(at*3)%2?'up':'fwd';
  if(act==='prac')return 'noR';
  if(act==='learn'||act==='cast')return 'up';
@@ -77,7 +77,6 @@ function drawFx(f){
   g.fillStyle='#0e0a18';g.fillRect(x-12,y-36,24,36);g.fillStyle='#5a5a6a';g.fillRect(x-1,y-34,3,34);
   for(let i=0;i<5;i++){g.fillStyle=i%2?'#b8a070':'#9a8a5c';g.fillRect(x+Math.round(Math.sin(i*1.2)*6)-5,y-5-i*6,10,3)}
   g.beginPath();g.rect(bl+4,top,88,70);g.clip();rects(g,SHELF2,bl+Math.round(o*22),top)}
- else if(t==='trap'){g.fillStyle='#050308';g.fillRect(x-10,y-3,20,4);g.fillStyle='#6a4420';g.fillRect(x-11,y-5-o*9,22,4);g.fillStyle='#3a2410';g.fillRect(x-11,y-2-o*9,22,1);g.fillStyle='#f2c84a';g.fillRect(x-1,y-4-o*9,2,2)}
  g.restore();
 }
 function heart(c,x,y){c.fillStyle='#e04060';c.fillRect(x-4,y,3,3);c.fillRect(x+1,y,3,3);c.fillRect(x-4,y+2,8,2);c.fillRect(x-2,y+4,4,2);c.fillRect(x-1,y+6,2,1)}
@@ -103,21 +102,32 @@ const weaponOf=u=>u.form==='eknight'?'magic':(u.weapon||'longsword');
 // How far the body leans while practicing (so the sprite and the swinging arm move together)
 const actDx=u=>u.act==='prac'?Math.round(pracAnim(weaponOf(u),u.at).dx)*u.face:0;
 
+// Swirling sparkles around a character: pur = purple (eldritch) instead of blue; k = how strong (0..1)
+function swirl(c,x,y,t,pur,k){const K=pur?['#c890ff','#e8d0ff','#8a5ae0']:['#2a6af0','#4fb0ff','#bfe8ff'],n=Math.round(14*k);
+ for(let i=0;i<n;i++){const an=t*(pur?3:4)+i*Math.PI*2/14,r=13+5*Math.sin(t*3+i),px=x+Math.cos(an)*r*1.2,py=y-24+Math.sin(an)*r*.8-(i%7)*2.5+8,s=i%3===2?2:3;
+  c.fillStyle=K[i%3];c.fillRect(Math.round(px-s/2),Math.round(py-s/2),s,s)}}
+// Magic shield bubble around a character (sparring). t = time since raised, hit = flashes brighter when struck
+function drawWard(c,x,y,t,hit){const a=cl(t/.4,0,1);if(a<=0)return;
+ c.save();c.globalAlpha=a;c.fillStyle=hit?'rgba(170,230,255,.4)':'rgba(120,200,255,.14)';c.beginPath();c.ellipse(x,y-22,18,26,0,0,Math.PI*2);c.fill();
+ for(let i=0;i<24;i++){const an=i/24*Math.PI*2+t*1.2,px=Math.round(x+Math.cos(an)*18),py=Math.round(y-22+Math.sin(an)*26);c.fillStyle=(i+Math.floor(t*6))%3?'#4fb0ff':'#bfe8ff';c.fillRect(px-1,py-1,hit?3:2,hit?3:2)}
+ c.restore()}
 // Activity overlays drawn in front of the character. u needs: act, at (seconds), x, y (feet), face, and for the knight weapon/form.
 function drawAct(c,u){
  const f=u.face,a=u.act,t=u.at,x=u.x,y=u.y;
- if(a==='read'){
-  // Held up and open toward the wizard: we see the covers and spine, page tops, and pages turning over the top
-  const bx=Math.round(x+f*2),by=Math.round(y-20),pf=(t*.9)%1;
+ if(a==='read'||a==='tome'){
+  // Held up and open toward the reader: we see the covers and spine, page tops, and pages turning over the top.
+  // tome = the Wizard's eldritch spellbook (dark purple, glowing runes, purple sparkles)
+  const tm=a==='tome',bx=Math.round(x+f*2),by=Math.round(y-20),pf=(t*.9)%1;
+  if(tm)swirl(c,x,y,t,1,cl(t/1.5,0,1));
   c.fillStyle=O;c.fillRect(bx-8,by-7,16,13);
   c.fillStyle='#f2ead0';c.fillRect(bx-7,by-6,14,2);
-  c.fillStyle='#7a4a22';c.fillRect(bx-7,by-4,7,9);c.fillStyle='#6a3e1c';c.fillRect(bx,by-4,7,9);
-  c.fillStyle='#4a2a12';c.fillRect(bx-1,by-4,2,9);c.fillStyle='#f2c84a';c.fillRect(bx-5,by-1,2,2);c.fillRect(bx+3,by-1,2,2);
+  c.fillStyle=tm?'#3a1a5a':'#7a4a22';c.fillRect(bx-7,by-4,7,9);c.fillStyle=tm?'#2e1448':'#6a3e1c';c.fillRect(bx,by-4,7,9);
+  c.fillStyle=tm?'#1a0a2a':'#4a2a12';c.fillRect(bx-1,by-4,2,9);
+  c.fillStyle=tm?(Math.floor(t*6)%2?'#c890ff':'#e8d0ff'):'#f2c84a';c.fillRect(bx-5,by-1,2,2);c.fillRect(bx+3,by-1,2,2);
   if(pf<.35){const k=pf/.35,px=Math.round(bx+f*(6-12*k)),py=Math.round(by-6-Math.sin(k*Math.PI)*6);c.fillStyle='#fff';c.fillRect(px-1,py,2,by-5-py)}}
- else if(a==='magic'||a==='learn'){const pur=a==='learn',K=pur?['#c890ff','#e8d0ff','#8a5ae0']:['#2a6af0','#4fb0ff','#bfe8ff'];
-  for(let i=0;i<14;i++){const an=t*(pur?3:4)+i*Math.PI*2/14,r=13+5*Math.sin(t*3+i),px=x+Math.cos(an)*r*1.2,py=y-24+Math.sin(an)*r*.8-(i%7)*2.5+8,s=i%3===2?2:3;
-   c.fillStyle=K[i%3];c.fillRect(Math.round(px-s/2),Math.round(py-s/2),s,s)}
-  if(!pur){const gx=Math.round(x-f*14),gy=Math.round(y-38);c.fillStyle=K[1];c.fillRect(gx-2,gy-2,5,5);c.fillStyle=K[2];c.fillRect(gx-1,gy-1,3,3)}}
+ else if(a==='magic'){swirl(c,x,y,t,0,1);
+  // glow on the staff orb (red for the black-robed wizard)
+  const red=u.color==='black',gx=Math.round(x-f*14),gy=Math.round(y-38);c.fillStyle=red?'#ff6060':'#4fb0ff';c.fillRect(gx-2,gy-2,5,5);c.fillStyle=red?'#ffd0d0':'#bfe8ff';c.fillRect(gx-1,gy-1,3,3)}
  else if(a==='prac'){
   const w=weaponOf(u),A=pracAnim(w,t),col=CH[u.form||'knight'].a,sx=Math.round(x+f*(10+Math.round(A.dx))),sy=Math.round(y-23);
   c.save();c.translate(sx,sy);c.scale(f,1);c.rotate(-A.th); // from here +y runs down the arm from the shoulder

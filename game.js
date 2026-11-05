@@ -9,12 +9,12 @@ function kindOf(){const k=U.knight,w=U.wizard;if(!k||!w)return null;const dr=w.r
 function label(u){u.lb.style.left=(u.c*CELL+6)/W*100+'%';u.lb.style.top=(u.r*CELL+6)/H*100+'%'}
 function addUnit(id,r,c,quiet,weapon,form,color){
  const lb=document.createElement('div');lb.className='lb';lb.textContent=CH[id].name;$('#labels').appendChild(lb);
- U[id]={id,r,c,lb,weapon:id==='knight'?(weapon||pick(WEAPONS)):null,form:form||null,color:id==='wizard'?(color||pick(Object.keys(WIZ_COLORS))):null,
+ U[id]={id,r,c,lb,weapon:id==='knight'?(weapon||pick(WEAPONS)):null,form:form||null,color:id==='wizard'?(color||(r===0&&c===0?'black':pick(WIZ_RANDOM))):null, // dragged to the top-left on first placement = hidden black outfit (tapping the shelf picks a normal color)
   act:null,at:0,orc:null,dur:0,x:c*CELL+48,y:r*CELL+FY,face:1,st:'idle',wait:1.5+Math.random()*2,path:[],fxs:[],al:1,sk:1,hop:0,blink:0,mood:'ok',mt:0,gp:null,gt:0,mv:false,hosting:null,target:null,t:0,tt:0,ev:{}};
  if(form==='eknight')lb.textContent='Eldritch Knight';
  label(U[id]);if(!quiet){poof(c*CELL+48,r*CELL+FY-16);save()}ui();
 }
-function toHome(u){u.fxs.forEach(hide);u.act=null;u.orc=null;for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===u.id)demons.splice(i,1);u.x=u.c*CELL+48;u.y=u.r*CELL+FY;u.path=[];u.st='idle';u.wait=1;u.al=1;u.sk=1;u.mood='ok';u.mt=0;u.gt=0;u.mv=false;label(u)}
+function toHome(u){u.fxs.forEach(hide);u.act=null;u.orc=null;for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===u.id)demons.splice(i,1);u.x=u.c*CELL+48;u.y=u.r*CELL+FY;u.path=[];u.st='idle';u.wait=1;u.al=1;u.sk=1;u.mood='ok';u.mt=0;u.gt=0;u.mv=false;u.ward=null;label(u)}
 function detach(u){
  if(u.target){const h=U[u.target];if(h&&h.hosting===u.id){h.hosting=null;h.st='idle';h.wait=1;h.act=null}u.target=null}
  if(u.hosting){const v=U[u.hosting];if(v){v.target=null;toHome(v)}u.hosting=null}
@@ -78,12 +78,12 @@ function casting(w,dt){
  once('y',1.7,()=>{kill(k);w.st='idle';w.wait=3});
 }
 
-// Route between rooms. The ROOMS decide how (TR in data.js), not who is walking:
-// sideways = the room being left (door or portal); up/down = leave by this room's exit, arrive by the other room's.
+// Route between rooms. Left/right: the Wizard uses a portal, everyone else the side door.
+// Up/down: the ROOMS decide (TR in data.js): leave by this room's stairs, arrive by the other room's.
 function route(u,r1,c1,r2,c2,fin){
  const ra=at(r1,c1)||u.id,rb=at(r2,c2)||u.id,dc=c2-c1,dr=r2-r1;
  const F=(type,x,y)=>{const f={type,x,y,open:0,want:0,a:0,vis:false,keep:true};u.fxs.push(f);return f};
- if(dc){const ty=TR[ra].side;
+ if(dc){const ty=u.id==='wizard'?'portal':'door';
   if(ty==='door'){
    const ex=(dc>0?c1+1:c1)*CELL,yy=r1*CELL+FY,f=F('door',ex,yy);f.dir=dc;
    return [{k:'walk',x:ex-dc*28,y:yy,on:f},{k:'wait',f,w:.5},{k:'walk',x:ex+dc*28,y:yy,sp:40},{k:'walk',x:fin.x,y:fin.y,close:f}];
@@ -94,7 +94,7 @@ function route(u,r1,c1,r2,c2,fin){
  const up=dr<0,out=TR[ra][up?'up':'down'],inn=TR[rb][up?'down':'up'],A=EXIT[out],Bx=EXIT[inn];
  const X1=c1*CELL+A.x,X2=c2*CELL+Bx.x,y1=r1*CELL,y2=r2*CELL,f1=F(out,X1,y1+A.y),f2=F(inn,X2,y2+Bx.y);
  return [{k:'walk',x:X1,y:y1+FY,on:f1},{k:'walk',x:X1,y:y1+A.ay,open:f1},{k:'vanish',f:f1,m:out},
-  {k:'appear',x:X2,y:y2+Bx.ay+(inn==='trap'?3:0),f:f2,m:inn},{k:'walk',x:X2,y:y2+FY,sp:inn==='trap'?24:34,close:f2},{k:'walk',x:fin.x,y:fin.y,off:f2}];
+  {k:'appear',x:X2,y:y2+Bx.ay,f:f2,m:inn},{k:'walk',x:X2,y:y2+FY,sp:34,close:f2},{k:'walk',x:fin.x,y:fin.y,off:f2}];
 }
 const isPair=(a,b)=>(a.id==='knight'&&b.id==='wizard')||(a.id==='wizard'&&b.id==='knight');
 function decide(u){
@@ -107,6 +107,8 @@ function decide(u){
    if(isPair(u,h)&&Math.random()<ODDS.spar){visit(u,h,'spar');return} // any arrangement
    const hang=Math.random()<ODDS.hangout;
    if(kd==='bolt'&&!hang&&freeU(U.wizard)&&freeU(U.knight)){cast(U.wizard,U.knight);return}
+   // Eldritch Awakening: always the Knight who goes to the Wizard's room to read
+   if(kd==='learn'&&!hang){if(freeU(U.wizard)&&freeU(U.knight))visit(U.knight,U.wizard,'learn');else{u.st='idle';u.wait=1}return}
    if(kd!=='bolt'||hang){visit(u,h,hang||kd==='bolt'?null:kd);return}
   }
  }
@@ -131,9 +133,9 @@ function run(u,dt){
   if(s.k==='vanish')s.f.want=1;
   if(s.k==='appear'){u.x=s.x;u.y=s.y;u.al=0;show(s.f);s.f.want=1}}
  if(s.k==='wait'||s.k==='pause'){s.t+=dt;if(s.t>=s.w)fin(u)}
- else if(s.k==='vanish'){s.t+=dt;const p=cl((s.t-.25)/.35,0,1);u.al=1-p;u.sk=1-.4*p;if(s.m==='trap')u.y+=dt*14;
+ else if(s.k==='vanish'){s.t+=dt;const p=cl((s.t-.25)/.35,0,1);u.al=1-p;u.sk=1-.4*p;
   if(s.t>=.65){u.al=0;s.f.want=0;if(FIXED[s.f.type])s.f.closing=true;else hide(s.f);fin(u)}}
- else if(s.k==='appear'){s.t+=dt;const p=cl((s.t-.25)/.35,0,1);u.al=p;u.sk=s.m==='trap'?1:.6+.4*p;if(s.t>=.65){u.al=1;u.sk=1;fin(u)}}
+ else if(s.k==='appear'){s.t+=dt;const p=cl((s.t-.25)/.35,0,1);u.al=p;u.sk=.6+.4*p;if(s.t>=.65){u.al=1;u.sk=1;fin(u)}}
  else{const dx=s.x-u.x,dy=s.y-u.y,d=Math.hypot(dx,dy),sp=(s.sp||(u.st==='walk'?20:34))*dt;
   if(Math.abs(dx)>.5)u.face=dx>0?1:-1;u.t+=dt;
   if(d<=sp){u.x=s.x;u.y=s.y;if(s.dust)poof(u.x,u.y-3);if(s.off)hide(s.off);fin(u)}else{u.x+=dx/d*sp;u.y+=dy/d*sp}}
@@ -146,15 +148,16 @@ function talk(u,dt){
   once('a',.4,()=>{u.mood=h.mood='happy';u.mt=h.mt=3;hearts(u);hearts(h);gest(u,'both',.8);gest(h,'both',.8)});
   once('b',1.5,()=>{hearts(u);hearts(h);gest(u,'up',.5);gest(h,'up',.5)})}
  else if(k==='chat'){const sc=u.sc2||(u.sc2=pick(TALK));end=sc.length*2.3+.8;sc.forEach((l,i)=>once('l'+i,.6+i*2.3,()=>{if(U[l[0]]){say(U[l[0]],l[1]);gest(U[l[0]],'fwd',1.2)}}))}
- else if(k==='learn'){end=3.8;
-  once('a',.4,()=>{Wz.hop=.5;Wz.mood='happy';Wz.mt=2;K.act='learn';K.at=0;gest(Wz,'fwd',1.6)});
-  once('z',2,()=>{K.form='eknight';K.lb.textContent='Eldritch Knight';K.mood='happy';K.mt=2;poof(K.x,K.y-20,'#c890ff');gest(Wz,'both',.8);save()});
-  once('y',3,()=>{K.act=null})}
- else if(k==='spar'){end=4.6;// friendly sparring: weapon vs magic, a light hit each, then a cheer
-  once('s1',.3,()=>{K.act='prac';K.at=0;Wz.act='magic';Wz.at=0});
+ else if(k==='learn'){end=4.6;// the Wizard hands over a spellbook; reading it turns the Knight eldritch
+  once('a',.3,()=>{Wz.hop=.5;Wz.mood='happy';Wz.mt=2;gest(Wz,'fwd',.9)});
+  once('b',.9,()=>{K.act='tome';K.at=0});
+  once('z',2.8,()=>{K.form='eknight';K.lb.textContent='Eldritch Knight';K.mood='happy';K.mt=2;poof(K.x,K.y-20,'#c890ff');gest(Wz,'both',.8);save()});
+  once('y',3.4,()=>{K.act=null;K.hop=.5;gest(K,'both',.8)})}
+ else if(k==='spar'){end=4.6;// friendly sparring: weapon vs magic; the Wizard raises a magic shield that blocks the Knight's hit
+  once('s1',.3,()=>{K.act='prac';K.at=0;Wz.act='magic';Wz.at=0;Wz.ward=0});
   once('s2',1.5,()=>{poof(K.x,K.y-22,'#4fb0ff');K.blink=.4});
-  once('s3',2.6,()=>{poof(Wz.x,Wz.y-22,'#cfd6e0');Wz.blink=.4});
-  once('s4',3.6,()=>{K.act=Wz.act=null;K.mood=Wz.mood='happy';K.mt=Wz.mt=1.5;K.hop=Wz.hop=.5;gest(K,'both',.8);gest(Wz,'both',.8)})}
+  once('s3',2.6,()=>{poof(Wz.x+(K.x>Wz.x?16:-16),Wz.y-24,'#bfe8ff');Wz.wardHit=.4});
+  once('s4',3.6,()=>{K.act=Wz.act=null;Wz.ward=null;K.mood=Wz.mood='happy';K.mt=Wz.mt=1.5;K.hop=Wz.hop=.5;gest(K,'both',.8);gest(Wz,'both',.8)})}
  else if(k==='orc'){end=4.6;if(u.orc)u.face=u.orc.x>u.x?1:-1;
   once('o2',.5,()=>{u.act='prac';u.at=0});
   once('o3',1.2,()=>{if(u.orc)u.orc.blink=.5});
@@ -162,7 +165,7 @@ function talk(u,dt){
   once('o5',2.6,()=>{if(u.orc)u.orc.blink=.5});
   once('o6',3.5,()=>{if(u.orc){poof(u.orc.x,u.y-20,'#6a9a3a');u.orc=null}u.act=null;u.mood='happy';u.mt=1.5;h.hop=.5;h.mood='happy';h.mt=1.5;gest(u,'both',.9);gest(h,'both',.9)})}
  else{once('h1',.6,()=>{u.hop=.5;gest(u,'up',.6)});once('h2',1.4,()=>{h.hop=.5;gest(h,'up',.6)})}
- if(u.tt>end){u.act=null;u.orc=null;h.act=null;h.hosting=null;h.st='idle';h.wait=2;u.target=null;u.st='back';u.path=route(u,h.r,h.c,u.r,u.c,home(u))}
+ if(u.tt>end){u.act=null;u.orc=null;h.act=null;u.ward=h.ward=null;h.hosting=null;h.st='idle';h.wait=2;u.target=null;u.st='back';u.path=route(u,h.r,h.c,u.r,u.c,home(u))}
 }
 function step(dt){
  for(const u of Object.values(U))u.fxs=u.fxs.filter(f=>{f.open+=(f.want-f.open)*Math.min(1,dt*8);if(f.closing&&f.open<.05){f.vis=false;f.keep=false}f.a=f.type==='door'?(f.vis?1:0):f.a+((f.vis?1:0)-f.a)*Math.min(1,dt*9);return f.keep||f.vis||f.a>.03||(FIXED[f.type]&&f.open>.03)});
@@ -172,7 +175,7 @@ function step(dt){
  if(bubU&&(bubU.t-=dt)<=0){bubU=null;bub.style.display='none'}
  for(const id in U){const u=U[id];
   if(u.mt>0&&(u.mt-=dt)<=0)u.mood='ok';
-  if(u.hop>0)u.hop-=dt;if(u.blink>0)u.blink-=dt;if(u.gt>0)u.gt-=dt;
+  if(u.hop>0)u.hop-=dt;if(u.blink>0)u.blink-=dt;if(u.gt>0)u.gt-=dt;if(u.ward!=null)u.ward+=dt;if(u.wardHit>0)u.wardHit-=dt;
   if(u.act)u.at+=dt;if(u.orc&&u.orc.blink>0)u.orc.blink-=dt;
   if(u.st==='talk'){talk(u,dt);continue}
   if(u.st==='cast'){casting(u,dt);continue}
@@ -205,7 +208,8 @@ function render(){
   if(sink>0)g.restore()});
  Object.values(U).forEach(u=>{if(u.id===dm)return;
   if(u.orc){const o=u.orc,hit=o.blink>0,ob=hit&&Math.floor(o.blink*14)%2?.2:1;spr(g,'orc',hit?'hurt':'mad',o.x,o.y,u.x>o.x?1:-1,0,ob,1)}
-  if(u.act)drawAct(g,u)});
+  if(u.act)drawAct(g,u);
+  if(u.ward!=null)drawWard(g,u.x,u.y,u.ward,u.wardHit>0)});
  demons.forEach(d=>drawDemon(g,d));
  parts.forEach(p=>{if(p.k==='h')heart(g,p.x,p.y-p.t*26);else{const k=p.t/p.life,s=Math.max(1,7*(1-k));g.fillStyle=p.c;for(let i=0;i<8;i++){const a=i*Math.PI/4;g.fillRect(p.x+Math.cos(a)*k*28-s/2,p.y+Math.sin(a)*k*28-s/2,s,s)}}});
  bolts.forEach(b=>{const a=1-b.t/.5;g.fillStyle='rgba(255,255,255,'+(a*.6)+')';b.cells.forEach(q=>g.fillRect(q[0],q[1],CELL,CELL));
@@ -241,10 +245,10 @@ function firstFree(){for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(!at(r,c))r
   if(!td.moved&&Math.hypot(e.clientX-td.sx,e.clientY-td.sy)>8){td.moved=true;gx.clearRect(0,0,96,96);gx.drawImage(b.firstChild,0,0);gh.style.display='block'}
   if(td.moved){gh.style.left=e.clientX-42+'px';gh.style.top=e.clientY-42+'px';const p=pt(e);hover=p.inb?cellOf(p):null}};
  b.onpointerup=e=>{if(!td)return;const k=td;td=null;gh.style.display='none';hover=null;
-  if(!k.moved){const f=firstFree();if(f)addUnit(id,f[0],f[1])}
+  if(!k.moved){const f=firstFree();if(f)addUnit(id,f[0],f[1],false,null,null,id==="wizard"?pick(WIZ_RANDOM):null)}
   else{const p=pt(e);if(p.inb){const[r,c]=cellOf(p);if(!at(r,c))addUnit(id,r,c)}}};
  b.onpointercancel=()=>{td=null;gh.style.display='none';hover=null};
- b.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!U[id]){e.preventDefault();const f=firstFree();if(f)addUnit(id,f[0],f[1])}};
+ b.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!U[id]){e.preventDefault();const f=firstFree();if(f)addUnit(id,f[0],f[1],false,null,null,id==="wizard"?pick(WIZ_RANDOM):null)}};
  tray.appendChild(b);
 });
 $('#clr').onclick=()=>{Object.keys(U).forEach(i=>removeUnit(i,true));save()};
@@ -256,9 +260,11 @@ function diagram(k){
  const v=k==='bolt'||k==='chat',[c,x]=mkc(v?96:192,v?192:96,NAMES[k]);
  const [w,n]={friend:[[0,0],[96,0]],learn:[[96,0],[0,0]],bolt:[[0,0],[0,96]],chat:[[0,96],[0,0]]}[k];
  box(x,'wizard',w[0],w[1]);box(x,'knight',n[0],n[1],'longsword');
- spr(x,'wizard','ok',w[0]+48,w[1]+FY,1,0);spr(x,k==='learn'?'eknight':'knight','ok',n[0]+48,n[1]+FY,1,0);
+ if(k==='learn'){// the Knight has walked over and reads the Wizard's spellbook
+  spr(x,'wizard','ok',w[0]+66,w[1]+FY,-1,0,1,1,'fwd');spr(x,'eknight','happy',w[0]+30,w[1]+FY,1,0,1,1,'hold');drawAct(x,{act:'tome',at:2,x:w[0]+30,y:w[1]+FY,face:1});
+  return c}
+ spr(x,'wizard','ok',w[0]+48,w[1]+FY,1,0);spr(x,'knight','ok',n[0]+48,n[1]+FY,1,0);
  if(k==='friend'){heart(x,96,30);heart(x,84,20)}
- if(k==='learn'){x.fillStyle='#c890ff';[[20,24],[70,30],[30,52],[62,18]].forEach(q=>x.fillRect(n[0]+q[0],n[1]+q[1],3,3))}
  if(k==='bolt'){x.strokeStyle='#fff';x.lineWidth=2;x.beginPath();x.moveTo(52,44);[[44,64],[56,84],[46,106],[48,128]].forEach(q=>x.lineTo(q[0],q[1]));x.stroke()}
  if(k==='chat'){x.fillStyle='#eadcb4';[[40,40],[48,40],[56,40]].forEach(q=>x.fillRect(n[0]+q[0],n[1]+q[1],4,4))}
  return c}
@@ -287,10 +293,10 @@ function idleTile(kind,wp){
   else if(kind==='spar'){// friendly sparring in the knight's room
    const tt=t%4.8,on=tt>.3&&tt<3.6,cheer=tt>3.6&&tt<4.4,hop=cheer?-Math.abs(Math.sin((tt-3.6)/.5*Math.PI))*8:0,u={act:'prac',at:tt-.3,x:64,y:FY,face:-1,weapon:'longsword'};
    box(x,'knight',0,0,'longsword');
-   spr(x,'wizard',cheer?'happy':'ok',28,FY,1,hop,flash(tt>2.6&&tt<3,tt),1,cheer?'both':on?poseOf('magic',tt):'none');
+   spr(x,'wizard',cheer?'happy':'ok',28,FY,1,hop,1,1,cheer?'both':on?poseOf('magic',tt):'none');
    spr(x,'knight',cheer?'happy':'ok',64+(on?actDx(u):0),FY,-1,hop,flash(tt>1.5&&tt<1.9,tt),1,cheer?'both':on?'noR':'none');
-   if(on){drawAct(x,{act:'magic',at:tt,x:28,y:FY,face:1});drawAct(x,u)}
-   if(tt>1.5&&tt<2)poofTile(x,64,FY-22,(tt-1.5)/.5,'#4fb0ff');if(tt>2.6&&tt<3.1)poofTile(x,28,FY-22,(tt-2.6)/.5,'#cfd6e0')}
+   if(on){drawAct(x,{act:'magic',at:tt,x:28,y:FY,face:1});drawAct(x,u);drawWard(x,28,FY,tt-.3,tt>2.6&&tt<3)}
+   if(tt>1.5&&tt<2)poofTile(x,64,FY-22,(tt-1.5)/.5,'#4fb0ff');if(tt>2.6&&tt<3.1)poofTile(x,44,FY-24,(tt-2.6)/.5,'#bfe8ff')}
  });
  return c}
 function buildRef(){
