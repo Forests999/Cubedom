@@ -40,7 +40,7 @@ All odds live in `ODDS`; the game (`decide`, `startAct`) and the Compendium both
 - Necromancer: dark green hooded robe, pale skin, skull staff. Room: skulls and green candles on shelves, back-wall door. Unlock: when a Priest dies there is a 25% chance (`ODDS.necro`) the Necromancer box appears on the shelf (saved in `S.un.necromancer`; the Priest box stays too). The unlock is a real 25% roll on every Priest death, including fireball deaths (tested: about 25% over thousands of deaths).
 
 ## Items (consumables)
-- An item tray under the shelf with a counted inventory (`S.inv`, saved). Items are NOT infinite: each use takes one, and you start with none. Items are only gained through the game: scrolls from Necromancer + Wizard crafting (20 coins) or their 1% joint making; potions from the Wizard brewing next to a Merchant (5 coins) or that 1% joint making; artifacts from the crusade. An item you have none of is greyed out and can't be dragged. If the item does nothing, it is not used up. Drag one onto a room: it works only if the room's owner is at home (not visiting, not hosting, not in the middle of a big activity such as demon, fireball, flex, horse, raising, banishing, sniffing, or a farmer visit). Otherwise, or if the item does nothing for that character, a grey puff.
+- An item tray under the shelf with a counted inventory (`S.inv`, saved). Items are NOT infinite: each use takes one, and you start with none. Items are only gained through the game: scrolls from Necromancer + Wizard crafting (20 coins) or their 1% joint making; potions from the Wizard brewing next to a Merchant (5 coins), that 1% joint making, or buying from the Apothecary (30 coins); scrolls also from the Wizard's writing desk (50 coins); artifacts from the crusade. An item you have none of is greyed out and can't be dragged. If the item does nothing, it is not used up. Drag one onto a room: it works only if the room's owner is at home (not visiting, not hosting, not in the middle of a big activity such as demon, fireball, flex, horse, raising, banishing, sniffing, or a farmer visit). Otherwise, or if the item does nothing for that character, a grey puff.
 - Spell scroll on Wizard: fireball. He charges his staff and throws a fireball at a random neighboring room that has a box (or an empty neighboring cell if none). That room is destroyed and everyone inside dies, including visitors (whose own boxes are destroyed too).
 - Spell scroll on Knight: his armor shines with a golden glow for 30 seconds.
 - Potion on Wizard: he drinks, teleports to a random free character anywhere on the board, does a random interaction with them (`POTION_KINDS`: Knight = Old Friends/Eldritch Awakening/Tales of Old/Sparring; Priest = his four; Necromancer = duel, craft, golem, tomes; others = hangout), then portals back home. With nobody free, he just sparkles.
@@ -123,7 +123,7 @@ Whenever an interaction, idle activity or item effect is added or changed, updat
 
 
 ## Reset, unlocks, variants and easter eggs
-- Reset game button (next to Clear board): tap once to arm it ("Tap again to reset", red), tap again within 4 seconds to confirm. No browser pop-up (some browsers and phone apps block them). Saving is switched off during the reset so nothing writes the old game back. It wipes the save and starts fresh: default board (Knight + Wizard), 0 coins, no items, nothing unlocked, Compendium record cleared.
+- Reset game button (under the item tray): tap once to arm it ("Tap again to reset", red), tap again within 4 seconds to confirm. No browser pop-up (some browsers and phone apps block them). Saving is switched off during the reset so nothing writes the old game back. It wipes the save and starts fresh: default board (Knight + Wizard), 0 coins, no items, nothing unlocked, Compendium record cleared.
 - Fruit Merchant (class Merchant, coin tag): unlocked by holding `MERCHANT_COINS` (30) coins at once (`checkUnlocks`, saved in `S.un.merchant`, lasts until reset). Room: striped awning and fruit crates, back-wall door. No idles or special interactions yet (wanders and hangs out).
 - Knight armor: steel normally, bronze 1% of the time when placed (easter egg, `ODDS.bronze`, stored in the unit's color: 'steel'/'bronze').
 - Priest: 50% male (short hair) / 50% female (long hair) when placed (color 'm'/'f').
@@ -135,6 +135,18 @@ Whenever an interaction, idle activity or item effect is added or changed, updat
 - Priest above the Knight: 2% (`ODDS.crusade`) of their visit rolls they go on a holy crusade: the Knight joins the Priest, "To the crusade!", both fade away and are off the board for `CRUSADE_TIME` (120) seconds (labels dimmed, nobody can interact with them). They come back home with 10 coins (70%) or an artifact (30%), with a message. Moving their boxes brings them back early with nothing.
 - Artifacts are a new item (inventory `S.inv.artifact`); for now only the Priest easter egg uses them.
 - Compendium: tiles get a thin gold border once that interaction/idle/item effect has happened (`markSeen`, saved in `S.seen`). Hidden easter eggs (black Wizard, bronze Knight, skulls) are not shown.
+
+## Merchants, shops and Compendium rewards
+- No Clear board button any more (only Reset game).
+- Knight shield training: a squire comes in through the back door and spars with a wooden sword while the Knight blocks with his shield held close to his body (each hit pushes him back a little). Shield practice lasts longer (7 s). The squire leaves the same way.
+- Fruit Merchant idles (`ODDS.merchant`): calls out adverts 70% (`MERCH_ADS`); sells apples to a neighbor 29% (+`SELL_GAIN` 2 coins; no free neighbor = advert); a mob of farmers 1% (they storm in from the side away from him, pelt him with apples and oranges, then leave).
+- Priest left of the Fruit Merchant (= Merchant right of the Priest, the same arrangement): 50/50 (`ODDS.feast`) between:
+  - Apple: the Merchant drops an apple; 95% the Priest buys it (+`APPLE_GAIN` 1 coin), 5% (`ODDS.slip`) he slips on it and dies.
+  - Feast: the Merchant sets up a table of food at the front of the room, two nobles come in through the back door, everyone eats and cheers, then the nobles leave.
+- Apothecary (class Merchant): unlocked when any Merchant box sits next to any Mage (`checkUnlocks`, on place/move). Tap its room to buy a potion for `APOTH_COST` (30) coins. No idles yet.
+- Writing desk: while the Wizard has a Merchant neighbor AND another Mage neighbor, a desk appears in his room. Tap his room (while he's home and free) to write a spell scroll for `DESK_COST` (50) coins, or `DESK_COST_BLACK` (30) for the black-robed Wizard.
+- Crowds: extra people in a scene (squire, nobles, farmer mob) live in `u.crowd` and are stepped and drawn with the characters.
+- Compendium: built from `SECTIONS` (title + tile keys). Filling a whole section with gold borders pays `SECTION_REWARD` (10) coins once (`S.secDone`, saved; shown as "complete"). Tiles that give you something show small item icons in the bottom-left (`GAINS`).
 ## Art style
 Pixel art, 16x22 character grid drawn from rectangles with an automatic dark outline. Each room has plain walls and floor, one background element representing its class, and its up/down exit (Knight/Priest/Necromancer: back-wall door; Wizard: second bookshelf). Fantasy medieval theme.
 

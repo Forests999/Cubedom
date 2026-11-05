@@ -1,5 +1,5 @@
 // ---------- art: room backgrounds and drawing ----------
-const WALL={merchant:['#5a4430','#3a2a1c'],knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40'],priest:['#4a4458','#30293c'],necromancer:['#26262c','#18181c']};
+const WALL={apothecary:['#3e4a3a','#2a3226'],merchant:['#5a4430','#3a2a1c'],knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40'],priest:['#4a4458','#30293c'],necromancer:['#26262c','#18181c']};
 // Priest's stained glass window (frame 16..44 x 12..52, center x 30, y 32). Tentacles can smash through it.
 const WINDOW=[[16,12,28,40,'#2a2434'],[18,16,7,10,'#c04040'],[26,16,8,10,'#3a6ad0'],[35,16,7,10,'#d0b030'],[18,27,7,10,'#40a060'],[26,27,8,10,'#c890ff'],[35,27,7,10,'#c04040'],[18,38,7,12,'#3a6ad0'],[26,38,8,12,'#d0b030'],[35,38,7,12,'#40a060'],[29,19,2,8,'#f2e8a0'],[27,21,6,2,'#f2e8a0'],[20,12,20,2,'#3a3448']];
 const WIN_C={x:30,y:32};
@@ -9,6 +9,8 @@ const BACKDOOR=[[61,31,22,35,'#1e2030'],[63,33,18,33,'#6a4420'],[69,33,1,33,'#5a
 const SHELF2=[[56,30,24,36,'#6a4a2a'],[58,32,20,32,'#3a2410'],[58,47,20,2,'#6a4a2a'],[59,35,4,12,'#c04040'],[64,37,3,10,'#40a0c0'],[68,35,4,12,'#d0b030'],[73,36,4,11,'#40c070'],[59,51,3,13,'#8a5ae0'],[63,52,5,12,'#c04040'],[69,50,3,14,'#40a0c0'],[73,53,4,11,'#d0b030']];
 function bg(id,w){
  // Fruit Merchant: striped awning and crates of fruit
+ // Apothecary: shelves of colored bottles, hanging herbs, a mortar
+ if(id==='apothecary')return [[10,24,40,3,'#5a4024'],[10,44,40,3,'#5a4024'],[12,17,4,7,'#d03050'],[18,15,4,9,'#4fb0ff'],[24,18,4,6,'#7aff7a'],[30,16,5,8,'#c890ff'],[38,18,4,6,'#f2c84a'],[13,37,5,7,'#7aff7a'],[20,36,4,8,'#d03050'],[27,38,6,6,'#4fb0ff'],[36,35,4,9,'#f08a20'],[56,10,2,12,'#4a7a3a'],[60,10,2,9,'#6a9a4a'],[64,10,2,13,'#4a7a3a'],[16,58,10,6,'#8a8a8a'],[18,56,6,2,'#6a6a6a'],...BACKDOOR];
  if(id==='merchant')return [[6,8,84,6,'#c04040'],[6,8,12,6,'#f0e8d8'],[30,8,12,6,'#f0e8d8'],[54,8,12,6,'#f0e8d8'],[78,8,12,6,'#f0e8d8'],[8,46,22,18,'#8a5a2a'],[8,46,22,2,'#6a4420'],[11,42,4,4,'#d03030'],[16,41,4,4,'#e04040'],[21,42,4,4,'#c02828'],[13,38,4,4,'#d83838'],[32,50,20,14,'#8a5a2a'],[32,50,20,2,'#6a4420'],[34,46,4,4,'#f08a20'],[39,45,4,4,'#f8a030'],[44,46,4,4,'#e88018'],[48,38,3,8,'#f2d040'],[51,37,3,8,'#e8c830'],[54,38,3,8,'#f2d040'],...BACKDOOR];
  if(id==='priest')return [...WINDOW,[48,52,4,14,'#d8d0b0'],[47,50,6,2,'#a08a50'],[49,47,2,3,'#ffd060'],...BACKDOOR];
  if(id==='necromancer')return [[10,22,40,3,'#3a3028'],[10,42,40,3,'#3a3028'],[14,14,7,8,'#e8e4d0'],[15,16,2,2,O],[18,16,2,2,O],[30,15,6,7,'#e8e4d0'],[31,17,2,2,O],[33,17,2,2,O],[40,16,3,6,'#2a2a2a'],[40,13,3,3,'#7aff7a'],[16,34,4,8,'#2a2a2a'],[16,31,4,3,'#7aff7a'],[26,36,10,6,'#4a3a5a'],[38,33,6,9,'#e8e4d0'],[39,35,2,2,O],[41,35,2,2,O],...BACKDOOR];
@@ -65,6 +67,9 @@ function poseOf(act,at){
  if(act==='frost')return 'up';
  if(act==='sniff')return at<1.1?'up':at<1.5?'fwd':'none';
  if(act==='brew')return Math.floor(at*2)%2?'fwd':'up';
+ if(act==='advert')return Math.floor(at*1.5)%2?'both':'up';
+ if(act==='write')return 'fwd';
+ if(act==='mob')return at>1.5&&at<5?'both':'none';
  if(act==='relic')return at<2.6?'up':'none';
  if(act==='prac')return 'noR';
  if(act==='learn'||act==='cast')return 'up';
@@ -125,7 +130,7 @@ function thrust(t,P,rest,back,out,lean){const p=(t%P)/P;let e;
 function pracAnim(w,t){
  if(w==='glaive')return swing(t,1.4,.6,3.9,1.3,4);
  if(w==='spear')return thrust(t,.9,1.35,1.2,1.6,4);
- if(w==='shield')return thrust(t,1.2,.4,1.2,1.5,4);
+ if(w==='shield'){const p=(t%1),bump=p>.45&&p<.65?Math.sin((p-.45)/.2*Math.PI):0;return{th:.35+.15*bump,dx:-bump*2}} // braced behind the shield, pushed back a little by each hit
  return swing(t,1,.5,3.5,1.1,3); // longsword and the Eldritch Knight's magic sword
 }
 const weaponOf=u=>u.form==='eknight'?'magic':(u.weapon||'longsword');
@@ -190,13 +195,13 @@ function drawAct(c,u){
  else if(a==='prac'){
   const w=weaponOf(u),A=pracAnim(w,t),col=CH[u.form||'knight'].a,sx=Math.round(x+f*(10+Math.round(A.dx))),sy=Math.round(y-23);
   c.save();c.translate(sx,sy);c.scale(f,1);c.rotate(-A.th); // from here +y runs down the arm from the shoulder
-  if(w==='longsword'||w==='magic'){c.fillStyle='#6a4420';c.fillRect(-1,9,2,6);c.fillStyle='#c0a030';c.fillRect(-5,13,10,2);
-   c.fillStyle=w==='magic'?'#b080ff':'#cfd6e0';c.fillRect(-2,15,3,22);c.fillStyle='#fff';c.fillRect(-1,w==='magic'?16:33,1,w==='magic'?20:3)}
+  if(w==='longsword'||w==='magic'||w==='wood'){c.fillStyle='#6a4420';c.fillRect(-1,9,2,6);c.fillStyle='#c0a030';c.fillRect(-5,13,10,2);
+   c.fillStyle=w==='magic'?'#b080ff':w==='wood'?'#a8784a':'#cfd6e0';c.fillRect(-2,15,3,22);c.fillStyle=w==='wood'?'#c89a68':'#fff';c.fillRect(-1,w==='magic'?16:33,1,w==='magic'?20:3)}
   else if(w==='glaive'){c.fillStyle='#8a5a2a';c.fillRect(-1,-10,2,44);c.fillStyle='#cfd6e0';c.fillRect(-1,32,7,12);c.fillStyle='#8a94a8';c.fillRect(1,34,4,8)}
   else if(w==='spear'){c.fillStyle='#8a5a2a';c.fillRect(-1,-14,2,46);c.fillStyle='#cfd6e0';c.fillRect(-3,32,6,8);c.fillStyle='#fff';c.fillRect(-1,40,2,3)}
   c.fillStyle=O;c.fillRect(-3,-2,6,15);c.fillStyle=col.bodyD;c.fillRect(-2,-1,4,10);c.fillStyle=col.skin;c.fillRect(-2,9,4,3);
   c.restore();
-  if(w==='shield'){const hx=Math.round(sx+f*Math.sin(A.th)*10),hy=Math.round(sy+Math.cos(A.th)*10);
+  if(w==='shield'){const hx=Math.round(x+f*(5+A.dx)),hy=Math.round(y-21); // shield held close in front of the body
    c.save();c.translate(hx,hy);c.scale(f,1);c.fillStyle=O;c.fillRect(-1,-13,12,25);c.fillStyle='#3a5aa8';c.fillRect(0,-12,10,23);c.fillStyle='#2a4488';c.fillRect(5,-12,5,23);c.fillStyle='#f2c84a';c.fillRect(3,-4,3,6);c.restore()}}
  else if(a==='horse'&&t>=1&&t<4.6){
   // a bundle of hay in the outstretched hand, shrinking as the horse eats
@@ -242,6 +247,8 @@ function drawItem(c,kind,x,y,s){
  const R=kind==='scroll'
   ?[[-6,-3,12,6,'#eadcb4'],[-7,-4,2,8,'#c8b890'],[5,-4,2,8,'#c8b890'],[-4,-1,6,1,'#9a8a68'],[-1,1,3,3,'#c03030']]
   :kind==='artifact'?[[-2,-6,4,1,'#f2c84a'],[-3,-5,6,2,'#f2c84a'],[-4,-3,8,6,'#d8a030'],[-2,-2,4,4,'#7ae0ff'],[-1,-1,1,1,'#ffffff'],[-1,3,2,2,'#d8a030'],[-3,5,6,1,'#f2c84a']]
+  :kind==='apple'?[[-3,-2,6,5,'#d83030'],[-2,-3,4,1,'#d83030'],[0,-5,1,2,'#6a4420'],[1,-5,2,1,'#4a9a3a'],[-2,-1,1,1,'#ff9090']]
+  :kind==='orange'?[[-3,-2,6,5,'#f08a20'],[-2,-3,4,1,'#f08a20'],[0,-4,1,1,'#4a9a3a'],[-2,-1,1,1,'#ffc080']]
   :kind==='coin'?[[-2,-4,5,1,'#f2c84a'],[-3,-3,7,7,'#f2c84a'],[-2,4,5,1,'#f2c84a'],[-4,-2,1,5,'#f2c84a'],[4,-2,1,5,'#f2c84a'],[0,-2,1,5,'#b8862a'],[-2,-2,1,1,'#fff6c0']]
   :[[-1,-6,2,1,'#8a5a2a'],[-1,-5,2,2,'#cfe8f0'],[-3,-3,6,6,'#cfe8f0'],[-2,-1,4,3,'#d03050'],[-2,-2,1,1,'#ffffff']];
  c.fillStyle=O;R.forEach(r=>c.fillRect(Math.round(x+(r[0]-1)*s),Math.round(y+(r[1]-1)*s),(r[2]+2)*s,(r[3]+2)*s));
@@ -373,3 +380,11 @@ function drawSkulls(c,bx,by){[[14,84],[30,90],[66,86],[82,91]].forEach((q,i)=>{c
 // A small cauldron with bubbles (Wizard brewing a potion)
 function drawCauldron(c,x,y,t){c.fillStyle=O;c.fillRect(x-9,y-12,18,12);c.fillStyle='#3a3a44';c.fillRect(x-8,y-11,16,10);c.fillStyle='#2a2a30';c.fillRect(x-10,y-13,20,3);c.fillStyle='#d03050';c.fillRect(x-7,y-12,14,2);
  c.fillStyle='#ff8090';for(let i=0;i<3;i++){const k=(t*1.5+i/3)%1;c.fillRect(Math.round(x-5+i*5),Math.round(y-14-k*10),2,2)}c.fillStyle='#ff8020';c.fillRect(x-4,y,8,2)}
+
+// ---------- feast table and writing desk ----------
+// Feast table with food (x = center, y = floor line in front)
+function drawTable(c,x,y,a){c.save();c.globalAlpha=a;c.fillStyle=O;c.fillRect(x-22,y-14,44,4);c.fillStyle='#8a5a2a';c.fillRect(x-21,y-13,42,3);c.fillStyle='#6a4420';c.fillRect(x-19,y-10,3,10);c.fillRect(x+16,y-10,3,10);
+ c.fillStyle='#e8e4d0';c.fillRect(x-16,y-16,8,2);c.fillRect(x+6,y-16,8,2);c.fillStyle='#c87a3a';c.fillRect(x-14,y-19,5,3);c.fillStyle='#d83030';c.fillRect(x-2,y-17,3,3);c.fillStyle='#f08a20';c.fillRect(x+2,y-17,3,3);c.fillStyle='#f2d040';c.fillRect(x+8,y-19,2,3);c.fillStyle='#a03050';c.fillRect(x-6,y-20,2,4);c.restore()}
+// Writing desk that appears in the Wizard's room when a Merchant and another Mage are his neighbors
+function drawDesk(c,bx,by){const x=bx+14,y=by+66;c.fillStyle=O;c.fillRect(x-1,y-15,32,4);c.fillStyle='#7a4a22';c.fillRect(x,y-14,30,3);c.fillStyle='#5a3418';c.fillRect(x+2,y-11,3,11);c.fillRect(x+25,y-11,3,11);
+ c.fillStyle='#eadcb4';c.fillRect(x+4,y-17,10,3);c.fillStyle='#c03030';c.fillRect(x+8,y-17,2,3);c.fillStyle='#eadcb4';c.fillRect(x+16,y-16,8,2);c.fillStyle='#1a1226';c.fillRect(x+26,y-18,3,4);c.fillStyle='#ffffff';c.fillRect(x+27,y-25,1,7)}

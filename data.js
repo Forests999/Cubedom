@@ -155,3 +155,23 @@ const MC={body:'#d8c8a0',bodyD:'#b8a880',pants:'#5a4a3a',boot:'#3a2a1a',belt:'#4
 CH.merchant={name:'Fruit Merchant',eye:O,a:arms(MC),p:[...B(MC),[5,11,6,6,'#4a8a3a'],[6,12,4,1,'#6aaa5a'],[4,1,8,2,'#c04040'],[3,2,10,1,'#a02a2a'],[6,8,4,1,'#5a3a2a']]};
 NAMES.brew='Brewing a potion (next to a Merchant, 5 coins)';NAMES.forge='Making a scroll or potion';NAMES.crusade='Holy crusade (2 min)';NAMES.cleanse='Cleansing the Death Knight';
 NAMES.relic='Artifact on Priest: destroy the Necromancer';NAMES.artifact='Artifact';NAMES.merchant='Fruit Merchant';
+
+// ---------- Squire, nobles, Apothecary ----------
+// Squire: sparring partner who comes in while the Knight trains with his shield
+const SQ={body:'#6a8ac0',bodyD:'#4a6a9a',pants:'#5a4a3a',boot:'#3a2a1a',belt:'#8a6a3a'};
+CH.squire={name:'Squire',eye:O,a:arms(SQ),p:[...B(SQ),[5,2,6,2,'#c89050'],[5,4,1,2,'#c89050']]};
+// Nobles who join the Priest's feast
+const NB1={body:'#8a2a5a',bodyD:'#6a1a44',pants:'#3a2a4a',boot:'#2a1a2a',belt:'#f2c84a'},NB2={body:'#2a5a8a',bodyD:'#1a446a',pants:'#3a3a4a',boot:'#2a2a2a',belt:'#f2c84a'};
+CH.noble1={name:'Noble',eye:O,a:arms(NB1),p:[...B(NB1),[5,1,6,2,'#f2c84a'],[5,0,1,1,'#f2c84a'],[7,0,2,1,'#f2c84a'],[10,0,1,1,'#f2c84a'],[4,3,1,5,'#5a3a2a'],[11,3,1,5,'#5a3a2a']]};
+CH.noble2={name:'Noble',eye:O,a:arms(NB2),p:[...B(NB2),[4,1,8,2,'#2a2a3a'],[3,3,10,1,'#2a2a3a'],[6,8,4,1,'#6a4a2a']]};
+// Apothecary (Merchant): tap its room to buy a potion. Unlocked when any Merchant is placed next to a Mage.
+const AP={body:'#4a7a5a',bodyD:'#3a5a44',pants:'#4a3a2a',boot:'#2a1a10',belt:'#8a6a3a'};
+CH.apothecary={name:'Apothecary',eye:O,a:arms(AP),p:[...B(AP),[4,10,8,9,AP.body],[10,10,2,9,AP.bodyD],[4,14,8,1,AP.belt],[4,1,8,2,'#6a5a3a'],[5,3,1,3,'#b8b8b0'],[10,3,1,3,'#b8b8b0'],[11,13,3,4,'#8a6a3a'],[12,12,1,1,'#d03050']]};
+CLASS.apothecary='merchant';TR.apothecary={up:'backdoor',down:'backdoor'};
+// Priest left of the Fruit Merchant (= Merchant right of the Priest): 50% apple scene, 50% feast.
+PAIRS['priest>merchant']={left:'appleshop'};
+Object.assign(ODDS,{merchant:{advert:.7,sell:.29,mob:.01},slip:.05,feast:.5});
+const APOTH_COST=30,DESK_COST=50,DESK_COST_BLACK=30,SELL_GAIN=2,APPLE_GAIN=1,SECTION_REWARD=10;
+const MERCH_ADS=['Fresh apples! Crisp and sweet!','Oranges from the south! Two for a coin!','Bananas! Ripe bananas!','Fruit! Get your fruit here!'];
+Object.assign(NAMES,{apothecary:'Apothecary',advert:'Calling out to customers',sell:'Selling apples next door (+2 coins)',mob:'An angry fruit mob',
+ apple:'Priest buys an apple (+1 coin)',slip:'Priest slips on an apple',feast:'A feast with the nobles',apoth:'Tap the Apothecary: potion for 30 coins',desk:'Writing desk (Merchant + Mage next to the Wizard): scroll for 50 coins'});
