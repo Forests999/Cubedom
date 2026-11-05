@@ -31,6 +31,7 @@ function drawSprite(c,id,mood,pose){
  const A=ch.a?POSE[pose||'none'](ch.a):[],R=[...A.filter(r=>!r[5]),...ch.p,...A.filter(r=>r[5])]; // front-of-body arm pieces last
  R.forEach(p=>f(p[0]-1,p[1]-1,p[2]+2,p[3]+2,O));R.forEach(p=>f(p[0],p[1],p[2],p[3],p[4]));
  if(mood==='hurt'){f(5,6,2,1,O);f(9,6,2,1,O);f(7,8,2,1,'#a22');return}
+ if(mood==='sleep'){f(5,6,2,1,O);f(9,6,2,1,O);f(7,8,2,1,'#8a4a4a');return} // eyes closed, calm
  if(mood==='shock'){f(5,4,2,3,'#ffffff');f(9,4,2,3,'#ffffff');f(6,5,1,2,ch.eye);f(9,5,1,2,ch.eye);f(7,8,2,2,'#5a2a2a');return} // wide eyes, open mouth (surprise)
  const e=mood==='mad'?'#e03030':ch.eye;f(6,5,1,2,e);f(9,5,1,2,e);
  if(mood==='happy'){f(7,8,2,1,'#7a2a2a');f(5,7,1,1,'#f08080');f(10,7,1,1,'#f08080')}
@@ -57,7 +58,9 @@ function poseOf(act,at){
  if(act==='banish')return at>1.2&&at<3.2?'both':'none';
  // Necromancer
  if(act==='candles')return at<1.6?'fwd':at<3.2?'up':'none';
- if(act==='lightning')return 'hold';
+ if(act==='lightning'||act==='nread')return 'hold';
+ if(act==='sleepc'||act==='swapc'||act==='darkorb')return 'both';
+ if(act==='frost')return 'up';
  if(act==='sniff')return at<1.1?'up':at<1.5?'fwd':'none';
  if(act==='prac')return 'noR';
  if(act==='learn'||act==='cast')return 'up';
@@ -126,7 +129,7 @@ const weaponOf=u=>u.form==='eknight'?'magic':(u.weapon||'longsword');
 const actDx=u=>u.act==='prac'?Math.round(pracAnim(weaponOf(u),u.at).dx)*u.face:0;
 
 // Swirling sparkles around a character: pur = 0 blue, 1 purple (eldritch), 2 gold (holy); k = how strong (0..1)
-const SWIRL=[['#2a6af0','#4fb0ff','#bfe8ff'],['#c890ff','#e8d0ff','#8a5ae0'],['#f2c84a','#fff0a0','#d8a030'],['#3ac85a','#7aff7a','#1a8a3a']]; // 3 = necromantic green
+const SWIRL=[['#2a6af0','#4fb0ff','#bfe8ff'],['#c890ff','#e8d0ff','#8a5ae0'],['#f2c84a','#fff0a0','#d8a030'],['#3ac85a','#7aff7a','#1a8a3a'],['#bfe8ff','#ffffff','#7ac8ff']]; // 3 = necromantic green, 4 = frost
 function swirl(c,x,y,t,pur,k){const K=SWIRL[pur||0],n=Math.round(14*k);
  for(let i=0;i<n;i++){const an=t*(pur?3:4)+i*Math.PI*2/14,r=13+5*Math.sin(t*3+i),px=x+Math.cos(an)*r*1.2,py=y-24+Math.sin(an)*r*.8-(i%7)*2.5+8,s=i%3===2?2:3;
   c.fillStyle=K[i%3];c.fillRect(Math.round(px-s/2),Math.round(py-s/2),s,s)}}
@@ -139,10 +142,10 @@ function drawWard(c,x,y,t,hit){const a=cl(t/.4,0,1);if(a<=0)return;
 function drawAct(c,u){
  const f=u.face,a=u.act,t=u.at,x=u.x,y=u.y;
  if(a==='lightning')drawRedLightning(c,x,y,t);
- if(a==='read'||a==='tome'||a==='holy'||a==='lightning'){
+ if(a==='read'||a==='tome'||a==='holy'||a==='lightning'||a==='nread'){
   // Held up and open toward the reader: we see the covers and spine, page tops, and pages turning over the top.
   // tome = the Wizard's eldritch spellbook; holy = the Priest's white book with a gold cross; lightning = the Necromancer's black book with red runes
-  const tm=a==='tome',hb=a==='holy',nb=a==='lightning',bx=Math.round(x+f*2),by=Math.round(y-20),pf=(t*.9)%1;
+  const tm=a==='tome',hb=a==='holy',nb=a==='lightning'||a==='nread',bx=Math.round(x+f*2),by=Math.round(y-20),pf=(t*.9)%1;
   if(tm)swirl(c,x,y,t,1,cl(t/1.5,0,1));
   c.fillStyle=O;c.fillRect(bx-8,by-7,16,13);
   c.fillStyle='#f2ead0';c.fillRect(bx-7,by-6,14,2);
@@ -153,6 +156,10 @@ function drawAct(c,u){
   if(pf<.35){const k=pf/.35,px=Math.round(bx+f*(6-12*k)),py=Math.round(by-6-Math.sin(k*Math.PI)*6);c.fillStyle='#fff';c.fillRect(px-1,py,2,by-5-py)}}
  else if(a==='smite'||a==='tithe'){swirl(c,x,y,t,2,1)} // priest's holy power (gold)
  else if(a==='raise'){swirl(c,x,y,t,3,1)} // necromancer raising the dead (green)
+ else if(a==='sleepc'){swirl(c,x,y,t,1,1)}
+ else if(a==='swapc'){swirl(c,x,y,t,u.id==='necromancer'?3:1,1)}
+ else if(a==='frost'){const bx=Math.floor(x/CELL)*CELL,by=Math.floor((y-1)/CELL)*CELL;swirl(c,x,y,t,4,1);drawSnow(c,bx,by,t)}
+ else if(a==='darkorb'){const r=Math.round(2+cl(t/1.5,0,1)*7),ox=Math.round(x+f*2),oy=Math.round(y-50);c.fillStyle='rgba(40,10,60,.85)';c.beginPath();c.arc(ox,oy,r+3,0,Math.PI*2);c.fill();c.fillStyle='#0a0410';c.beginPath();c.arc(ox,oy,r,0,Math.PI*2);c.fill();c.fillStyle='#c890ff';for(let i=0;i<6;i++){const an=t*4+i;c.fillRect(Math.round(ox+Math.cos(an)*(r+4)),Math.round(oy+Math.sin(an)*(r+4)),2,2)}}
  else if(a==='exorcise'&&t>2.2&&t<4.6){swirl(c,x,y,t,2,1)}
  else if(a==='farmer'&&t>4.4&&t<5.6){const up=Math.floor(t*4)%2,hx=Math.round(x+f*(up?11:16)),hy=Math.round(y-(up?36:22));
   c.fillStyle=O;c.fillRect(hx-3,hy-7,6,9);c.fillStyle='#a8d8ff';c.fillRect(hx-2,hy-4,4,5);c.fillStyle='#e8f6ff';c.fillRect(hx-2,hy-6,4,2);c.fillStyle='#8a5a2a';c.fillRect(hx-1,hy-7,2,1)}
@@ -328,3 +335,27 @@ function drawWings(c,x,y,t){
 }
 // Smashed potion splat on the back wall (fades out). a = 0..1
 function drawSplat(c,x,y,a){c.save();c.globalAlpha=a;c.fillStyle='#d03050';[[-6,-2,12,4],[-3,-6,6,12],[-8,2,3,3],[6,-5,3,3],[-1,6,2,6],[4,4,2,5]].forEach(r=>c.fillRect(x+r[0],y+r[1],r[2],r[3]));c.fillStyle='#cfe8f0';[[-9,-6,2,2],[8,1,2,2],[2,-9,2,2]].forEach(r=>c.fillRect(x+r[0],y+r[1],r[2],r[3]));c.restore()}
+
+// ---------- Necromancer interaction effects ----------
+// Floating "Z" while asleep
+function drawZ(c,x,y,a){c.save();c.globalAlpha=a;const Zr=[[0,0,4,1],[2,1,1,1],[1,2,1,1],[0,3,4,1]];c.fillStyle=O;Zr.forEach(r=>c.fillRect(x+r[0]*2-1,y+r[1]*2-1,r[2]*2+2,r[3]*2+2));c.fillStyle='#d8c8ff';Zr.forEach(r=>c.fillRect(x+r[0]*2,y+r[1]*2,r[2]*2,r[3]*2));c.restore()}
+// A summoned creature: m = {id:'skeleton'|'zombie'|'ghost'|'golem', x, y (feet), t, blink, face, al, gone}
+function drawMob(c,m){
+ if(m.al!=null&&m.al<=0)return;const hit=m.blink>0,fl=hit&&Math.floor(m.blink*14)%2?.2:1,face=m.face||-1;
+ if(m.id==='ghost'){spr(c,'ghost',hit?'hurt':'ok',m.x,m.y-8-Math.sin(m.t*3+m.x)*3,face,0,.75*fl*(m.al==null?cl(m.t/.5,0,1):m.al),1);return}
+ if(m.id==='golem'){spr(c,'golem','ok',m.x,m.y,face,0,(m.al==null?1:m.al)*cl(m.t/.6,0,1),m.sc||1.35);return}
+ const rise=cl(m.t/.9,0,1);if(m.t<1.3)drawGreenCircle(c,m.x,m.y,cl(m.t/.4,0,1),m.t);
+ c.save();c.beginPath();c.rect(m.x-26,m.y-64,52,64);c.clip();spr(c,m.id,hit?'hurt':'mad',m.x,m.y+(1-rise)*44,face,0,fl*(m.al==null?1:m.al),1,m.id==='zombie'?'fwd':undefined);c.restore();
+}
+// Lightning bolt between two points (duel). blk = the Necromancer's black lightning, otherwise the Wizard's blue
+function drawZap(c,z){
+ const a=cl(1-z.t/.35,0,1);if(a<=0)return;c.save();c.globalAlpha=a;c.beginPath();z.p.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));
+ c.strokeStyle=z.blk?'#100818':'#4fb0ff';c.lineWidth=5;c.stroke();c.strokeStyle=z.blk?'#a070e0':'#ffffff';c.lineWidth=1.5;c.stroke();c.restore();
+}
+// Sleep spell: a lavender mist wave rolling right along a row
+function drawSleepWave(c,w){const fx=w.x0+w.t*240,y=w.r*CELL;c.save();const gr=c.createLinearGradient(fx-60,0,fx,0);gr.addColorStop(0,'rgba(200,170,255,0)');gr.addColorStop(1,'rgba(200,170,255,.45)');c.fillStyle=gr;c.fillRect(Math.max(w.x0,fx-60),y+8,Math.min(60,fx-w.x0),CELL-12);
+ c.fillStyle='#e8d8ff';for(let i=0;i<6;i++)c.fillRect(Math.round(fx-4-i*9),Math.round(y+20+((i*29+w.t*60)%60)),2,2);c.restore()}
+// Hole smashed in a back wall by the escaping golem; fades as it is repaired. a = 0..1
+function drawHole(c,x,y,a){c.save();c.globalAlpha=a;c.fillStyle='#0a0610';[[-12,-14,24,26],[-15,-8,30,16],[-8,-18,16,6]].forEach(r=>c.fillRect(x+r[0],y+r[1],r[2],r[3]));c.fillStyle='#8a5a34';[[-16,-16,4,4],[13,-10,4,3],[-14,10,5,3],[10,9,4,4]].forEach(r=>c.fillRect(x+r[0],y+r[1],r[2],r[3]));c.restore()}
+// Snow falling in a room (frost spell)
+function drawSnow(c,bx,by,t){c.save();c.beginPath();c.rect(bx+4,by+4,88,88);c.clip();c.fillStyle='#ffffff';for(let i=0;i<14;i++){const px=bx+8+((i*37)%80)+Math.sin(t*2+i)*3,py=by+4+((t*22+i*13)%84);c.fillRect(Math.round(px),Math.round(py),2,2)}c.restore()}

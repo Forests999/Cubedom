@@ -37,19 +37,19 @@ All odds live in `ODDS`; the game (`decide`, `startAct`) and the Compendium both
 
 ## Characters
 - Priest: white robes, gold rope belt, gold cross necklace. Room: stained glass window, candle, back-wall door with stone stairs.
-- Necromancer: dark green hooded robe, pale skin, skull staff. Room: skulls and green candles on shelves, back-wall door. Unlock: when a Priest dies there is a 25% chance (`ODDS.necro`) the Necromancer box appears on the shelf (saved in `S.un.necromancer`; the Priest box stays too). No neighbor interactions yet (only plain hangouts; the owner will add them later). The unlock is a real 25% roll on every Priest death, including fireball deaths (tested: about 25% over thousands of deaths).
+- Necromancer: dark green hooded robe, pale skin, skull staff. Room: skulls and green candles on shelves, back-wall door. Unlock: when a Priest dies there is a 25% chance (`ODDS.necro`) the Necromancer box appears on the shelf (saved in `S.un.necromancer`; the Priest box stays too). The unlock is a real 25% roll on every Priest death, including fireball deaths (tested: about 25% over thousands of deaths).
 
 ## Items (consumables)
-- An item tray under the shelf. Items are infinite use for now (may be purchasable later with coins). Drag one onto a room: it works only if the room's owner is at home (not visiting, not hosting, not in the middle of a big activity such as demon, fireball, flex, horse, raising, banishing, sniffing, or a farmer visit). Otherwise, or if the item does nothing for that character, a grey puff.
+- An item tray under the shelf with a counted inventory (`S.inv`, saved). Items are NOT infinite: each use takes one, and you start with none. Items are only gained through the game: spell scrolls from Necromancer + Wizard crafting (20 coins). Potions currently have no source (the owner will add one). An item you have none of is greyed out and can't be dragged. If the item does nothing, it is not used up. Drag one onto a room: it works only if the room's owner is at home (not visiting, not hosting, not in the middle of a big activity such as demon, fireball, flex, horse, raising, banishing, sniffing, or a farmer visit). Otherwise, or if the item does nothing for that character, a grey puff.
 - Spell scroll on Wizard: fireball. He charges his staff and throws a fireball at a random neighboring room that has a box (or an empty neighboring cell if none). That room is destroyed and everyone inside dies, including visitors (whose own boxes are destroyed too).
 - Spell scroll on Knight: his armor shines with a golden glow for 30 seconds.
-- Potion on Wizard: he drinks, teleports to a random free character anywhere on the board, does a random interaction with them (`POTION_KINDS`: Knight = Old Friends/Eldritch Awakening/Tales of Old/Sparring; Priest = his four; others = hangout), then portals back home. With nobody free, he just sparkles.
+- Potion on Wizard: he drinks, teleports to a random free character anywhere on the board, does a random interaction with them (`POTION_KINDS`: Knight = Old Friends/Eldritch Awakening/Tales of Old/Sparring; Priest = his four; Necromancer = duel, craft, golem, tomes; others = hangout), then portals back home. With nobody free, he just sparkles.
 - Potion on Knight: he drinks and flexes his muscles.
 - Spell scroll on Priest: a ghost floats in; he raises his arms and drives it off with a beam of holy light; it fades away.
 - Potion on Priest: he drinks it and glowing angel wings appear on his back for 30 seconds (`u.wings`).
 - Spell scroll on Necromancer: he raises a skeleton in another character's room (same as his 1% idle). Nobody free: grey puff.
 - Potion on Necromancer: he sniffs it, makes a face, and throws it at the back wall, where it smashes (glass and a red splat that fades).
-- Gold coins: shown in the item tray (not draggable). +1 every `COIN_EVERY` (30) seconds while the game is open, +5 (`TITHE`) from the Priest's tithe prayer. Saved as `coins`. Will be used to buy items later.
+- Gold coins: shown in the item tray (not draggable). Spent on crafting scrolls. +1 every `COIN_EVERY` (30) seconds while the game is open, +5 (`TITHE`) from the Priest's tithe prayer. Saved as `coins`. Will be used to buy items later.
 
 ## Transitions between rooms
 - Left/right: the Wizard always uses his portals (one in each room); everyone else walks through the side door, whichever room they're in.
@@ -84,6 +84,23 @@ Priest position relative to Knight:
 - Below: Holy water. The Priest shakes a flask and drops sprinkle onto the Knight, who glows and cheers.
 - Left: 90% A short prayer (`PRAYERS`): the Priest speaks, the Knight listens with hands together, nodding. 10% (`ODDS.tentacle`) Eldritch tentacles: tentacles smash through the Priest's stained glass window, the Priest scurries to the far side, the Knight glares, runs over, stands between them and fights them off; the window is repaired.
 
+
+Necromancer position relative to Knight:
+- Left: Sleep spell. Cast from his own room: a lavender wave rolls right along his row and everyone in that row to his right falls asleep for `SLEEP_TIME` (60) seconds (closed eyes, floating Z's, gentle breathing). Asleep = no interactions, no idles, nobody visits them; any visit they were in ends. A potion dropped on a sleeper's room wakes them early (uses the potion, no normal potion effect). Waking up in someone else's room, they walk home.
+- Above: Death Knight. The Knight visits the Necromancer's room, green power swirls, and he becomes a Death Knight (form `dknight`: a skeleton in dark armor with red eyes, saved). The Death Knight loses all normal interactions, idles and item effects, nobody interacts with him, and he only follows the Necromancer: he walks to the Necromancer's current room (any room, even far away) and stands on his free side. No Necromancer on the board: he just stands still.
+- Right: Undead horde. Three skeletons rise one after another beside the Knight and he cuts each down. 5% of the time the Knight falls to the last one and dies (box back to the shelf); otherwise he cheers.
+- Below: Old friends (`NECRO_TALK`): they trade stories of past adventures.
+
+Necromancer position relative to Priest:
+- Left / Right: no interaction at all (`none`): they never visit each other.
+- Below: Purge. The Necromancer raises three ghosts (70%) or three zombies (30%), spread across the free floor; the Priest destroys them one by one with beams of holy light.
+- Above: Holy vs unholy argument (`DEBATE`): they visit each other and argue, both getting angry (red eyes are fine for real anger), with gold and green power flaring.
+
+Necromancer position relative to Wizard:
+- Above: 50/50 between a Lightning duel (black lightning from the Necromancer, blue from the Wizard, two shots each, then friendly cheers) and Crafting a scroll. Crafting: if you have `SCROLL_COST` (20) coins they make a spell scroll (+1 scroll; the 20 coins are taken at the moment it is made, so an interrupted craft costs nothing). Not enough coins: 50% the Wizard shows off a frost spell (snow, ice sparkles), 50% the Necromancer shows off a dark energy orb. (The owner listed "above" twice; this 50/50 is the chosen reading.)
+- Left: Clay golem. They summon a big clay golem that charges into the back wall and smashes through it, escaping; the hole is repaired over a few seconds.
+- Right: Reading tomes together (Wizard's purple spellbook, Necromancer's black book).
+- Below: Room swap. Both cast from their own rooms, a purple flash, and their boxes trade places on the board.
 ## Idle activities
 - Wizard: read a book 60% (holds it up open toward himself; we see the covers and pages turning), practice magic (swirling blue, arm waving) 38%, summon a demon 2% (arms raised; the demon rises, grabs him and drags him down through the floor; he dies).
 - Knight: weapon practice 75%, fight an orc 20% (falls back to practice if no free neighbor), feed a horse 5% (needs open space to his right, meaning no box in the next cell, in any column or at the board edge; otherwise falls back to practice).
@@ -100,6 +117,7 @@ Priest position relative to Knight:
 Shows every interaction from the start (for development tracking), with no descriptive text: arrangement diagrams and looping animations of each idle activity and item effect. Each tile shows its % chance in the top right corner, computed from `ODDS` (one decimal for small values), or a short label:
 - Arrangements: chance per idle check that a character starts that interaction. Wizard & Knight: visit x not sparring x not a hangout (33% Old Friends, 15% the others), Friendly Sparring 0.4%. Priest pairs: visit x not a hangout (15%); Priest left of Knight splits into prayer 14% / tentacles 1.5%; Zeal shows "+60%".
 - Idle activities: how the activity is picked (Wizard 60/38/2, Knight 75/20/5, black cat 1%, Priest 50/35/10/5, Necromancer 50/25/24/1).
+- Necromancer pairs: 15% each per idle check, except above the Wizard where the duel and crafting are 7.5% each. Necromancer left/right of the Priest is listed as no interaction.
 - Items: labelled "scroll" or "potion" (one tile per character effect). The hidden black Wizard is not shown.
 Whenever an interaction, idle activity or item effect is added or changed, update the Compendium to match.
 

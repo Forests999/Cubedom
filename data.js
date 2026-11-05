@@ -49,6 +49,13 @@ for(const c in WIZ_COLORS)CH['wizard_'+c]=wizardCH(c);
 const FC={body:'#8a6a44',bodyD:'#6a5034',pants:'#4a6a9a',boot:'#3a2a1a',belt:'#4a6a9a'};
 CH.farmer={name:'Farmer',eye:O,a:arms(FC),p:[...B(FC),[5,10,1,4,'#4a6a9a'],[10,10,1,4,'#4a6a9a'],[3,2,10,2,'#d8b860'],[5,0,6,2,'#d8b860'],[5,2,6,1,'#a8883a']]};
 CH.ghost={name:'Ghost',eye:O,p:[[3,2,10,14,'#e8eef8'],[2,6,12,10,'#e8eef8'],[2,16,3,3,'#e8eef8'],[6,16,3,2,'#e8eef8'],[10,16,3,3,'#e8eef8'],[11,3,2,12,'#c8d0e0']]};
+// Undead and magic creatures summoned in interactions
+const ZC={body:'#5a6a4a',bodyD:'#46553a',pants:'#3a3a4a',boot:'#2a2a2a',belt:'#3a2a1a',skin:'#8aaa6a',skinD:'#6a8a4a'};
+CH.zombie={name:'Zombie',eye:'#d0ff60',a:arms(ZC),p:[...B(ZC),[6,12,2,2,'#2a2a2a'],[5,2,6,1,'#3a3a2a'],[9,15,2,1,'#2a2a2a']]};
+CH.golem={name:'Clay golem',eye:'#ffd060',p:[[2,8,12,10,'#a8744a'],[10,8,4,10,'#8a5a34'],[4,2,8,7,'#a8744a'],[9,2,3,7,'#8a5a34'],[0,9,3,8,'#a8744a'],[13,9,3,8,'#8a5a34'],[3,18,4,3,'#8a5a34'],[9,18,4,3,'#8a5a34'],[6,11,4,1,'#6a4424'],[5,14,2,2,'#c89468']]};
+// Death Knight: a skeleton in dark armor (a Knight changed by the Necromancer). Follows the Necromancer around.
+const DC={body:'#3a3a46',bodyD:'#2a2a34',pants:'#2a2a34',boot:'#1a1a22',belt:'#6a1a1a',skin:'#e8e4d0',skinD:'#c8c4b0'};
+CH.dknight={name:'Death Knight',eye:'#ff3030',a:arms(DC),p:[...B(DC),[4,1,8,2,'#4a4a56'],[3,0,1,3,'#2a2a34'],[12,0,1,3,'#2a2a34'],[1,9,3,2,'#4a4a56'],[12,9,3,2,'#4a4a56'],[5,11,6,1,'#e8e4d0'],[5,13,6,1,'#c8c4b0'],[7,7,2,1,O]]};
 
 // Class tags shown as a small symbol next to each name. Merchants: coin, Fighters: sword, Mages: magic star.
 const CLASS={knight:'fighter',wizard:'mage',priest:'mage',necromancer:'mage'};
@@ -71,9 +78,15 @@ const WEAPONS=['shield','spear','glaive','longsword'];
 const PAIRS={
  'wizard>knight':{left:'friend',right:'learn',above:'bolt',below:'chat'},
  'priest>wizard':{right:'study',left:'gossip',below:'undead',above:'light'},
- 'priest>knight':{above:'zeal',right:'pray',below:'bless',left:'sermon'}};
+ 'priest>knight':{above:'zeal',right:'pray',below:'bless',left:'sermon'},
+ // 'none' = these two never visit each other. 'aboveW' = 50/50 lightning duel or crafting a scroll.
+ 'necromancer>knight':{left:'sleep',above:'dknight',right:'horde',below:'nchat'},
+ 'necromancer>priest':{left:'none',right:'none',below:'purge',above:'debate'},
+ 'necromancer>wizard':{above:'aboveW',left:'golem',right:'tomes',below:'swap'}};
 // Potion on the Wizard: he teleports to a random character and does one of these with them
-const POTION_KINDS={knight:['friend','learn','chat','spar'],priest:['study','gossip','undead','light']};
+const POTION_KINDS={knight:['friend','learn','chat','spar'],priest:['study','gossip','undead','light'],necromancer:['duel','craft','golem','tomes']};
+// Items are collected through the game (not infinite). Crafting a scroll costs SCROLL_COST coins.
+const SCROLL_COST=20,SLEEP_TIME=60;
 
 // Odds. Every few seconds each idle character rolls once:
 // visit a neighbor (visit, or visitFriend when Old Friends), else an idle activity (idle), else wander.
@@ -115,5 +128,13 @@ const NAMES={friend:'Old Friends',learn:'Eldritch Awakening',bolt:'Thunderstruck
  pray1:'Praying',farmer:'Blessing a farmer',tithe:'Prayer for coins',exorcise:'Exorcism',
  spirits:'Communing with spirits',candles:'Candles and chalk circle',lightning:'Red lightning spell',raise:'Raising a skeleton next door',
  scroll:'Spell scroll',potion:'Potion',coin:'Gold coins'};
+const NECRO_TALK=[
+ [['necromancer','Remember the siege of Grimhollow?'],['knight','You raised the fallen to hold the gate.'],['necromancer','And you held it with them till dawn.'],['knight','Strange allies. Good friends.']],
+ [['knight','The bone dragon of Saltmarsh...'],['necromancer','Technically, I only borrowed it.'],['knight','It ate my best horse.'],['necromancer','It said the horse was delicious.']]];
+const DEBATE=[
+ [['priest','Holy light guides every soul!'],['necromancer','Every soul ends in the dark.'],['priest','The dark is only light forgotten!'],['necromancer','Then I remember it fondly.']],
+ [['necromancer','Death is the only true power.'],['priest','Life is the greater miracle!'],['necromancer','Life is just death warming up.'],['priest','I will pray for you. Loudly.']]];
+NAMES.sleep='Sleep spell (everyone to his right, 1 min)';NAMES.dknight='Death Knight';NAMES.horde='Undead horde (5% the Knight dies)';NAMES.nchat='Old friends, old stories';
+NAMES.purge='Ghosts or zombies to purge';NAMES.debate='Holy vs unholy argument';NAMES.duel='Lightning duel';NAMES.craft='Crafting a scroll (20 coins)';NAMES.golem='Clay golem escapes';NAMES.tomes='Reading tomes together';NAMES.swap='Swapping rooms';
 // The Priest's blessing for a visiting farmer
 const FARM_PRAYER=['Bless your fields and your flock.','May your harvest be plenty.'];
