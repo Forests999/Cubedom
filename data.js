@@ -270,7 +270,7 @@ const BIZ_WELL=[
  [['merchant','Best week ever! I had to hire a second crate.'],['apothecary','Everyone wants my sleeping draught.'],['merchant','Is that because of the Necromancer?'],['apothecary','Do not ask. Just count the coins.']]];
 Object.assign(NAMES,{braver:'"You\'re braver than I."',goldapple:'Golden apples',business:'Talking business',wave:'Waving to a neighbor',
  apoth:'Coin in the Apothecary\'s room: potion for 30 coins',desk:'Coin in the Wizard\'s room (Merchant + Mage next door): scroll for 50 coins',farm:'A farm appears (3 min, +30 coins)'});
-COMP_TABS.forEach(t=>{t.idle.push('wave');if(t.id==='knight'||t.id==='priest')t.pairs.push('braver');if(t.id==='merchant'||t.id==='apothecary')t.pairs.push('goldapple','business')});
+COMP_TABS.forEach(t=>{if(t.id==='knight'||t.id==='priest')t.pairs.push('braver');if(t.id==='merchant'||t.id==='apothecary')t.pairs.push('goldapple','business')});
 Object.assign(PAIR_WITH,{braver:['knight','priest'],goldapple:['apothecary','merchant'],business:['apothecary','merchant']});
 
 // ---------- Compendium descriptions (shown when you hover over or tap a tile) ----------
@@ -367,3 +367,67 @@ const DESC={
  blackwiz:'Secret: drag a brand new Wizard onto the top-left space. Black robes, red orb, cheaper scrolls.',
  bronze:'Secret: 1% of Knights come in bronze armor.',
  skulls:'Secret: put the Necromancer on the bottom row and his floor fills with skulls.'};
+
+// ---------- Alchemist, more Knight / Wizard / Necromancer scenes with the Merchants ----------
+// Alchemist (Merchant): unlocked 5% of the time the Wizard (right of the Apothecary) brews with her. 50% man / 50% woman.
+// No scenes of his/her own yet: only hangouts and wandering.
+const ALC={body:'#5a7a9a',bodyD:'#46627e',pants:'#4a3a2a',boot:'#2a1a10',belt:'#3a2a1a'};
+const alchemistCH=f=>({name:'Alchemist',eye:O,a:arms(ALC),p:[...B(ALC),[5,11,6,7,'#8a5a2a'],[10,11,1,7,'#6a4420'],[6,12,4,1,'#a8784a'],
+ ...(f?[[4,1,8,2,'#2a1a1a'],[4,3,1,8,'#2a1a1a'],[11,3,1,8,'#2a1a1a']]:[[5,1,6,2,'#3a2a1a'],[5,7,6,2,'#5a3a2a'],[6,9,4,1,'#5a3a2a']]),
+ [4,2,8,1,'#3a3a3a'],[5,2,2,1,'#7ae0ff'],[9,2,2,1,'#7ae0ff']]}); // leather apron; goggles pushed up on the head; beard (man) or long hair (woman)
+CH.alchemist_m=alchemistCH(0);CH.alchemist_f=alchemistCH(1);CH.alchemist=CH.alchemist_m;
+CLASS.alchemist='merchant';TR.alchemist={up:'backdoorL',down:'backdoorL'};NAMES.alchemist='Alchemist';
+const ALL_CHARS=['knight','wizard','priest','necromancer','merchant','apothecary','alchemist']; // every character that can be on the shelf (for "5/7 unlocked")
+// Grizzly bear: what the Knight turns into for BEAR_TIME seconds (Knight above the Apothecary)
+const BR={body:'#6a4428',bodyD:'#52341e',pants:'#6a4428',boot:'#3a2414',belt:'#6a4428',skin:'#6a4428',skinD:'#52341e'};
+CH.bear={name:'Grizzly Bear',eye:O,a:arms(BR),p:[...B(BR),[3,1,3,3,'#6a4428'],[10,1,3,3,'#52341e'],[4,1,1,1,'#a07850'],[11,1,1,1,'#a07850'],[6,6,4,3,'#a07850'],[7,6,2,1,O],[5,11,6,4,'#8a6040']]};
+// Thief who tries to steal from the Fruit Merchant (Knight right of the Merchant)
+const TF={body:'#3a3a44',bodyD:'#2a2a32',pants:'#2a2a32',boot:'#1a1a20',belt:'#5a3a1e'};
+CH.thief={name:'Thief',eye:O,a:arms(TF),p:[...B(TF),[4,1,8,2,'#2a2a32'],[3,3,2,6,'#2a2a32'],[11,3,2,6,'#2a2a32'],[5,6,6,2,'#2a2a32']]};
+// Knight + Fruit Merchant: knight>merchant (Knight relative to Merchant), merchant>knight (Merchant relative to Knight)
+PAIRS['knight>merchant']={right:'thief',left:'lemons'};
+PAIRS['merchant>knight']={above:'greenapple',below:'rumors'};
+// Knight relative to the Apothecary; Wizard relative to the Apothecary; Necromancer above the Apothecary
+PAIRS['knight>apothecary']={above:'bear',below:'kgossip',right:'kdate',left:'bees'};
+PAIRS['wizard>apothecary']={right:'cobrew',left:'boom',below:'wdate',above:'wabove'}; // wabove = 40% imp blood, 60% purple potion
+PAIRS['necromancer>apothecary']={above:'bats'};
+// dragon = share of rumors that are about a dragon (else goblins); kdate/wdate = chance the date goes well;
+// alchemist = brewing together unlocks the Alchemist (or, once unlocked, makes a potion); boomDeath = the explosion kills both; imp = share of wabove that is the imp
+Object.assign(ODDS,{dragon:.1,kdate:.8,wdate:.4,alchemist:.05,boomDeath:.02,imp:.4});
+const BEAR_TIME=30,KDATE_TIME=60,WDATE_TIME=30,BEES_TIME=7,REMOVE_COST=10;
+const LEMONS=[['knight','Two lemons, please. For polishing my armor.'],['merchant','Lemons? All out, I am afraid.'],['knight','A fruit shop... with no lemons?'],['merchant','Life gave me no lemons. Try next week!']];
+const RUMOR_GOBLIN=[['merchant','Psst. Goblins were spotted by the old mill.'],['knight','Goblins? Let them come.'],['merchant','They stole three cabbages already!'],['knight','I will slay any threat that dares come here!']];
+const RUMOR_DRAGON=[['merchant','A dragon! A real dragon, seen over the hills!'],['knight','A dragon... truly?'],['merchant','It roasted a whole orchard!'],['knight','Then I shall slay it. No threat comes here while I stand!']];
+// Knight below the Apothecary: they gossip about one of the Mages on the board
+const KGOSSIP={
+ wizard:[['apothecary','Have you noticed the Wizard talks to his hat?'],['knight','He says it answers back.'],['apothecary','It does! I heard it sneeze.'],['knight','Say nothing. Wizards are touchy.']],
+ priest:[['knight','The Priest blessed my breakfast again.'],['apothecary','He blessed my herbs. They grew little halos.'],['knight','Halos? On parsley?'],['apothecary','Very holy parsley. Sells well, though.']],
+ necromancer:[['apothecary','The Necromancer bought forty candles this week.'],['knight','Forty? What for?'],['apothecary','He said "ambience". Again.'],['knight','I am sleeping with my sword tonight.']],
+ none:[['knight','No Mages around here lately.'],['apothecary','So quiet. No sparkles, no explosions.'],['knight','No talking hats.'],['apothecary','Bliss, honestly.']]};
+// What the Knight / Wizard says when back from a date with the Apothecary
+const DATE_GOOD={knight:['What a wonderful evening!','She laughed at all my jokes!'],wizard:['The stars were perfect tonight.','I made the moon glow. She loved it!']};
+const DATE_BAD={knight:['She laughed at my helmet.','I talked about swords for an hour. Too long?'],wizard:['I turned the waiter into a toad. By accident!','She would not stop sniffing my robes.']};
+Object.assign(NAMES,{thief:'A thief!',lemons:'Out of lemons',greenapple:'Green apples (+2 coins)',rumors:'Rumors of goblins (or a dragon)',
+ bear:'Grizzly bear potion (30 s)',kgossip:'Gossip about a Mage',kdate:'A date (1 min)',bees:'Bee swarm!',
+ cobrew:'Brewing together (5%: the Alchemist)',boom:'Brewing gone wrong (2% both die)',wdate:'A date (30 s)',imp:'Imp blood for the Apothecary',purplepot:'A purple potion',
+ bats:'Bats!'});
+COMP_TABS.forEach(t=>{const add={knight:['thief','lemons','greenapple','rumors','bear','kgossip','kdate','bees'],merchant:['thief','lemons','greenapple','rumors'],
+ apothecary:['bear','kgossip','kdate','bees','cobrew','boom','wdate','imp','purplepot','bats'],wizard:['cobrew','boom','wdate','imp','purplepot'],necromancer:['bats']}[t.id];if(add)t.pairs.push(...add)});
+Object.assign(PAIR_WITH,{thief:['knight','merchant'],lemons:['knight','merchant'],greenapple:['knight','merchant'],rumors:['knight','merchant'],
+ bear:['knight','apothecary'],kgossip:['knight','apothecary'],kdate:['knight','apothecary'],bees:['knight','apothecary'],
+ cobrew:['wizard','apothecary'],boom:['wizard','apothecary'],wdate:['wizard','apothecary'],imp:['wizard','apothecary'],purplepot:['wizard','apothecary'],bats:['necromancer','apothecary']});
+Object.assign(DESC,{
+ thief:'Knight right of the Fruit Merchant. A hooded thief grabs some fruit. The Knight has opinions about that.',
+ lemons:'Knight left of the Fruit Merchant. The Knight wants lemons. A fruit shop with no lemons. Tragic.',
+ greenapple:'Fruit Merchant above the Knight. Green apples today! Sour, but the Knight pays 2 coins anyway.',
+ rumors:'Fruit Merchant below the Knight. Rumors of goblins (90%) or a dragon (10%). The Knight vows to slay them all.',
+ bear:'Knight above the Apothecary. One sip of her potion and he is a grizzly bear for 30 seconds. Rawr.',
+ kgossip:'Knight below the Apothecary. They gossip about whichever Mage lives nearby.',
+ kdate:'Knight right of the Apothecary. They leave for a 1 minute date. 80% it goes well, 20%... less so.',
+ bees:'Knight left of the Apothecary. A bee swarm! Both flee to the other room until the bees buzz off.',
+ cobrew:'Wizard right of the Apothecary. They brew together. 5% this attracts the Alchemist (after that: a free potion).',
+ boom:'Wizard left of the Apothecary. Too much newt: the brew explodes. 2% it takes them both with it.',
+ wdate:'Wizard below the Apothecary. A 30 second date. Only 40% go well. Wizards are hard to date.',
+ imp:'Wizard above the Apothecary, 40%. He summons an imp, zaps it, and bottles its blood for her.',
+ purplepot:'Wizard above the Apothecary, 60%. She mixes a purple potion; he drinks it and tastes colors.',
+ bats:'Necromancer above the Apothecary. His bats flap around, and a few swoop down into her shop. She is not pleased.'});

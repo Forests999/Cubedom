@@ -1,5 +1,5 @@
 // ---------- art: room backgrounds and drawing ----------
-const WALL={farmer:['#8ab8e0','#6a4a24'],apothecary:['#3e4a3a','#2a3226'],merchant:['#5a4430','#3a2a1c'],knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40'],priest:['#4a4458','#30293c'],necromancer:['#26262c','#18181c']};
+const WALL={alchemist:['#44384c','#2c2232'],farmer:['#8ab8e0','#6a4a24'],apothecary:['#3e4a3a','#2a3226'],merchant:['#5a4430','#3a2a1c'],knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40'],priest:['#4a4458','#30293c'],necromancer:['#26262c','#18181c']};
 // Priest's stained glass window (frame 16..44 x 12..52, center x 30, y 32). Tentacles can smash through it.
 const WINDOW=[[16,12,28,40,'#2a2434'],[18,16,7,10,'#c04040'],[26,16,8,10,'#3a6ad0'],[35,16,7,10,'#d0b030'],[18,27,7,10,'#40a060'],[26,27,8,10,'#c890ff'],[35,27,7,10,'#c04040'],[18,38,7,12,'#3a6ad0'],[26,38,8,12,'#d0b030'],[35,38,7,12,'#40a060'],[29,19,2,8,'#f2e8a0'],[27,21,6,2,'#f2e8a0'],[20,12,20,2,'#3a3448']].map(r=>[r[0],r[1]+12,r[2],r[3],r[4]]); // moved down, clear of the name label
 const WIN_C={x:30,y:44};
@@ -19,6 +19,13 @@ function bg(id,w){
   [38,56,22,10,'#8a5a2a'],[38,56,22,2,'#6a4420'],[40,46,2,10,'#4a9a3a'],[39,44,4,4,'#6aba4a'],[45,48,2,8,'#3a8a3a'],[44,46,4,3,'#d8e070'],[50,44,2,12,'#4a9a3a'],[48,42,6,4,'#6aba4a'],[55,49,2,7,'#3a8a3a'],[54,47,4,3,'#c890ff'],
   ...down([[62,22,30,2,'#6a4a2a'],[62,40,30,2,'#6a4a2a'],[64,13,4,9,'#d03050'],[70,15,4,7,'#4fb0ff'],[76,12,5,10,'#7aff7a'],[83,15,4,7,'#f2c84a'],[64,32,5,8,'#c890ff'],[71,30,4,10,'#f08a20'],[77,33,4,7,'#4fb0ff'],[83,31,5,9,'#d03050'],[65,14,2,2,'#ffffff'],[77,13,2,2,'#ffffff'],[72,31,2,2,'#ffffff']],10),
   [64,58,26,8,'#7a4a22'],[64,58,26,2,'#5a3418'],[68,53,3,5,'#7aff7a'],[74,52,3,6,'#d03050'],[80,53,3,5,'#4fb0ff']];
+ // Alchemist: back door on the LEFT, potions on shelves, a long table with a brewing setup (flask and flame animated in drawRoomLife)
+ if(id==='alchemist')return [...BACKDOOR_L,
+  [56,30,36,2,'#6a4a2a'],[56,44,36,2,'#6a4a2a'],[58,22,4,8,'#d03050'],[64,24,4,6,'#7aff7a'],[70,21,5,9,'#4fb0ff'],[77,23,4,7,'#f2c84a'],[84,22,5,8,'#c890ff'],
+  [59,37,5,7,'#f08a20'],[66,36,4,8,'#c890ff'],[72,38,5,6,'#d03050'],[79,36,4,8,'#7aff7a'],[85,37,5,7,'#4fb0ff'],[59,22,1,2,'#ffffff'],[71,22,1,2,'#ffffff'],[67,37,1,2,'#ffffff'],
+  [38,56,54,3,'#7a4a22'],[38,59,54,1,'#5a3418'],[41,59,3,7,'#5a3418'],[86,59,3,7,'#5a3418'],
+  [53,53,7,3,'#4a4a52'],[61,43,2,2,'#cfe8f0'],[63,41,8,2,'#cfe8f0'],[71,41,2,6,'#cfe8f0'],[71,47,4,2,'#cfe8f0'],
+  [76,47,7,9,'#cfe8f0'],[77,51,5,4,'#c890ff'],[78,45,3,2,'#8a5a2a'],[42,50,8,6,'#8a6a4a'],[43,48,6,2,'#a8884a']];
  // Fruit Merchant: striped banner just below the name label, crates of fruit
  if(id==='merchant')return [[6,24,84,6,'#c04040'],[6,24,12,6,'#f0e8d8'],[30,24,12,6,'#f0e8d8'],[54,24,12,6,'#f0e8d8'],[78,24,12,6,'#f0e8d8'],[8,46,22,18,'#8a5a2a'],[8,46,22,2,'#6a4420'],[11,42,4,4,'#d03030'],[16,41,4,4,'#e04040'],[21,42,4,4,'#c02828'],[13,38,4,4,'#d83838'],[32,50,20,14,'#8a5a2a'],[32,50,20,2,'#6a4420'],[34,46,4,4,'#f08a20'],[39,45,4,4,'#f8a030'],[44,46,4,4,'#e88018'],[48,38,3,8,'#f2d040'],[51,37,3,8,'#e8c830'],[54,38,3,8,'#f2d040'],...BACKDOOR];
  if(id==='priest')return [...WINDOW,[48,52,4,14,'#d8d0b0'],[47,50,6,2,'#a08a50'],[49,47,2,3,'#ffd060'],...BACKDOOR];
@@ -96,7 +103,7 @@ function poseOf(act,at){
  if(act==='hoe')return (at*1.6)%1<.45?'up':'fwd';   // Farmer: hoe raised, then down into the soil
  if(act==='fork')return 'none';                     // Farmer carrying a pitchfork
  if(act==='wave')return Math.floor(at*5)%2?'wave':'up';
- if(act==='goldmix')return Math.floor(at*2)%2?'fwd':'up';
+ if(act==='goldmix'||act==='cobrew')return Math.floor(at*2)%2?'fwd':'up';
  if(act==='eatbanana')return 'up';
  if(act==='advert')return Math.floor(at*1.5)%2?'both':'up';
  if(act==='write')return 'fwd';
@@ -110,9 +117,12 @@ function poseOf(act,at){
 }
 function box(c,id,x,y,w){
  const k=WALL[id];c.fillStyle=k[0];c.fillRect(x,y,CELL,CELL);c.fillStyle=k[1];c.fillRect(x,y+66,CELL,30);c.fillStyle='rgba(0,0,0,.3)';c.fillRect(x,y+66,CELL,2);
- bg(id,w).forEach(d=>{c.fillStyle=d[4];c.fillRect(x+d[0],y+d[1],d[2],d[3])});
- c.strokeStyle='#000';c.lineWidth=4;c.strokeRect(x+2,y+2,CELL-4,CELL-4);
+ bg(id,w).forEach(d=>{c.fillStyle=d[4];c.fillRect(x+d[0],y+d[1],d[2],d[3])});if(id==='alchemist')drawAlembic(c,x,y,0);
+ c.strokeStyle='#000';c.lineWidth=2;c.strokeRect(x+1,y+1,CELL-2,CELL-2); // thin frame; boxFrame() thickens the outside edges
 }
+// Extra 2px of frame on the sides of a box that have no neighbor box, so every edge on the board looks the same thickness
+// (two boxes side by side each draw their 2px, making 4px; a lone edge gets 2 + 2 = 4px too). sides = {t,b,l,r} true = add.
+function boxFrame(c,x,y,s){c.fillStyle='#000';if(s.t)c.fillRect(x,y+2,CELL,2);if(s.b)c.fillRect(x,y+CELL-4,CELL,2);if(s.l)c.fillRect(x+2,y,2,CELL);if(s.r)c.fillRect(x+CELL-4,y,2,CELL)}
 
 // ---------- ways between rooms (drawn behind the characters) ----------
 // backdoor and shelf are always part of the room, so only their open state is drawn here.
@@ -131,17 +141,15 @@ function drawFx(f){
  else if(t==='portal'){const h=58,w=36,c=Math.floor(T*8)%2?'#8fe0ff':'#c890ff';
   g.fillStyle='#6a4cc2';g.fillRect(x-w/2,y-h,w,h);g.fillStyle=c;g.fillRect(x-w/2+2,y-h+2,w-4,h-4);g.fillStyle='#fff';g.fillRect(x-w/2+5,y-h+6,w-10,h-12)}
  else if(t==='backdoor'&&o>.02){
-  // dark doorway with stone stairs going up, door panel swinging toward the viewer on its left hinge
-  g.fillStyle='#0b0a14';g.fillRect(x-9,y-33,18,33);
-  for(let i=0;i<4;i++){g.fillStyle=i%2?'#7a7f8c':'#8a8f9a';g.fillRect(x-8+i*4,y-6*(i+1),17-i*4,6*(i+1));g.fillStyle='#b8bcc8';g.fillRect(x-8+i*4,y-6*(i+1),17-i*4,1)}
+  // black doorway, door panel swinging toward the viewer on its left hinge
+  g.fillStyle='#000000';g.fillRect(x-9,y-33,18,33);
   const pw=Math.max(2,Math.round(18*Math.cos(o*1.35))),gr=Math.round(3*Math.sin(o*1.35));
   g.fillStyle=O;g.fillRect(x-10,y-34-gr,pw+2,35+gr*2);g.fillStyle='#6a4420';g.fillRect(x-9,y-33-gr,pw,33+gr*2);
   g.fillStyle='#3a2a1a';g.fillRect(x-9,y-28-gr,pw,2);g.fillRect(x-9,y-8+gr,pw,2)}
  else if(t==='shelf'&&o>.02){
-  // dark opening with a spiral staircase; the bookshelf slides right into the wall
+  // black opening; the bookshelf slides right into the wall
   const bl=Math.floor(x/CELL)*CELL,top=y-66;
-  g.fillStyle='#0e0a18';g.fillRect(x-12,y-36,24,36);g.fillStyle='#5a5a6a';g.fillRect(x-1,y-34,3,34);
-  for(let i=0;i<5;i++){g.fillStyle=i%2?'#b8a070':'#9a8a5c';g.fillRect(x+Math.round(Math.sin(i*1.2)*6)-5,y-5-i*6,10,3)}
+  g.fillStyle='#000000';g.fillRect(x-12,y-36,24,36);
   g.beginPath();g.rect(bl+4,top,88,70);g.clip();rects(g,SHELF2,bl+Math.round(o*22),top)}
  g.restore();
 }
@@ -248,6 +256,7 @@ function drawAct(c,u){
   const hx=Math.round(x+f*9);stick(c,hx,Math.round(y-2),hx,Math.round(y-44),'#8a5a2a');c.fillStyle=O;c.fillRect(hx-5,Math.round(y-46),11,3);c.fillRect(hx-5,Math.round(y-52),3,7);c.fillRect(hx-1,Math.round(y-53),3,8);c.fillRect(hx+3,Math.round(y-52),3,7);
   c.fillStyle='#cfd6e0';c.fillRect(hx-4,Math.round(y-45),9,1);c.fillRect(hx-4,Math.round(y-51),1,6);c.fillRect(hx,Math.round(y-52),1,7);c.fillRect(hx+4,Math.round(y-51),1,6)}
  else if(a==='goldmix'){swirl(c,x,y,t,2,1)} // Apothecary and Merchant brewing golden apples
+ else if(a==='cobrew'){drawCauldron(c,Math.round(x+f*18),Math.round(y),t)} // brewing together with the Wizard
  else if(a==='horse'&&t>=1&&t<4.6){
   // a bundle of hay in the outstretched hand, shrinking as the horse eats
   const hs=1-cl((t-1.8)/2.8,0,1),w=Math.round(8*hs)+2,hx=Math.round(x+f*17),hy=Math.round(y-22);
@@ -266,7 +275,16 @@ function drawLocked(c,x,y,price,can){c.fillStyle='#15122a';c.fillRect(x+1,y+1,CE
  c.fillStyle=can?'#d8a030':'#6a6060';c.fillRect(lx-10,ly-6,20,16);c.fillStyle=O;c.fillRect(lx-1,ly-2,3,6);
  drawItem(c,'coin',x+34,y+68,1);c.font='600 15px '+GAME_FONT;c.fillStyle=can?'#f2c84a':'#9a8f7a';c.fillText(String(price),x+42,y+73)}
 // Coin button in the bottom-right of a shop room: tap it to buy
-function drawShopCoin(c,x,y,t){const cx=x+80,cy=y+80,b=Math.round(Math.sin(t*3)*1);c.fillStyle='rgba(10,8,20,.7)';c.fillRect(cx-12,cy-12+b,24,24);c.strokeStyle='#f2c84a';c.lineWidth=2;c.strokeRect(cx-12,cy-12+b,24,24);drawItem(c,'coin',cx,cy+b,2)}
+function drawShopCoin(c,x,y){const cx=x+82,cy=y+82;c.fillStyle='rgba(10,8,20,.75)';c.fillRect(cx-8,cy-8,16,16);c.strokeStyle='#f2c84a';c.lineWidth=1;c.strokeRect(cx-7.5,cy-7.5,15,15);drawItem(c,'coin',cx,cy,1)}
+// Bats (Necromancer above the Apothecary) and a bee swarm (Knight left of the Apothecary)
+function drawBat(c,x,y,t){const up=Math.floor(t*10)%2;x=Math.round(x);y=Math.round(y);c.fillStyle=O;c.fillRect(x-2,y-1,4,3);
+ if(up){c.fillRect(x-6,y-4,4,3);c.fillRect(x+2,y-4,4,3)}else{c.fillRect(x-6,y,4,2);c.fillRect(x+2,y,4,2)}c.fillStyle='#ff4040';c.fillRect(x-1,y,1,1);c.fillRect(x+1,y,1,1)}
+function drawBees(c,bx,by,t,a){c.save();c.globalAlpha=a;for(let i=0;i<14;i++){const x=Math.round(bx+48+Math.sin(t*3.1+i*1.7)*30+Math.sin(t*9+i)*4),y=Math.round(by+44+Math.cos(t*2.3+i*2.1)*20+Math.cos(t*11+i)*3);
+ c.fillStyle=O;c.fillRect(x-1,y-1,4,3);c.fillStyle='#f2c84a';c.fillRect(x,y,2,1);c.fillStyle='#ffffff';c.fillRect(x,y-2,2,1)}c.restore()}
+// Alchemist's table: a flask over a little flame, a coiled glass tube and a collecting bottle (bx,by = room's top-left)
+function drawAlembic(c,bx,by,t){const x=bx+56,y=by+52,fl=Math.floor(t*8)%3;c.fillStyle='#f08a20';c.fillRect(x-1,y+1-fl,3,2+fl);
+ c.fillStyle=O;c.fillRect(x-5,y-10,11,10);c.fillStyle='#8fe0ff';c.fillRect(x-4,y-9,9,8);c.fillStyle='#7aff7a';c.fillRect(x-4,y-5,9,4);
+ if(Math.floor(t*3)%2){c.fillStyle='#ffffff';c.fillRect(x-1+Math.floor(t*2)%3,y-7,1,1)}}
 // Golden apples on the Fruit Merchant's crates (Apothecary above him)
 function drawGold(c,bx,by,t){c.fillStyle='#f2c84a';[[11,42,4,4],[16,41,4,4],[21,42,4,4],[13,38,4,4]].forEach(r=>c.fillRect(bx+r[0],by+r[1],r[2],r[3]));c.fillStyle='#fff6c0';[[12,42],[17,41],[22,42],[14,38]].forEach(q=>c.fillRect(bx+q[0],by+q[1],1,1));
  if(Math.floor(t*3)%2){c.fillStyle='#fffbe0';c.fillRect(bx+10+Math.floor(t*3)%14,by+36,2,2)}}
@@ -275,6 +293,7 @@ function drawRoomLife(c,id,bx,by,t){const fl=(k)=>Math.floor(t*8+k)%3;
  if(id==='priest'){const h=2+fl(0);c.fillStyle='#4a4458';c.fillRect(bx+48,by+44,4,6);c.fillStyle='#ffd060';c.fillRect(bx+49,by+50-h,2,h);c.fillStyle='#fff6c0';c.fillRect(bx+49,by+49,1,1)}
  if(id==='necromancer'){[[40,23],[16,41]].forEach((q,i)=>{const h=2+fl(i*2);c.fillStyle='#26262c';c.fillRect(bx+q[0],by+q[1]-2,3,3);c.fillStyle='#7aff7a';c.fillRect(bx+q[0],by+q[1]+3-h,3,h)})}
  if(id==='apothecary'){c.save();c.beginPath();c.rect(bx+39,by+26,20,6);c.clip();c.fillStyle='#8ac8f0';c.fillRect(bx+39,by+26,20,6);const cx=bx+39+((t*4)%34)-8;c.fillStyle='#ffffff';c.fillRect(Math.round(cx),by+28,7,3);c.fillRect(Math.round(cx)+2,by+27,4,1);c.restore()}
+ if(id==='alchemist')drawAlembic(c,bx,by,t);
  if(id==='wizard'&&Math.floor(t*2)%5===0){c.fillStyle='#e8d0ff';c.fillRect(bx+14+Math.floor(t*2)%30,by+26,1,1)}}
 // Horse head and neck poking in from the right edge of the knight's room. ex = room's right edge, fy = floor y, t = activity time
 function drawHorse(c,ex,fy,t){
@@ -317,6 +336,9 @@ function drawItem(c,kind,x,y,s){
   :kind==='banana'?[[-4,-1,2,3,'#f2d040'],[-3,1,6,2,'#f2d040'],[2,-2,2,3,'#f2d040'],[3,-3,1,1,'#6a4420'],[-2,2,4,1,'#c8a020']]
   :kind==='starfruit'?[[-1,-4,2,8,'#f8d840'],[-4,-1,8,2,'#f8d840'],[-2,-2,4,4,'#ffe868'],[-3,2,2,2,'#f8d840'],[1,2,2,2,'#f8d840']]
   :kind==='durian'?[[-3,-3,6,6,'#8a9a3a'],[-4,-1,1,2,'#6a7a2a'],[3,-1,1,2,'#6a7a2a'],[-1,-4,2,1,'#6a7a2a'],[-1,3,2,1,'#6a7a2a'],[-2,-2,1,1,'#aaba5a'],[1,0,1,1,'#aaba5a']]
+  :kind==='greenapple'?[[-3,-2,6,5,'#7ac840'],[-2,-3,4,1,'#7ac840'],[0,-5,1,2,'#6a4420'],[1,-5,2,1,'#4a9a3a'],[-2,-1,1,1,'#d8f8a0']]
+  :kind==='blood'?[[-1,-6,2,1,'#8a5a2a'],[-1,-5,2,2,'#cfe8f0'],[-2,-3,4,7,'#cfe8f0'],[-1,-1,2,4,'#a01818']]
+  :kind==='purplepotion'?[[-1,-6,2,1,'#8a5a2a'],[-1,-5,2,2,'#cfe8f0'],[-3,-3,6,6,'#cfe8f0'],[-2,-1,4,3,'#a050e0'],[-2,-2,1,1,'#ffffff']]
   :kind==='goldapple'?[[-3,-2,6,5,'#f2c84a'],[-2,-3,4,1,'#f2c84a'],[0,-5,1,2,'#6a4420'],[1,-5,2,1,'#4a9a3a'],[-2,-1,1,1,'#fff6c0'],[1,1,2,2,'#d8a030']]
   :kind==='apple'?[[-3,-2,6,5,'#d83030'],[-2,-3,4,1,'#d83030'],[0,-5,1,2,'#6a4420'],[1,-5,2,1,'#4a9a3a'],[-2,-1,1,1,'#ff9090']]
   :kind==='orange'?[[-3,-2,6,5,'#f08a20'],[-2,-3,4,1,'#f08a20'],[0,-4,1,1,'#4a9a3a'],[-2,-1,1,1,'#ffc080']]
@@ -428,6 +450,7 @@ function drawZ(c,x,y,a){c.save();c.globalAlpha=a;const Zr=[[0,0,4,1],[2,1,1,1],[
 function drawMob(c,m){
  if(m.al!=null&&m.al<=0)return;const hit=m.blink>0,fl=hit&&Math.floor(m.blink*14)%2?.2:1,face=m.face||-1;
  if(m.id==='ghost'){spr(c,'ghost',hit?'hurt':'ok',m.x,m.y-8-Math.sin(m.t*3+m.x)*3,face,0,.75*fl*(m.al==null?cl(m.t/.5,0,1):m.al),1);return}
+ if(m.id==='imp'){spr(c,'demon',hit?'hurt':'mad',m.x,m.y-Math.abs(Math.sin(m.t*6))*3,face,0,fl*(m.al==null?cl(m.t/.4,0,1):m.al),.6);return} // a small hopping demon
  if(m.id==='golem'){spr(c,'golem','ok',m.x,m.y,face,0,(m.al==null?1:m.al)*cl(m.t/.6,0,1),m.sc||1.35);return}
  const rise=cl(m.t/.9,0,1);if(m.t<1.3)drawGreenCircle(c,m.x,m.y,cl(m.t/.4,0,1),m.t);
  c.save();c.beginPath();c.rect(m.x-26,m.y-64,52,64);c.clip();spr(c,m.id,hit?'hurt':'mad',m.x,m.y+(1-rise)*44,face,0,fl*(m.al==null?1:m.al),1,m.id==='zombie'?'fwd':undefined);c.restore();
