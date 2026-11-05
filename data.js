@@ -29,10 +29,10 @@ const WIZ_COLORS={
  blue:{body:'#2f5fb8',bodyD:'#244a90',hat:'#3f7ad8'},
  purple:{body:'#5a3ca8',bodyD:'#46308a',hat:'#6a4cc2'},
  red:{body:'#b03838',bodyD:'#8a2a2a',hat:'#cc4a4a'},
- black:{body:'#26242e',bodyD:'#18161e',hat:'#34313e',orb:'#ff3030'}};
+ black:{body:'#26242e',bodyD:'#18161e',hat:'#34313e',orb:'#ff3030',trim:'#c03030'}}; // trim = belt and hat band (gold, red on the black Wizard)
 const WIZ_RANDOM=['blue','purple','red'];
-function wizardCH(col){const P=WIZ_COLORS[col],C={body:P.body,bodyD:P.bodyD};
- return {name:'Wizard',eye:O,a:arms(C),p:[...B(C),[4,10,8,9,P.body],[10,10,2,9,P.bodyD],[4,14,8,1,'#f2c84a'],[6,9,4,3,'#e8e8f0'],[3,3,10,2,P.hat],[5,1,6,2,P.hat],[7,0,3,1,P.hat],[5,3,6,1,'#f2c84a'],[1,5,1,15,'#8a5a2a'],[0,3,3,3,P.orb||'#7ff0ff']]}}
+function wizardCH(col){const P=WIZ_COLORS[col],C={body:P.body,bodyD:P.bodyD},tr=P.trim||'#f2c84a';
+ return {name:'Wizard',eye:O,a:arms(C),p:[...B(C),[4,10,8,9,P.body],[10,10,2,9,P.bodyD],[4,14,8,1,tr],[6,9,4,3,'#e8e8f0'],[3,3,10,2,P.hat],[5,1,6,2,P.hat],[7,0,3,1,P.hat],[5,3,6,1,tr],[1,5,1,15,'#8a5a2a'],[0,3,3,3,P.orb||'#7ff0ff']]}}
 // Knights hold no weapon here; weapons are drawn only while practicing or fighting (drawAct in art.js).
 const CH={
  knight:{name:'Knight',eye:O,a:arms(KC),p:[...B(KC),[4,1,8,3,'#aab4c8'],[4,4,1,4,'#8a94a8'],[11,4,1,4,'#667088'],[7,0,2,2,'#c03030']]},
@@ -374,9 +374,10 @@ const DESC={
 // No scenes of his/her own yet: only hangouts and wandering.
 const ALC={body:'#5a7a9a',bodyD:'#46627e',pants:'#4a3a2a',boot:'#2a1a10',belt:'#3a2a1a'};
 const alchemistCH=f=>({name:'Alchemist',eye:O,a:arms(ALC),p:[...B(ALC),[5,11,6,7,'#8a5a2a'],[10,11,1,7,'#6a4420'],[6,12,4,1,'#a8784a'],
- ...(f?[[4,1,8,2,'#2a1a1a'],[4,3,1,8,'#2a1a1a'],[11,3,1,8,'#2a1a1a']]:[[5,1,6,2,'#3a2a1a'],[5,7,6,2,'#5a3a2a'],[6,9,4,1,'#5a3a2a']]),
+ ...(f===2?[[3,0,3,3,'#f0f0f8'],[7,0,3,2,'#f0f0f8'],[11,0,3,3,'#f0f0f8'],[2,3,3,4,'#f0f0f8'],[11,3,3,4,'#f0f0f8'],[5,1,6,1,'#d8d8e4']]: // f 2 = mad scientist: wild white hair
+  f?[[4,1,8,2,'#2a1a1a'],[4,3,1,8,'#2a1a1a'],[11,3,1,8,'#2a1a1a']]:[[5,1,6,2,'#3a2a1a'],[5,7,6,2,'#5a3a2a'],[6,9,4,1,'#5a3a2a']]),
  [4,2,8,1,'#3a3a3a'],[5,2,2,1,'#7ae0ff'],[9,2,2,1,'#7ae0ff']]}); // leather apron; goggles pushed up on the head; beard (man) or long hair (woman)
-CH.alchemist_m=alchemistCH(0);CH.alchemist_f=alchemistCH(1);CH.alchemist=CH.alchemist_m;
+CH.alchemist_m=alchemistCH(0);CH.alchemist_f=alchemistCH(1);CH.alchemist=CH.alchemist_m;CH.alchemist_mad=alchemistCH(2);
 CLASS.alchemist='merchant';TR.alchemist={up:'backdoorL',down:'backdoorL'};NAMES.alchemist='Alchemist';
 const ALL_CHARS=['knight','wizard','priest','necromancer','merchant','apothecary','alchemist']; // every character that can be on the shelf (for "5/7 unlocked")
 // Grizzly bear: what the Knight turns into for BEAR_TIME seconds (Knight above the Apothecary)
@@ -494,3 +495,94 @@ Object.assign(DESC,{
  count:'The Rogue counts his stash: your coin total. He seems pleased.',
  spook:'Potion on the Rogue: he turns invisible, sneaks up on someone anywhere and shouts BOO.',
  roguemage:'Spell scroll on the Rogue: he gains the Mage tag. 0.2% of his idle time he conjures an artifact, which uses the tag up.'});
+
+// ---------- Alchemist by tags, Rogue neighbor scenes, more secrets ----------
+// Beast-man: what the mad-scientist Alchemist turns into for a moment (secret, bottom-right space)
+const BM={body:'#6a5a4a',bodyD:'#52463a',skin:'#8a7a5a',skinD:'#6a5a44',pants:'#4a3a2a',boot:'#3a2a1a',belt:'#8a5a2a'};
+CH.beast={name:'Beast-man',eye:'#ffd34e',a:arms(BM),p:[...B(BM),[3,9,10,8,BM.body],[10,9,3,8,BM.bodyD],[5,11,6,6,'#8a5a2a'],[3,0,3,3,'#f0f0f8'],[7,0,3,2,'#f0f0f8'],[11,0,3,3,'#f0f0f8'],[4,2,8,1,'#3a3a3a'],[5,2,2,1,'#7ae0ff'],[9,2,2,1,'#7ae0ff'],[6,8,1,2,'#f0ead0'],[9,8,1,2,'#f0ead0'],[4,4,1,3,BM.bodyD],[11,4,1,3,BM.bodyD]]};
+// Who takes part in tag-based scenes: 'tag:mage' etc. means "any character with that tag"
+const TAG_NAMES={'tag:mage':'a Mage','tag:merchant':'a Merchant','tag:fighter':'a Fighter'};
+// alcMage = extra visit chance for a Mage next to the Alchemist; promo = Merchant idle share next to him; haste = how much more a Fighter
+// next to him picks Mage neighbors; twopot = buying a potion next to him gives two; beast = mad scientist idle; fourMage = gift a potion
+// tempt = the demon talks the Rogue into it; betray = the Necromancer's sacrifice works; sickDeath = poisoned wine kills when it wears off
+Object.assign(ODDS,{alcMage:.2,promo:.1,haste:.5,twopot:.2,beast:.15,fourMage:.1,tempt:.05,betray:.2,sickDeath:.05,
+ dungeon:{coins:.2,artifact:.1,scrolls:.25,potions:.25,secret:.2}});
+const SICK_TIME=60,TINY_TIME=120,DUNGEON_TIME=300,DUNGEON_GOLD=50,ROGUE_BUY=5,STEAL_SHARE=.05;
+// Rogue relative to each character. The Rogue is always the one who visits.
+PAIRS['rogue>apothecary']={right:'nefarious',left:'poisons',below:'wine',above:'rtrip'};
+PAIRS['rogue>merchant']={left:'pinch',right:'pinch',above:'pinch',below:'pinch'};
+PAIRS['rogue>priest']={below:'lecture',above:'vandal',right:'confess',left:'tempt'};
+PAIRS['rogue>knight']={above:'dungeon',below:'rspar',right:'drinks',left:'wgossip'};
+PAIRS['rogue>alchemist']={above:'snatch',below:'snatch',right:'volatile',left:'shrink'};
+PAIRS['rogue>wizard']={above:'rgossip',below:'spell',right:'dressup',left:'rsteal'};
+PAIRS['rogue>necromancer']={above:'rritual',below:'betray',right:'rcandles',left:'fairies'};
+const ROGUE_SCENES=['nefarious','poisons','wine','rtrip','pinch','lecture','vandal','confess','tempt','dungeon','rspar','drinks','wgossip','snatch','volatile','shrink','rgossip','spell','dressup','rsteal','rritual','betray','rcandles','fairies'];
+// 'mage' lines are said by whichever Mage is next to the Alchemist
+const MAGICTALK=[[['alchemist','Tell me honestly: is magic actually useful?'],['mage','I lit my pipe with a fireball this morning.'],['alchemist','I can do that with a match.'],['mage','Yes, but mine was dramatic.']],
+ [['mage','Alchemy is just magic with extra steps.'],['alchemist','Magic is just alchemy without safety goggles.'],['mage','...Fair point.'],['alchemist','Science and sorcery. A fine team.']]];
+const PROMO=['Potions from the Alchemist next door! Today only!','Alchemy sale! One potion, five coins!','Feeling poorly? The Alchemist has just the thing!'];
+const WGOSSIP=[[['rogue','Your Wizard friend talks in his sleep.'],['knight','How would you know that?'],['rogue','...Lucky guess.'],['knight','I am counting my coins tonight.']],
+ [['knight','The Wizard says his hat is enchanted.'],['rogue','I tried it on. It just smells of cheese.'],['knight','You tried on his hat?!'],['rogue','I try on everybody\'s hats.']]];
+const RGOSSIP=[[['rogue','The Knight sleeps in his armor.'],['wizard','He says it is "for readiness".'],['rogue','He clanks when he snores.'],['wizard','I cast a silence spell on him once. Bliss.']],
+ [['wizard','Have you seen the Knight practice?'],['rogue','He fights the air like it owes him money.'],['wizard','I think the air is winning.'],['rogue','Do not tell him.']]];
+const LECTURE=[['priest','Stealing is a sin, my son.'],['rogue','I prefer "creative borrowing".'],['priest','The gods see everything you do.'],['rogue','...Even last Tuesday?'],['priest','ESPECIALLY last Tuesday.']];
+const CONFESS=[[['rogue','Forgive me, Father, for I have stolen.'],['priest','What did you take?'],['rogue','Forty purses, a goat and the Knight\'s left boot.'],['priest','Return the boot. We will work on the rest.']],
+ [['rogue','I have a confession. A big one.'],['priest','Go on. I am listening.'],['rogue','It was me who ate the feast pie.'],['priest','I knew it! ...You are forgiven.']]];
+const DRINKS=[['knight','To old battles!'],['rogue','To full purses!'],['knight','Ha ha! This ale is strong!'],['rogue','Ha! You are wearing my boot.']];
+// Tags (Compendium): what each character's tags are and what changes them. {mage} etc. become the tag icons.
+const TAG_NOTES={knight:'{fighter} Fighter.',wizard:'{mage} Mage.',priest:'{mage} Mage.',necromancer:'{mage} Mage.',merchant:'{merchant} Merchant.',apothecary:'{merchant} Merchant.',
+ alchemist:'{merchant} Merchant. He also gets the {mage} Mage tag while a Mage is next to him (both tags show). His neighbor effects go by tag: Mages, Merchants and Fighters next to him each get something.',
+ rogue:'{fighter} Fighter. He gets the {mage} Mage tag when you use a spell scroll on him (conjuring an artifact uses it up). While disguised he shows the tags of whoever he copies.'};
+Object.assign(NAMES,{magictalk:'Is magic useful?',promo:'Alchemy sale (+5 coins)',haste:'Haste potions',twopot:'Secret: two for one',madsci:'Secret: the mad scientist',beast:'Secret: the beast-man',fourmage:'Secret: four Mages',
+ nscroll:'Scroll on Necromancer: raise a skeleton',
+ nefarious:'Nefarious potions (+5 coins)',poisons:'Buying poisons (+5 coins)',wine:'Poisoned wine',rtrip:'A clumsy burglary',pinch:'Pinching fruit',
+ lecture:'A lecture on morals',vandal:'Vandalism!',confess:'Confession',tempt:'A demon\'s whisper',
+ dungeon:'Dungeon crawl (5 min)',rspar:'Sparring with ninja stars',drinks:'Drinks and laughs',wgossip:'Gossip about the Wizard',
+ snatch:'Snatching a potion',volatile:'Volatile potions',shrink:'A shrinking potion?',
+ rgossip:'Gossip about the Knight',spell:'Lightning and frost',dressup:'Dress-up',rsteal:'Light fingers (-5% coins)',
+ rritual:'Dark ritual together',betray:'Betrayal!',rcandles:'Errands and stolen candles',fairies:'Fairy attack!',
+ tiny:'Secret: tiny Rogue',graveyard:'Secret: the graveyard'});
+EGGS.push('twopot','madsci','beast','fourmage','tiny','graveyard');
+COMP_TABS.forEach(t=>{const add={knight:['dungeon','rspar','drinks','wgossip','haste'],wizard:['rgossip','spell','dressup','rsteal','magictalk'],priest:['lecture','vandal','confess','tempt','magictalk'],
+ necromancer:['rritual','betray','rcandles','fairies','magictalk'],merchant:['pinch','promo'],apothecary:['nefarious','poisons','wine','rtrip','promo'],
+ alchemist:['magictalk','promo','haste','snatch','volatile','shrink'],rogue:[...ROGUE_SCENES,'haste']}[t.id];if(add)t.pairs.push(...add);
+ if(t.id==='necromancer')t.items.unshift('nscroll');if(t.id==='alchemist')t.items.push('twopot','madsci','beast','fourmage');if(t.id==='rogue')t.items.push('tiny','graveyard')});
+Object.assign(PAIR_WITH,{magictalk:['alchemist','tag:mage'],promo:['alchemist','tag:merchant'],haste:['alchemist','tag:fighter']});
+ROGUE_SCENES.forEach(k=>{for(const p in PAIRS)if(p.startsWith('rogue>')&&Object.values(PAIRS[p]).includes(k))PAIR_WITH[k]=['rogue',p.slice(6)]});
+Object.assign(DESC,{
+ duel:'Necromancer above the Wizard, 50%. Black lightning versus blue lightning. They really do not like each other.',
+ kdate:'Knight right of the Apothecary. They leave for a 1 minute date. 80% it goes well, 20%... less so. He tells you how it went.',
+ nscroll:'Spell scroll on the Necromancer: he raises a skeleton in a room next door. Fighters and Mages beat it; Merchants do not.',
+ magictalk:'The Alchemist and any Mage next to him debate whether magic is actually useful. Passive: Mages next to him visit their neighbors 20% more often.',
+ promo:'A Merchant next to the Alchemist, 10% of idle time: a promotional sale of his potions instead of the usual wares. +5 coins.',
+ haste:'A Fighter next to the Alchemist drinks his haste potions: he picks Mage neighbors to visit 50% more often than other neighbors.',
+ twopot:'Secret: with the Alchemist next to the Apothecary, 20% of the potions you buy from her come as two.',
+ madsci:'Secret: put the Alchemist on the bottom-right space and his hair goes wild and white. Mad scientist!',
+ beast:'Secret: the mad scientist, 15% of idle time, turns into a beast-man and attacks a neighbor. Merchants lose. Fighters and Mages fight it out: one of them dies.',
+ fourmage:'Secret: with four Mages around him, 10% of the time the Alchemist gives one of them a potion (its usual effect).',
+ nefarious:'Rogue right of the Apothecary. He buys some "nefarious" potions from under the counter. +5 coins.',
+ poisons:'Rogue left of the Apothecary. Poison, for "very large rats". +5 coins.',
+ wine:'Rogue below the Apothecary. Poison plus wine, gifted to another neighbor: sick for a minute (no neighbor scenes), 5% fatal.',
+ rtrip:'Rogue above the Apothecary. He tries to steal, trips, and smashes a shelf of potions. She is furious.',
+ pinch:'Rogue on any side of the Fruit Merchant. While the Merchant looks away, an apple quietly disappears.',
+ lecture:'Rogue below the Priest. A long lecture about morals. The Rogue sulks.',
+ vandal:'Rogue above the Priest. He splatters paint on the chapel walls, gets caught, and has to scrub it all off.',
+ confess:'Rogue right of the Priest. He confesses his crimes, hoping for redemption. Some of them, anyway.',
+ tempt:'Rogue left of the Priest. A demon whispers: kill the Priest. 95% he says no. 5%... he does not.',
+ dungeon:'Rogue above the Knight. They go dungeon crawling for 5 minutes and come back with coins, an artifact, scrolls, potions or a secret.',
+ rspar:'Rogue below the Knight. Sparring: sword against ninja stars.',
+ drinks:'Rogue right of the Knight. A few drinks and a lot of laughing.',
+ wgossip:'Rogue left of the Knight. They gossip about the Wizard.',
+ snatch:'Rogue above or below the Alchemist. He drops in through the ceiling or the floor, snatches a potion and uses it himself.',
+ volatile:'Rogue right of the Alchemist. They brew volatile potions and the Rogue practices throwing them. Boom!',
+ shrink:'Rogue left of the Alchemist. He wants a potion to make him small and fast. The Alchemist cannot make it... without magic.',
+ rgossip:'Rogue above the Wizard. They gossip about the Knight.',
+ spell:'Rogue below the Wizard. Lightning and frost! The Rogue is jealous, unless he has the Mage tag: then he is amazed.',
+ dressup:'Rogue right of the Wizard. They try on disguises; afterwards the Wizard keeps a new robe color.',
+ rsteal:'Rogue left of the Wizard. He steals from the Wizard: you lose 5% of your coins.',
+ rritual:'Rogue above the Necromancer. He joins a dark ritual by candlelight.',
+ betray:'Rogue below the Necromancer. A ritual invite... it is a trap! 80% he escapes; 20% he is sacrificed and the Necromancer gets a little skeleton follower.',
+ rcandles:'Rogue right of the Necromancer. While the Necromancer runs errands, the Rogue pockets black candles and a skull.',
+ fairies:'Rogue left of the Necromancer. Good fairies attack! Ninja stars and dark magic send them packing.',
+ tiny:'Secret: the shrinking potion works if the Rogue has the Mage tag. Tiny and fast for 2 minutes.',
+ graveyard:'Secret: put the Rogue next to the Necromancer with both on the bottom row. His room becomes a graveyard.'});

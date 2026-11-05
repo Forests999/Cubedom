@@ -12,21 +12,21 @@
 <link rel="apple-touch-icon" href="icon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Tiny5&display=swap" rel="stylesheet">
 <!-- ?v= is the release number: change it (all four together) with every update so browsers load the new files -->
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="style.css?v=20">
 </head><body>
 <h1>Cubedom</h1>
 <div class="tabs"><button class="tab on" data-t="board">Board</button><button class="tab" data-t="ref">Compendium</button></div>
 <section id="tab-board">
+<div id="items"><div class="lbl">Items: drag onto a room while its owner is home</div></div>
 <div id="wrap"><canvas id="cv" aria-label="Cubedom board"></canvas><div id="labels"></div><div id="bub"></div></div>
 <div id="tray"><div class="lbl">Shelf: drag a box up to the board</div></div>
-<div id="items"><div class="lbl">Items: drag onto a room while its owner is home</div></div>
 <div class="row"><button class="b" id="reset">Reset game</button></div>
 </section>
 <section id="tab-ref" hidden><div id="refs"></div></section>
 <canvas id="ghost" width="96" height="96"></canvas>
 <div id="toast" role="status"></div>
 <div id="modal" hidden><div class="mbox" role="dialog" aria-modal="true"><p></p><div class="mrow"><button class="b" id="mYes">Buy</button><button class="b" id="mNo">Cancel</button></div></div></div>
-<script src="data.js?v=19"></script>
-<script src="art.js?v=19"></script>
-<script src="game.js?v=19"></script>
+<script src="data.js?v=20"></script>
+<script src="art.js?v=20"></script>
+<script src="game.js?v=20"></script>
 </body></html>
