@@ -1,5 +1,5 @@
 const cv=$('#cv'),g=cv.getContext('2d'),W=COLS*CELL,H=ROWS*CELL,tray=$('#tray'),itemsEl=$('#items'),bub=$('#bub');cv.width=W;cv.height=H;g.imageSmoothingEnabled=false;
-const U={};let S={un:{},coins:0,inv:{scroll:0,potion:0}},drag=null,td=null,hover=null,parts=[],bolts=[],demons=[],cats=[],fbs=[],flashes=[],thrown=[],splats=[],zaps=[],waves=[],holes=[],coinT=0,bubU=null,T=0;
+const U={};let S={un:{},coins:0,inv:{scroll:0,potion:0,artifact:0},seen:{}},drag=null,td=null,hover=null,parts=[],bolts=[],demons=[],cats=[],fbs=[],flashes=[],thrown=[],splats=[],zaps=[],waves=[],holes=[],coinT=0,bubU=null,T=0;
 
 // ---------- units ----------
 const at=(r,c)=>Object.keys(U).find(i=>U[i].r===r&&U[i].c===c);
@@ -17,7 +17,7 @@ function standBy(h,d,s){const hx=h.c*CELL,lo=hx+14,hi=hx+82;s=s||(h.x-hx<48?1:-1
 function label(u){u.lb.style.left=(u.c*CELL+6)/W*100+'%';u.lb.style.top=(u.r*CELL+6)/H*100+'%'}
 function addUnit(id,r,c,quiet,weapon,form,color){
  const lb=document.createElement('div');lb.className='lb';$('#labels').appendChild(lb);
- U[id]={id,r,c,lb,weapon:id==='knight'?(weapon||pick(WEAPONS)):null,form:form||null,color:id==='wizard'?(color||(r===0&&c===0?'black':pick(WIZ_RANDOM))):null, // dragged to the top-left on first placement = hidden black outfit (tapping the shelf picks a normal color)
+ U[id]={id,r,c,lb,weapon:id==='knight'?(weapon||pick(WEAPONS)):null,form:form||null,color:color||(id==='wizard'?(r===0&&c===0?'black':pick(WIZ_RANDOM)):id==='knight'?(Math.random()<ODDS.bronze?'bronze':'steel'):id==='priest'?pick(['m','f']):null), // knight 1% bronze armor, priest 50/50 female/male, // dragged to the top-left on first placement = hidden black outfit (tapping the shelf picks a normal color)
   act:null,at:0,orc:null,dur:0,x:c*CELL+48,y:r*CELL+FY,face:1,st:'idle',wait:1.5+Math.random()*2,path:[],fxs:[],al:1,sk:1,hop:0,blink:0,mood:'ok',mt:0,gp:null,gt:0,mv:false,glow:0,drink:0,kneel:false,tp:false,after:null,hosting:null,target:null,t:0,tt:0,ev:{}};
  setLabel(U[id]);label(U[id]);if(!quiet){poof(c*CELL+48,r*CELL+FY-16);save()}ui();
 }
@@ -61,10 +61,12 @@ const freeU=x=>x&&!x.hosting&&!x.target&&x.form!=='dknight'&&(x.st==='idle'||x.s
 const nbrs=u=>[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filter(h=>freeU(h));
 
 // ---------- idle activities (odds in ODDS, data.js) ----------
-function beginAct(u,a){u.st='act';u.act=a;u.at=0;u.ev={};u.path=[];u.dur=a==='prac'?3.5+Math.random()*1.5:3}
+function beginAct(u,a){markSeen(a==='prac'?'prac:'+u.weapon:a);u.st='act';u.act=a;u.at=0;u.ev={};u.path=[];u.dur=a==='prac'?3.5+Math.random()*1.5:3}
 function startAct(u){
  const r=Math.random();u.path=[];
  if(u.id==='wizard'){
+  // next to a Merchant, 1% chance he spends BREW_COST coins brewing a potion
+  if(S.coins>=BREW_COST&&Object.values(U).some(v=>CLASS[v.id]==='merchant'&&rel(v,u))&&Math.random()<ODDS.wizBrew){beginAct(u,'brew');u.dur=4.2;return true}
   const W=ODDS.wizard,a=r<W.read?'read':r<W.read+W.magic?'magic':'demon';
   u.st='act';u.act=a;u.at=0;u.ev={};u.dur=a==='read'?4+Math.random()*2:a==='magic'?3.5+Math.random()*1.5:3;
   if(a==='demon'){const rc=u.c*CELL,dx=cl(u.x+(u.x<rc+48?30:-30),rc+16,rc+80);u.face=dx>u.x?1:-1;demons.push({x:dx,y:u.y,t:0,dir:dx>u.x?-1:1,owner:u.id})}
@@ -76,11 +78,11 @@ function startAct(u){
   const b=a==='raise'?'spirits':a;beginAct(u,b);u.dur={spirits:5,candles:5.5,lightning:4.5}[b];return true}
  if(u.id!=='knight')return false;
  // Eldritch Knight only: a black cat wanders across the back of the Wizard's room
- if(u.form==='eknight'&&U.wizard&&Math.random()<ODDS.eknightCat){cats.push({t:0,dir:pick([1,-1])});u.st='idle';u.wait=3;return true}
+ if(u.form==='eknight'&&U.wizard&&Math.random()<ODDS.eknightCat){cats.push({t:0,dir:pick([1,-1])});markSeen('cat');u.st='idle';u.wait=3;return true}
  const K=ODDS.knight;
  if(r>=K.prac&&r<K.prac+K.orc){const o=nbrs(u);if(o.length){visit(u,pick(o),'orc');return true}}
  // Horse: needs open space to the right (no box in the next cell)
- if(r>=K.prac+K.orc&&!at(u.r,u.c+1)){u.st='act';u.act='horse';u.at=0;u.ev={};u.dur=6.3;u.hx=u.c*CELL+46;return true}
+ if(r>=K.prac+K.orc&&!at(u.r,u.c+1)){markSeen('horse');u.st='act';u.act='horse';u.at=0;u.ev={};u.dur=6.3;u.hx=u.c*CELL+46;return true}
  // Weapon practice: first walk to the middle of the room so the swings stay inside it
  const mid=u.c*CELL+48;
  if(Math.abs(u.x-mid)>1){u.st='walk';u.path=[{k:'walk',x:mid,y:u.r*CELL+FY}];u.after='prac';return true}
@@ -118,6 +120,12 @@ function acting(u,dt){
  if(u.act==='swapc'&&u.swapWith){const o=U[u.swapWith];
   once('f',1.3,()=>{flashes.push({x:u.c*CELL,y:u.r*CELL,t:0,col:'200,140,255'});if(o)flashes.push({x:o.c*CELL,y:o.r*CELL,t:0,col:'200,140,255'})});
   once('s',1.6,()=>{if(o&&U[o.id]){const r=o.r,c=o.c;relocate(u.id,r,c);poof(u.x,u.y-24,'#7aff7a');poof(o.x,o.y-24,'#c890ff');save()}})}
+ // ---- Wizard brewing next to a Merchant ----
+ if(u.act==='brew')once('p',3,()=>{if(S.coins>=BREW_COST){S.coins-=BREW_COST;showCoins();save();parts.push({k:'txt',s:'-'+BREW_COST,x:u.x-14,y:u.y-56,t:0,life:1.4,icon:'coin'});addItem('potion',1,u.x+u.face*18,u.y-34);u.mood='happy';u.mt=1.5}});
+ // ---- Priest using an artifact on the Necromancer ----
+ if(u.act==='relic'){const N=U.necromancer;
+  once('b',1.2,()=>{if(N){u.beam={x:N.x,y:N.y-24,t:0};flashes.push({x:N.c*CELL,y:N.r*CELL,t:0,col:'255,236,150'});N.mood='shock';N.mt=2;N.blink=1}});
+  once('k',2,()=>{const M=U.necromancer;if(M){poof(M.x,M.y-24,'#f2d870');poof(M.x,M.y-10,'#ffffff');kill(M);S.un.necromancer=false;buildShelf();save();toast('The Necromancer is destroyed. He must be summoned again the old way...')}u.mood='happy';u.mt=2})}
  if(u.act==='sniff'){once('y',1,()=>{u.mood='hurt';u.mt=1.6});
   once('t',1.3,()=>{const bx=u.c*CELL,by=u.r*CELL;thrown.push({sx:u.x+u.face*10,sy:u.y-30,ex:bx+(u.face>0?80:16),ey:by+38,t:0})})}
  if(u.at>=u.dur){if(u.npcDoor)npcDoor(u,0);u.act=null;u.npc=null;u.kneel=false;u.ghost=null;u.spirit=null;u.st='idle';u.mv=false;u.wait=1.5+Math.random()*2.5}
@@ -138,7 +146,21 @@ function stepNpc(u,dt){const n=u.npc;if(!n)return;n.t+=dt;if(n.hop>0)n.hop-=dt;
  if(!n.leaving)n.al=Math.min(1,n.al+dt*2.5);else if(!n.path.length){n.al-=dt*2.5;if(n.al<=0){u.npc=null;npcDoor(u,0)}}
 }
 // ---- coins ----
-function addCoins(n,x,y){S.coins=(S.coins||0)+n;showCoins();save();if(x!=null)parts.push({k:'txt',s:'+'+n,x,y,t:0,life:1.4})}
+function addCoins(n,x,y){S.coins=(S.coins||0)+n;showCoins();checkUnlocks();save();if(x!=null)parts.push({k:'txt',s:'+'+n,x,y,t:0,life:1.4})}
+// ---- unlocks that depend on what you hold ----
+function checkUnlocks(){if(!S.un.merchant&&(S.coins||0)>=MERCHANT_COINS){S.un.merchant=true;buildShelf();toast('Business is booming! A Fruit Merchant box has appeared on the shelf.')}}
+// ---- Compendium: remember every interaction/idle/item effect that has happened (gold border) ----
+const SEEN_ALIAS={sleepc:'sleep',swapc:'swap'};
+function markSeen(k){k=SEEN_ALIAS[k]||k;if(!k||S.seen[k])return;S.seen[k]=1;save();document.querySelectorAll('.tile[data-k="'+k+'"]').forEach(t=>t.classList.add('seen'))}
+// ---- walk back to your own room from wherever you are ----
+function goHome(v){const r=cellY(v),c=cellX(v);v.st='back';v.path=r===v.r&&c===v.c?[{k:'walk',x:v.c*CELL+48,y:v.r*CELL+FY}]:route(v,r,c,v.r,v.c,home(v))}
+// ---- holy crusade: Priest and Knight leave the board for CRUSADE_TIME seconds, then come back with a reward ----
+function goCrusade(a,b){[a,b].forEach(v=>{clearFx(v);v.target=null;v.hosting=null;v.path=[];v.st='away';v.awayT=CRUSADE_TIME;v.al=0;poof(v.x,v.y-24,'#f2d870')})}
+function stepAway(v,dt){v.awayT-=dt;if(v.awayT>0)return;toHome(v);v.al=1;poof(v.x,v.y-24,'#f2d870');v.mood='happy';v.mt=2;v.hop=.5;
+ if(v.id==='priest'){if(Math.random()<ODDS.crusadeGold){addCoins(CRUSADE_GOLD,v.x,v.y-50);toast('The crusade returns victorious with '+CRUSADE_GOLD+' coins!')}else{addItem('artifact',1,v.x,v.y-50);toast('The crusade returns with a mysterious artifact!')}}}
+// ---- Artifact on the Priest (easter egg): if the Necromancer is his neighbor, the Priest destroys him for good ----
+// The Necromancer box does NOT go back to the shelf; it must be unlocked again the normal way (a Priest dying).
+function relic(u){const N=U.necromancer;if(!N||!rel(u,N))return false;beginAct(u,'relic');u.dur=3.4;u.face=N.c>u.c?1:N.c<u.c?-1:u.face;return true}
 // ---- Necromancer raises a skeleton in another character's room. Fighters and Mages beat it; anyone else dies. ----
 function startRaise(u){
  const tg=Object.values(U).filter(v=>v!==u&&freeU(v)&&cellX(v)===v.c&&cellY(v)===v.r);
@@ -183,7 +205,7 @@ function sleepUnit(v){
 function wakeUnit(v){v.st='idle';v.mood='happy';v.mt=1;v.hop=.4;v.wait=1.5;
  if(cellX(v)!==v.c||cellY(v)!==v.r){v.st='back';v.path=route(v,cellY(v),cellX(v),v.r,v.c,home(v))}} // asleep in someone else's room: walk home
 function stepSleep(v,dt){v.sleepT-=dt;v.zT+=dt;if(v.zT>1.1){v.zT=0;parts.push({k:'z',x:v.x+v.face*8,y:v.y-46,t:0,life:1.6})}if(v.sleepT<=0)wakeUnit(v)}
-function cast(w,k){w.st='cast';w.tt=0;w.ev={};w.path=[];k.path=[];k.st='idle';k.wait=8;w.face=k.x>w.x?1:-1}
+function cast(w,k){markSeen('bolt');w.st='cast';w.tt=0;w.ev={};w.path=[];k.path=[];k.st='idle';k.wait=8;w.face=k.x>w.x?1:-1}
 function casting(w,dt){
  const k=U.knight;if(!k||pairKind(w,k)!=='bolt'){w.st='idle';w.wait=1;return}
  w.tt+=dt;const once=(n,t,f)=>{if(!w.ev[n]&&w.tt>=t){w.ev[n]=1;f()}};
@@ -193,7 +215,9 @@ function casting(w,dt){
 }
 
 // ---------- items (drag from the item tray onto a room; the room's owner must be home) ----------
-const ITEM_FX={scroll:{wizard:fireball,knight:goldGlow,priest:banish,necromancer:nscroll},potion:{wizard:potionTeleport,knight:flex,priest:wings,necromancer:sniff}};
+const ITEM_FX={scroll:{wizard:fireball,knight:goldGlow,priest:banish,necromancer:nscroll},potion:{wizard:potionTeleport,knight:flex,priest:wings,necromancer:sniff},artifact:{priest:relic}};
+// Which Compendium tile each item effect lights up
+const ITEM_KEY={scroll:{wizard:'fireball',knight:'glow',priest:'banish',necromancer:'raise'},potion:{wizard:'teleport',knight:'flex',priest:'wings',necromancer:'sniff'},artifact:{priest:'relic'}};
 // Items are a counted inventory (S.inv). Using one takes it away; they are earned in the game (e.g. crafting).
 function addItem(kind,n,x,y){S.inv[kind]=(S.inv[kind]||0)+n;showItems();save();if(x!=null)parts.push({k:'txt',s:'+'+n,x,y,t:0,life:1.6,icon:kind})}
 function useItem(kind,r,c){
@@ -207,7 +231,7 @@ function useItem(kind,r,c){
  if(!home||!fx){no();return}
  u.act=null;u.path=[];u.after=null;u.mv=false;u.st='idle';u.wait=2;
  if(fx(u)===false){no();return}
- S.inv[kind]--;showItems();save();
+ S.inv[kind]--;showItems();markSeen(ITEM_KEY[kind][u.id]);save();
 }
 // Jagged lightning from caster a to target b (blk = the Necromancer's black lightning)
 function mkZap(a,b,blk){const sx=a.x+a.face*14,sy=a.y-28,ex=b.x,ey=b.y-24,p=[[sx,sy]];for(let i=1;i<6;i++)p.push([lerp(sx,ex,i/6),lerp(sy,ey,i/6)+Math.random()*12-6]);p.push([ex,ey]);return{p,t:0,blk}}
@@ -271,9 +295,16 @@ function decide(u){
  const rr=Math.random();
  if(rr>=P&&rr<P+ODDS.idle&&startAct(u))return;
  if(rr<P){
+  // Priest and Necromancer are neighbors (any side) while a Death Knight exists: the Priest goes to cleanse him
+  const DK=Object.values(U).find(v=>v.form==='dknight');
+  if(DK&&(u.id==='priest'||u.id==='necromancer')&&U.priest&&U.necromancer&&rel(U.priest,U.necromancer)&&freeU(U.priest)&&freeU(U.necromancer)){visit(U.priest,U.necromancer,'cleanse');return}
   const opts=nbrs(u).filter(h=>pairKind(u,h)!=='none'); // 'none' pairs never visit each other
   if(opts.length){
    const h=pick(opts);let kd=pairKind(u,h);
+   // Wizard + Necromancer, any side: 1% they make a scroll or a potion together
+   if(((u.id==='wizard'&&h.id==='necromancer')||(u.id==='necromancer'&&h.id==='wizard'))&&Math.random()<ODDS.forge){visit(u,h,'forge');return}
+   // Priest above the Knight: 2% they go on a holy crusade
+   if(kd==='zeal'&&Math.random()<ODDS.crusade){visit(U.knight,U.priest,'crusade');return}
    const N=U.necromancer,special=Math.random()>=ODDS.hangout;
    // Necromancer left of the Knight: puts everyone to his right to sleep (cast from his own room)
    if(kd==='sleep'&&special){if(freeU(N)){beginAct(N,'sleepc');N.dur=2.4}else u.wait=1;return}
@@ -315,7 +346,7 @@ function visit(u,h,vk){
   u.mood='shock';u.mt=.8;u.face=h.c>u.c?1:-1;u.path.unshift({k:'pause',w:.9})}
 }
 function arrive(u){
- if(u.st==='out'){u.st='talk';u.tt=0;u.ev={};u.kind=u.vk;u.sc2=null;return}
+ if(u.st==='out'){u.st='talk';u.tt=0;u.ev={};u.kind=u.vk;u.sc2=null;markSeen(u.vk);return}
  u.tp=false;
  if(u.after){const a=u.after;u.after=null;beginAct(u,a);return}
  u.st='idle';u.wait=u.form==='dknight'?.3:2+Math.random()*3;
@@ -344,7 +375,7 @@ function talk(u,dt){
  u.tt+=dt;if(Math.abs(h.x-u.x)>2)u.face=h.x>u.x?1:-1; // only turn when clearly to one side (stops flip-flopping)
  const pp={[u.id]:u,[h.id]:h},K=pp.knight,Wz=pp.wizard,Pr=pp.priest,N=pp.necromancer;
  const need={friend:K&&Wz,learn:K&&Wz,chat:K&&Wz,spar:K&&Wz,study:Pr&&Wz,gossip:Pr&&Wz,undead:Pr&&Wz,light:Pr&&Wz,pray:Pr&&K,bless:Pr&&K,sermon:Pr&&K,tentacle:Pr&&K,
-  dknight:N&&K,horde:N&&K,nchat:N&&K,purge:N&&Pr,debate:N&&Pr,duel:N&&Wz,craft:N&&Wz,golem:N&&Wz,tomes:N&&Wz};
+  dknight:N&&K,horde:N&&K,nchat:N&&K,purge:N&&Pr,debate:N&&Pr,duel:N&&Wz,craft:N&&Wz,golem:N&&Wz,tomes:N&&Wz,forge:N&&Wz,crusade:Pr&&K,cleanse:Pr&&N};
  const k=u.kind in need?(need[u.kind]?u.kind:null):u.kind,once=(n,t,f)=>{if(!u.ev[n]&&u.tt>=t){u.ev[n]=1;f()}};let end=3.4;
  const lines=(sc,who)=>{end=sc.length*2.3+.8;sc.forEach((l,i)=>once('l'+i,.6+i*2.3,()=>{const s=who||U[l[0]];if(s){say(s,who?l:l[1]);gest(s,'fwd',1.2)}}))};
  if(k==='friend'){
@@ -462,6 +493,19 @@ function talk(u,dt){
  else if(k==='tomes'){end=5.4;// reading their tomes side by side
   once('a',.3,()=>{Wz.act='tome';Wz.at=0;N.act='nread';N.at=0});
   once('b',4.4,()=>{Wz.act=N.act=null;Wz.mood=N.mood='happy';Wz.mt=N.mt=1.2})}
+ else if(k==='forge'){end=4.6;// Wizard + Necromancer (any side, 1%): together they make a scroll or a potion
+  once('a',.4,()=>{gest(Wz,'fwd',2.4);gest(N,'fwd',2.4);u.made={x:(u.x+h.x)/2,y:u.y-40,t:0,icon:Math.random()<.5?'scroll':'potion'}});
+  once('b',3.2,()=>{if(u.made)addItem(u.made.icon,1,u.made.x,u.made.y-10);u.made=null;Wz.mood=N.mood='happy';Wz.mt=N.mt=1.5;Wz.hop=N.hop=.5})}
+ else if(k==='crusade'){// Priest above Knight (2%): they set off on a holy crusade together
+  once('a',.3,()=>{say(Pr,'To the crusade!');gest(Pr,'both',1);gest(K,'up',1);K.mood=Pr.mood='happy';K.mt=Pr.mt=1.5});
+  if(u.tt>1.6){const q=cl(1-(u.tt-1.6)/.6,0,1);u.al=h.al=q} // they fade away on their journey
+  if(u.tt>=2.2){goCrusade(u,h);return}}
+ else if(k==='cleanse'){end=4.6;// the Priest frees the Death Knight with holy light; he becomes a Knight again
+  const D=Object.values(U).find(v=>v.form==='dknight');
+  once('a',.3,()=>{Pr.act='smite';Pr.at=0;gest(Pr,'both',2);N.mood='shock';N.mt=2.5});
+  once('b',1.1,()=>{if(D){u.beam={x:D.x,y:D.y-24,t:0};D.blink=.8;flashes.push({x:cellX(D)*CELL,y:cellY(D)*CELL,t:0,col:'255,236,150'})}});
+  once('c',1.9,()=>{if(D){D.form=null;setLabel(D);poof(D.x,D.y-24,'#f2d870');poof(D.x,D.y-10,'#ffffff');D.mood='happy';D.mt=2;D.hop=.5;save();goHome(D)}});
+  once('d',2.6,()=>{Pr.act=null;Pr.mood='happy';Pr.mt=1.5})}
  else{once('h1',.6,()=>{u.hop=.5;gest(u,'up',.6)});once('h2',1.4,()=>{h.hop=.5;gest(h,'up',.6)})}
  if(k==='dknight'&&u.tt>end){clearFx(u);freeHost(h);u.target=null;u.st='idle';u.wait=.5;return} // the new Death Knight stays with the Necromancer
  if(u.tt>end){clearFx(u);h.act=null;h.kneel=false;h.ward=null;h.hosting=null;h.st='idle';h.wait=2;u.target=null;u.st='back';u.path=route(u,h.r,h.c,u.r,u.c,home(u))}
@@ -492,6 +536,7 @@ function step(dt){
   if(u.mobs){u.mobs.forEach(m=>{m.t+=dt;if(m.blink>0)m.blink-=dt;if(m.gone)m.al=(m.al==null?1:m.al)-dt*3});u.mobs=u.mobs.filter(m=>!(m.gone&&m.al<=0))}
   if(u.made)u.made.t+=dt;if(u.beam){u.beam.t+=dt;if(u.beam.t>.5)u.beam=null}
   if(u.st==='sleep'){stepSleep(u,dt);continue}
+  if(u.st==='away'){stepAway(u,dt);continue} // on crusade
   stepNpc(u,dt);
   if(u.act)u.at+=dt;if(u.orc&&u.orc.blink>0)u.orc.blink-=dt;
   if(u.st==='def'){defending(u,dt);continue}
@@ -514,7 +559,8 @@ function render(){
  const dm=drag&&drag.moved?drag.id:null,live=Object.values(U).filter(u=>u.id!==dm);
  for(const id in U){const u=U[id],x=u.c*CELL,y=u.r*CELL;
   if(id===dm){g.strokeStyle='#5a5590';g.lineWidth=2;g.setLineDash([4,4]);g.strokeRect(x+4,y+4,CELL-8,CELL-8);g.setLineDash([])}else box(g,id,x,y,u.weapon);
-  u.lb.style.opacity=id===dm?0:1}
+  u.lb.style.opacity=id===dm?0:u.st==='away'?.45:1;
+  if(id==='necromancer'&&id!==dm&&u.r===ROWS-1)drawSkulls(g,x,y)} // easter egg: skulls on the bottom row
  Object.values(U).forEach(u=>u.fxs.forEach(f=>drawFx(f)));
  // background details behind the characters: horse, cat, tentacles through the Priest's window
  live.forEach(u=>{if(u.act==='horse')drawHorse(g,(u.c+1)*CELL,u.r*CELL+FY,u.at)});
@@ -545,7 +591,7 @@ function render(){
    g.save();g.beginPath();g.rect(s.x-24,s.y-60,48,60);g.clip();spr(g,'skeleton',hit?'hurt':'mad',s.x,s.y+(1-rise)*44,u.x>s.x?1:-1,0,hit&&Math.floor(s.blink*14)%2?.2:1,1);g.restore()}
   if(u.mobs)u.mobs.forEach(m=>drawMob(g,m));
   if(u.beam){const Pr=U.priest;if(Pr){g.save();g.globalAlpha=cl(1-u.beam.t/.5,0,1);g.strokeStyle='rgba(255,236,150,.95)';g.lineWidth=5;g.beginPath();g.moveTo(Pr.x+Pr.face*8,Pr.y-36);g.lineTo(u.beam.x,u.beam.y);g.stroke();g.restore()}}
-  if(u.made){const m=u.made;swirl(g,m.x,m.y+24,T,1,1);swirl(g,m.x,m.y+24,T+1,2,.6);if(m.t>2)drawItem(g,'scroll',Math.round(m.x),Math.round(m.y-(m.t-2)*10),1)}
+  if(u.made){const m=u.made;swirl(g,m.x,m.y+24,T,1,1);swirl(g,m.x,m.y+24,T+1,2,.6);if(m.t>2)drawItem(g,m.icon||'scroll',Math.round(m.x),Math.round(m.y-(m.t-2)*10),1)}
   if(u.spirit){const p=u.spirit;spr(g,'demon','mad',p.x,p.y-8-p.t*22,1,0,.65*cl(1-(p.t-.8)/1,0,1)*cl(p.t/.3,0,1),1)} // demon driven out of the farmer
   if(u.act){g.save();g.beginPath();g.rect(cellX(u)*CELL+4,cellY(u)*CELL,CELL-8,CELL);g.clip();drawAct(g,u);g.restore()} // weapons stay inside the room
   if(u.drink>0)drawItem(g,'potion',Math.round(u.x+u.face*9),Math.round(u.y-38),1);
@@ -605,7 +651,7 @@ function draggable(b,canStart,onDrop,onTap){
 // Character boxes on the shelf (the Necromancer only once unlocked)
 function buildShelf(){
  tray.querySelectorAll('.it').forEach(b=>b.remove());
- [...SHELF_CHARS,...(S.un.necromancer?['necromancer']:[])].forEach(id=>{
+ [...SHELF_CHARS,...(S.un.necromancer?['necromancer']:[]),...(S.un.merchant?['merchant']:[])].forEach(id=>{
   const b=document.createElement('button');b.className='it';b.dataset.id=id;b.innerHTML='<canvas width="96" height="96"></canvas>'+CH[id].name+tagImg(id);
   const t=b.firstChild.getContext('2d');t.imageSmoothingEnabled=false;box(t,id,0,0,'longsword');spr(t,id,'ok',48,FY,1,0);
   const tap=()=>{const f=firstFree();if(f)addUnit(id,f[0],f[1],false,null,null,id==='wizard'?pick(WIZ_RANDOM):null)};
@@ -630,6 +676,8 @@ function showCoins(){coinBox.lastChild.textContent=(S.coins||0)+' coins'}
 // Item counts on the tray buttons; an item you have none of is greyed out
 function showItems(){itemsEl.querySelectorAll('.item').forEach(b=>{const k=b.dataset.item,n=S.inv[k]||0;b.lastChild.textContent=NAMES[k]+' x'+n;b.classList.toggle('used',n<=0)})}
 $('#clr').onclick=()=>{Object.keys(U).forEach(i=>removeUnit(i,true));save()};
+// Reset: wipe the save and start a brand new game (default board, 0 coins, no items, nothing unlocked, Compendium cleared)
+$('#reset').onclick=()=>{if(!confirm('Reset everything? Coins, items, unlocked characters and the Compendium will all be wiped.'))return;try{localStorage.removeItem(KEY)}catch(e){}location.reload()};
 
 // ---------- compendium ----------
 const anim=[],tabRef=$('#tab-ref');
@@ -649,6 +697,7 @@ function diagram(k){
 // Priest arrangements: [priest, other, where the priest is]
 // Pair diagrams: [other, where the first character is, first character (default Priest)]
 const PD={study:['wizard','right'],gossip:['wizard','left'],undead:['wizard','below'],light:['wizard','above'],zeal:['knight','above'],pray:['knight','right'],bless:['knight','below'],sermon:['knight','left'],tentacle:['knight','left'],
+ crusade:['knight','above'],cleanse:['necromancer','left'],
  sleep:['knight','left','necromancer'],dknight:['knight','above','necromancer'],horde:['knight','right','necromancer'],nchat:['knight','below','necromancer'],
  purge:['priest','below','necromancer'],debate:['priest','above','necromancer'],
  duel:['wizard','above','necromancer'],craft:['wizard','above','necromancer'],golem:['wizard','left','necromancer'],tomes:['wizard','right','necromancer'],swap:['wizard','below','necromancer']};
@@ -679,11 +728,15 @@ function pairDiagram(k){
  if(k==='golem'){spr(x,'golem','ok',q[0]+76,q[1]+FY,-1,0,1,1.2);pm=om='shock'}
  if(k==='tomes'){pp=op='hold'}
  if(k==='swap'){pp=op='both'}
+ if(k==='crusade'){pp='both';op='up';pm=om='happy'}
+ if(k==='cleanse'){pp='both';om='shock'}
  const one=(id,pt,pose,m,face)=>{x.save();x.beginPath();x.rect(pt[0],pt[1],96,FY);x.clip();spr(x,id,m,pt[0]+48,pt[1]+FY+low,face,0,1,1,pose);x.restore()};
  one(a,p,pp,pm,pf);one(od,q,op,om,-pf);
  if(k==='tomes'){drawAct(x,{act:'nread',at:.5,x:p[0]+48,y:p[1]+FY,face:pf});drawAct(x,{act:'tome',at:2,x:q[0]+48,y:q[1]+FY,face:-pf})}
  if(k==='swap'){swirl(x,p[0]+48,p[1]+FY,1,3,1);swirl(x,q[0]+48,q[1]+FY,1,1,1)}
  if(k==='dknight'||k==='horde'||k==='purge')swirl(x,p[0]+48,p[1]+FY,1,3,1);
+ if(k==='crusade'){drawItem(x,'coin',70,100,2);drawItem(x,'artifact',26,100,2)}
+ if(k==='cleanse'){spr(x,'dknight','shock',q[0]+78,q[1]+FY,-1,0,1,1);x.strokeStyle='rgba(255,236,150,.9)';x.lineWidth=4;x.beginPath();x.moveTo(p[0]+56,p[1]+FY-36);x.lineTo(q[0]+78,q[1]+FY-26);x.stroke()}
  if(k==='study'){drawAct(x,{act:'holy',at:.5,x:p[0]+48,y:p[1]+FY,face:pf});drawAct(x,{act:'read',at:.5,x:q[0]+48,y:q[1]+FY,face:-pf})}
  if(k==='light')drawHolyLight(x,p[0],p[1],p[0]+48,p[1]+FY-40,.7,0);
  if(k==='bless'){drawAct(x,{act:'sprinkle',at:0,x:p[0]+48,y:p[1]+FY,face:1});x.fillStyle='#8fd0ff';[[60,96],[54,90],[66,86],[58,80]].forEach(d=>x.fillRect(p[0]+d[0]-16,d[1]-40,2,3))}
@@ -754,6 +807,12 @@ function idleTile(kind,wp){
   // ---- items on the Priest and Necromancer ----
   else if(kind==='banish'){const tt=t%4.4;box(x,'priest',0,0);spr(x,'priest',tt>3.6?'happy':'ok',58,FY,-1,0,1,1,poseOf('banish',tt));if(tt<3.6)drawAct(x,{act:'banish',at:tt,x:58,y:FY,face:-1,ghost:{x:24,y:FY}})}
   else if(kind==='wings'){const tt=t%6;box(x,'priest',0,0);if(tt>.8)drawWings(x,48,FY,t);spr(x,'priest',tt>.8?'happy':'ok',48,FY,1,0,1,1,tt<.8?'up':'none');if(tt<.8)drawItem(x,'potion',57,FY-38,1);if(tt>.8&&tt<1.3)poofTile(x,48,FY-24,(tt-.8)/.5,'#f2d870')}
+  else if(kind==='brew'){const tt=t%5;box(x,'wizard',0,0);spr(x,'wizard',tt>3?'happy':'ok',36,FY,1,0,1,1,tt<4.2?poseOf('brew',tt):'none');if(tt<4.2)drawAct(x,{act:'brew',at:tt,x:36,y:FY,face:1})}
+  else if(kind==='forge'){const tt=t%5,mx=48;box(x,'necromancer',0,0);spr(x,'wizard',tt>3.2?'happy':'ok',20,FY,1,0,1,1,tt>.4&&tt<2.8?'fwd':'none');spr(x,'necromancer',tt>3.2?'happy':'ok',76,FY,-1,0,1,1,tt>.4&&tt<2.8?'fwd':'none');
+   if(tt>.4&&tt<3.4){swirl(x,mx,FY-16,t,1,1);swirl(x,mx,FY-16,t+1,2,.6);if(tt>2.4)drawItem(x,Math.floor(t/5)%2?'potion':'scroll',mx,Math.round(FY-40-(tt-2.4)*10),1)}}
+  else if(kind==='relic'){const tt=t%4.4;box(x,'priest',0,0);spr(x,'priest',tt>2.4?'happy':'ok',30,FY,1,0,1,1,poseOf('relic',tt));drawAct(x,{act:'relic',at:tt,x:30,y:FY,face:1});
+   if(tt<2){spr(x,'necromancer',tt>1.2?'shock':'ok',74,FY,-1,0,flash(tt>1.2,tt),1)}else if(tt<2.5)poofTile(x,74,FY-24,(tt-2)/.5,'#f2d870');
+   if(tt>1.2&&tt<2){x.strokeStyle='rgba(255,236,150,.9)';x.lineWidth=4;x.beginPath();x.moveTo(40,FY-40);x.lineTo(74,FY-24);x.stroke()}}
   else if(kind==='sniff'){const tt=t%4,k=cl((tt-1.3)/.35,0,1);box(x,'necromancer',0,0);if(tt>1.65)drawSplat(x,80,38,cl((3.8-tt)/1,0,1));
    spr(x,'necromancer',tt>1&&tt<2.6?'hurt':'ok',40,FY,1,0,1,1,poseOf('sniff',tt));if(tt<1.1)drawItem(x,'potion',48,FY-36,1);else if(tt>1.3&&tt<1.65)drawItem(x,'potion',Math.round(lerp(50,80,k)),Math.round(lerp(54,38,k)-Math.sin(k*Math.PI)*12),1)}
  });
@@ -761,24 +820,26 @@ function idleTile(kind,wp){
 function buildRef(){
  const b=$('#refs');b.innerHTML='';
  const sec=(t,items)=>{const h=document.createElement('h2');h.className='sec';h.textContent=t;const d=document.createElement('div');d.className='cg';items.forEach(i=>d.appendChild(i));b.append(h,d)};
- // Wrap a tile with its % chance (or a short label) in the top right corner
+ // Wrap a tile with its % chance (or a short label) in the top right corner.
+ // k = what it shows; tiles for things that have happened get a gold border (S.seen).
  const fmt=p=>{if(typeof p==='string')return p;const v=p*100;return(v<10&&Math.abs(v-Math.round(v))>.05?v.toFixed(1):Math.round(v))+'%'};
- const pc=(c,p)=>{const d=document.createElement('div');d.className='tile';const s=document.createElement('span');s.className='pct';s.textContent=fmt(p);d.append(c,s);return d};
+ const pc=(c,p,k)=>{const d=document.createElement('div');d.className='tile'+(S.seen[k]?' seen':'');d.dataset.k=k;const s=document.createElement('span');s.className='pct';s.textContent=fmt(p);d.append(c,s);return d};
+ const D=(k,p)=>pc(diagram(k),p,k),P=(k,p)=>pc(pairDiagram(k),p,k),I=(k,p,w)=>pc(idleTile(k,w),p,w?k+':'+w:k);
  // Arrangements: chance per idle check that a character starts that interaction (visit x not sparring x not a plain hangout)
  const ev=(1-ODDS.spar)*(1-ODDS.hangout),arr=k=>(k==='friend'?ODDS.visitFriend:ODDS.visit)*ev,pv=ODDS.visit*(1-ODDS.hangout);
- sec('Arrangements: Wizard & Knight',[...['friend','learn','bolt','chat'].map(k=>pc(diagram(k),arr(k))),pc(idleTile('spar'),ODDS.visit*ODDS.spar)]);
- sec('Arrangements: Priest & Wizard',['study','gossip','undead','light'].map(k=>pc(pairDiagram(k),pv)));
- sec('Arrangements: Priest & Knight',[pc(pairDiagram('zeal'),'+60%'),pc(pairDiagram('pray'),pv),pc(pairDiagram('bless'),pv),pc(pairDiagram('sermon'),pv*(1-ODDS.tentacle)),pc(pairDiagram('tentacle'),pv*ODDS.tentacle)]);
- sec('Arrangements: Necromancer & Knight',['sleep','dknight','horde','nchat'].map(k=>pc(pairDiagram(k),pv)));
- sec('Arrangements: Necromancer & Priest (left/right: no interaction)',['purge','debate'].map(k=>pc(pairDiagram(k),pv)));
- sec('Arrangements: Necromancer & Wizard',[pc(pairDiagram('duel'),pv/2),pc(pairDiagram('craft'),pv/2),pc(pairDiagram('golem'),pv),pc(pairDiagram('tomes'),pv),pc(pairDiagram('swap'),pv)]);
+ sec('Arrangements: Wizard & Knight',[...['friend','learn','bolt','chat'].map(k=>D(k,arr(k))),I('spar',ODDS.visit*ODDS.spar)]);
+ sec('Arrangements: Priest & Wizard',['study','gossip','undead','light'].map(k=>P(k,pv)));
+ sec('Arrangements: Priest & Knight',[P('zeal','+60%'),P('crusade','2%'),P('pray',pv),P('bless',pv),P('sermon',pv*(1-ODDS.tentacle)),P('tentacle',pv*ODDS.tentacle)]);
+ sec('Arrangements: Necromancer & Knight',['sleep','dknight','horde','nchat'].map(k=>P(k,pv)));
+ sec('Arrangements: Necromancer & Priest (left/right: no interaction)',[P('purge',pv),P('debate',pv),P('cleanse','Death Knight')]);
+ sec('Arrangements: Necromancer & Wizard',[P('duel',pv/2),P('craft',pv/2),P('golem',pv),P('tomes',pv),P('swap',pv),I('forge','1% any side')]);
  const W=ODDS.wizard,K=ODDS.knight;
- sec('Wizard idle',[pc(idleTile('read'),W.read),pc(idleTile('magic'),W.magic),pc(idleTile('demon'),W.demon)]);
- sec('Knight idle',[...WEAPONS.map(w=>pc(idleTile('prac',w),K.prac)),pc(idleTile('orc'),K.orc),pc(idleTile('horse'),K.horse),pc(idleTile('cat'),ODDS.eknightCat)]);
+ sec('Wizard idle',[I('read',W.read),I('magic',W.magic),I('demon',W.demon),I('brew','1% Merchant')]);
+ sec('Knight idle',[...WEAPONS.map(w=>I('prac',K.prac,w)),I('orc',K.orc),I('horse',K.horse),I('cat',ODDS.eknightCat)]);
  const PR=ODDS.priest,NE=ODDS.necromancer;
- sec('Priest idle',[pc(idleTile('pray1'),PR.pray),pc(idleTile('farmer'),PR.farmer),pc(idleTile('tithe'),PR.tithe),pc(idleTile('exorcise'),PR.exorcise)]);
- sec('Necromancer idle',[pc(idleTile('spirits'),NE.spirits),pc(idleTile('candles'),NE.candles),pc(idleTile('lightning'),NE.lightning),pc(idleTile('raise'),NE.raise)]);
- sec('Items',[pc(idleTile('fireball'),'scroll'),pc(idleTile('glow'),'scroll'),pc(idleTile('banish'),'scroll'),pc(idleTile('raise'),'scroll'),pc(idleTile('teleport'),'potion'),pc(idleTile('flex'),'potion'),pc(idleTile('wings'),'potion'),pc(idleTile('sniff'),'potion')]);
+ sec('Priest idle',[I('pray1',PR.pray),I('farmer',PR.farmer),I('tithe',PR.tithe),I('exorcise',PR.exorcise)]);
+ sec('Necromancer idle',[I('spirits',NE.spirits),I('candles',NE.candles),I('lightning',NE.lightning),I('raise',NE.raise)]);
+ sec('Items',[I('fireball','scroll'),I('glow','scroll'),I('banish','scroll'),pc(idleTile('raise'),'scroll','raise'),I('teleport','potion'),I('flex','potion'),I('wings','potion'),I('sniff','potion'),I('relic','artifact')]);
 }
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
@@ -787,10 +848,10 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
 
 // ---------- state ----------
 function ui(){document.querySelectorAll('.it[data-id]').forEach(b=>b.classList.toggle('used',!!U[b.dataset.id]))}
-function save(){try{const b={};for(const i in U)b[i]=[U[i].r,U[i].c,U[i].weapon,U[i].form,U[i].color];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,inv:S.inv}))}catch(e){}}
+function save(){try{const b={};for(const i in U)b[i]=[U[i].r,U[i].c,U[i].weapon,U[i].form,U[i].color];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,inv:S.inv,seen:S.seen}))}catch(e){}}
 function load(){let d=null;try{d=JSON.parse(localStorage.getItem(KEY))}catch(e){}
- if(d){S.un=d.un||{};S.coins=d.coins||0;S.inv=Object.assign({scroll:0,potion:0},d.inv)}
- showCoins();showItems();
+ if(d){S.un=d.un||{};S.coins=d.coins||0;S.inv=Object.assign({scroll:0,potion:0,artifact:0},d.inv);S.seen=d.seen||{}}
+ showCoins();showItems();checkUnlocks();
  buildShelf();
  if(d&&d.boxes){for(const i in d.boxes)if(CH[i]){const q=d.boxes[i];addUnit(i,q[0],q[1],true,q[2],q[3],q[4])}}
  else{addUnit('knight',1,1,true);addUnit('wizard',1,3,true)}

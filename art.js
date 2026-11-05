@@ -1,5 +1,5 @@
 // ---------- art: room backgrounds and drawing ----------
-const WALL={knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40'],priest:['#4a4458','#30293c'],necromancer:['#26262c','#18181c']};
+const WALL={merchant:['#5a4430','#3a2a1c'],knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40'],priest:['#4a4458','#30293c'],necromancer:['#26262c','#18181c']};
 // Priest's stained glass window (frame 16..44 x 12..52, center x 30, y 32). Tentacles can smash through it.
 const WINDOW=[[16,12,28,40,'#2a2434'],[18,16,7,10,'#c04040'],[26,16,8,10,'#3a6ad0'],[35,16,7,10,'#d0b030'],[18,27,7,10,'#40a060'],[26,27,8,10,'#c890ff'],[35,27,7,10,'#c04040'],[18,38,7,12,'#3a6ad0'],[26,38,8,12,'#d0b030'],[35,38,7,12,'#40a060'],[29,19,2,8,'#f2e8a0'],[27,21,6,2,'#f2e8a0'],[20,12,20,2,'#3a3448']];
 const WIN_C={x:30,y:32};
@@ -8,6 +8,8 @@ const BACKDOOR=[[61,31,22,35,'#1e2030'],[63,33,18,33,'#6a4420'],[69,33,1,33,'#5a
 // Wizard's second bookshelf (slides aside to reveal the spiral staircase). Center x 68, bottom y 66.
 const SHELF2=[[56,30,24,36,'#6a4a2a'],[58,32,20,32,'#3a2410'],[58,47,20,2,'#6a4a2a'],[59,35,4,12,'#c04040'],[64,37,3,10,'#40a0c0'],[68,35,4,12,'#d0b030'],[73,36,4,11,'#40c070'],[59,51,3,13,'#8a5ae0'],[63,52,5,12,'#c04040'],[69,50,3,14,'#40a0c0'],[73,53,4,11,'#d0b030']];
 function bg(id,w){
+ // Fruit Merchant: striped awning and crates of fruit
+ if(id==='merchant')return [[6,8,84,6,'#c04040'],[6,8,12,6,'#f0e8d8'],[30,8,12,6,'#f0e8d8'],[54,8,12,6,'#f0e8d8'],[78,8,12,6,'#f0e8d8'],[8,46,22,18,'#8a5a2a'],[8,46,22,2,'#6a4420'],[11,42,4,4,'#d03030'],[16,41,4,4,'#e04040'],[21,42,4,4,'#c02828'],[13,38,4,4,'#d83838'],[32,50,20,14,'#8a5a2a'],[32,50,20,2,'#6a4420'],[34,46,4,4,'#f08a20'],[39,45,4,4,'#f8a030'],[44,46,4,4,'#e88018'],[48,38,3,8,'#f2d040'],[51,37,3,8,'#e8c830'],[54,38,3,8,'#f2d040'],...BACKDOOR];
  if(id==='priest')return [...WINDOW,[48,52,4,14,'#d8d0b0'],[47,50,6,2,'#a08a50'],[49,47,2,3,'#ffd060'],...BACKDOOR];
  if(id==='necromancer')return [[10,22,40,3,'#3a3028'],[10,42,40,3,'#3a3028'],[14,14,7,8,'#e8e4d0'],[15,16,2,2,O],[18,16,2,2,O],[30,15,6,7,'#e8e4d0'],[31,17,2,2,O],[33,17,2,2,O],[40,16,3,6,'#2a2a2a'],[40,13,3,3,'#7aff7a'],[16,34,4,8,'#2a2a2a'],[16,31,4,3,'#7aff7a'],[26,36,10,6,'#4a3a5a'],[38,33,6,9,'#e8e4d0'],[39,35,2,2,O],[41,35,2,2,O],...BACKDOOR];
  if(id==='wizard')return [[10,14,38,42,'#6a4a2a'],[12,18,5,14,'#c04040'],[18,18,5,14,'#40a0c0'],[24,18,5,14,'#d0b030'],[30,18,5,14,'#8a5ae0'],[36,18,5,14,'#40c070'],[10,34,38,3,'#3a2410'],[12,38,5,14,'#d0b030'],[18,38,8,14,'#c04040'],[28,38,5,14,'#40a0c0'],[34,38,6,14,'#8a5ae0'],...SHELF2];
@@ -62,6 +64,8 @@ function poseOf(act,at){
  if(act==='sleepc'||act==='swapc'||act==='darkorb')return 'both';
  if(act==='frost')return 'up';
  if(act==='sniff')return at<1.1?'up':at<1.5?'fwd':'none';
+ if(act==='brew')return Math.floor(at*2)%2?'fwd':'up';
+ if(act==='relic')return at<2.6?'up':'none';
  if(act==='prac')return 'noR';
  if(act==='learn'||act==='cast')return 'up';
  if(act==='demon')return at<1.6?'both':'up';
@@ -169,6 +173,8 @@ function drawAct(c,u){
   if(t>1.2&&t<3.2){const la=cl((t-1.2)/.4,0,1)*cl((3.2-t)/.4,0,1);c.save();c.globalAlpha=la;c.strokeStyle='rgba(255,236,150,.9)';c.lineWidth=5;c.beginPath();c.moveTo(x+f*6,y-36);c.lineTo(gh.x,gh.y-26);c.stroke();
    c.fillStyle='rgba(255,250,210,.6)';c.beginPath();c.arc(x,y-38,10,0,Math.PI*2);c.fill();c.restore()}
   if(ga>0)spr(c,'ghost',t>2?'hurt':'ok',gh.x,gh.y-6-Math.sin(t*3)*3-(t>2?(t-2)*14:0),gh.x>x?-1:1,0,.75*ga,1)}
+ else if(a==='brew'){drawCauldron(c,Math.round(x+f*18),Math.round(y),t);if(t>3)drawItem(c,'potion',Math.round(x+f*18),Math.round(y-20-(t-3)*12),1)}
+ else if(a==='relic'&&t<2.6){drawItem(c,'artifact',Math.round(x+f*9),Math.round(y-40),1);c.fillStyle='rgba(255,240,170,'+(.35+.25*Math.sin(t*10))+')';c.beginPath();c.arc(x+f*9,y-40,9,0,Math.PI*2);c.fill()}
  else if(a==='sniff'&&t<1.1){drawItem(c,'potion',Math.round(x+f*8),Math.round(y-36),1)}
  else if(a==='sprinkle'){ // a little flask of holy water in the hand
   const up=Math.floor(t*4)%2,hx=Math.round(x+f*(up?11:16)),hy=Math.round(y-(up?36:22));
@@ -235,6 +241,7 @@ const sinkOf=at=>cl((at-1.9)/1,0,1);
 function drawItem(c,kind,x,y,s){
  const R=kind==='scroll'
   ?[[-6,-3,12,6,'#eadcb4'],[-7,-4,2,8,'#c8b890'],[5,-4,2,8,'#c8b890'],[-4,-1,6,1,'#9a8a68'],[-1,1,3,3,'#c03030']]
+  :kind==='artifact'?[[-2,-6,4,1,'#f2c84a'],[-3,-5,6,2,'#f2c84a'],[-4,-3,8,6,'#d8a030'],[-2,-2,4,4,'#7ae0ff'],[-1,-1,1,1,'#ffffff'],[-1,3,2,2,'#d8a030'],[-3,5,6,1,'#f2c84a']]
   :kind==='coin'?[[-2,-4,5,1,'#f2c84a'],[-3,-3,7,7,'#f2c84a'],[-2,4,5,1,'#f2c84a'],[-4,-2,1,5,'#f2c84a'],[4,-2,1,5,'#f2c84a'],[0,-2,1,5,'#b8862a'],[-2,-2,1,1,'#fff6c0']]
   :[[-1,-6,2,1,'#8a5a2a'],[-1,-5,2,2,'#cfe8f0'],[-3,-3,6,6,'#cfe8f0'],[-2,-1,4,3,'#d03050'],[-2,-2,1,1,'#ffffff']];
  c.fillStyle=O;R.forEach(r=>c.fillRect(Math.round(x+(r[0]-1)*s),Math.round(y+(r[1]-1)*s),(r[2]+2)*s,(r[3]+2)*s));
@@ -359,3 +366,10 @@ function drawSleepWave(c,w){const fx=w.x0+w.t*240,y=w.r*CELL;c.save();const gr=c
 function drawHole(c,x,y,a){c.save();c.globalAlpha=a;c.fillStyle='#0a0610';[[-12,-14,24,26],[-15,-8,30,16],[-8,-18,16,6]].forEach(r=>c.fillRect(x+r[0],y+r[1],r[2],r[3]));c.fillStyle='#8a5a34';[[-16,-16,4,4],[13,-10,4,3],[-14,10,5,3],[10,9,4,4]].forEach(r=>c.fillRect(x+r[0],y+r[1],r[2],r[3]));c.restore()}
 // Snow falling in a room (frost spell)
 function drawSnow(c,bx,by,t){c.save();c.beginPath();c.rect(bx+4,by+4,88,88);c.clip();c.fillStyle='#ffffff';for(let i=0;i<14;i++){const px=bx+8+((i*37)%80)+Math.sin(t*2+i)*3,py=by+4+((t*22+i*13)%84);c.fillRect(Math.round(px),Math.round(py),2,2)}c.restore()}
+
+// ---------- easter eggs and brewing ----------
+// Skulls littering the floor of the Necromancer's room while it's on the bottom row
+function drawSkulls(c,bx,by){[[14,84],[30,90],[66,86],[82,91]].forEach((q,i)=>{const x=bx+q[0],y=by+q[1];c.fillStyle=O;c.fillRect(x-4,y-5,9,7);c.fillStyle='#e8e4d0';c.fillRect(x-3,y-4,7,5);c.fillStyle=O;c.fillRect(x-2,y-3,2,2);c.fillRect(x+1,y-3,2,2);if(i%2){c.fillStyle='#d8d4c0';c.fillRect(x+6,y-1,8,2);c.fillRect(x+5,y-2,2,4);c.fillRect(x+13,y-2,2,4)}})}
+// A small cauldron with bubbles (Wizard brewing a potion)
+function drawCauldron(c,x,y,t){c.fillStyle=O;c.fillRect(x-9,y-12,18,12);c.fillStyle='#3a3a44';c.fillRect(x-8,y-11,16,10);c.fillStyle='#2a2a30';c.fillRect(x-10,y-13,20,3);c.fillStyle='#d03050';c.fillRect(x-7,y-12,14,2);
+ c.fillStyle='#ff8090';for(let i=0;i<3;i++){const k=(t*1.5+i/3)%1;c.fillRect(Math.round(x-5+i*5),Math.round(y-14-k*10),2,2)}c.fillStyle='#ff8020';c.fillRect(x-4,y,8,2)}

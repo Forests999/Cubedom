@@ -63,3 +63,7 @@ button{touch-action:manipulation}
 @media (max-width:480px){.lb .tag{width:9px;height:9px;margin-left:2px}}
 /* Coin counter in the item tray (not draggable) */
 .it.coins{cursor:default;color:#f2c84a}
+
+/* Compendium: a thin gold border on everything that has happened at least once */
+.tile.seen>canvas{border-color:#f2c84a}
+#reset{background:#4a2630}

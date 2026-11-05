@@ -58,18 +58,18 @@ const DC={body:'#3a3a46',bodyD:'#2a2a34',pants:'#2a2a34',boot:'#1a1a22',belt:'#6
 CH.dknight={name:'Death Knight',eye:'#ff3030',a:arms(DC),p:[...B(DC),[4,1,8,2,'#4a4a56'],[3,0,1,3,'#2a2a34'],[12,0,1,3,'#2a2a34'],[1,9,3,2,'#4a4a56'],[12,9,3,2,'#4a4a56'],[5,11,6,1,'#e8e4d0'],[5,13,6,1,'#c8c4b0'],[7,7,2,1,O]]};
 
 // Class tags shown as a small symbol next to each name. Merchants: coin, Fighters: sword, Mages: magic star.
-const CLASS={knight:'fighter',wizard:'mage',priest:'mage',necromancer:'mage'};
+const CLASS={knight:'fighter',wizard:'mage',priest:'mage',necromancer:'mage',merchant:'merchant'};
 const TAG_ICON={ // 7x7 pixel icons: [x,y,w,h,color]
  merchant:[[2,0,3,1,'#f2c84a'],[1,1,5,5,'#f2c84a'],[2,6,3,1,'#f2c84a'],[0,2,1,3,'#f2c84a'],[6,2,1,3,'#f2c84a'],[3,2,1,3,'#b8862a']],
  fighter:[[3,0,1,5,'#e0e6f0'],[1,4,5,1,'#d8b040'],[3,5,1,2,'#8a5a2a']],
  mage:[[3,0,1,7,'#c890ff'],[0,3,7,1,'#c890ff'],[2,2,3,3,'#f0e0ff'],[1,1,1,1,'#c890ff'],[5,1,1,1,'#c890ff'],[1,5,1,1,'#c890ff'],[5,5,1,1,'#c890ff']]};
 // Character boxes on the shelf. The Necromancer only appears once unlocked (see ODDS.necro).
 const SHELF_CHARS=['knight','wizard','priest'];
-const ITEMS=['scroll','potion']; // consumables, infinite use for now
+const ITEMS=['scroll','potion','artifact']; // consumables: a counted inventory, earned in the game (artifacts are used later; for now only the Priest easter egg)
 
 // Left/right: the Wizard always uses his portals; everyone else walks through the side door.
 // Up/down: each ROOM's own stairs. Leave by your room's exit and arrive by the other room's exit.
-const TR={knight:{up:'backdoor',down:'backdoor'},wizard:{up:'shelf',down:'shelf'},priest:{up:'backdoor',down:'backdoor'},necromancer:{up:'backdoor',down:'backdoor'}};
+const TR={merchant:{up:'backdoor',down:'backdoor'},knight:{up:'backdoor',down:'backdoor'},wizard:{up:'shelf',down:'shelf'},priest:{up:'backdoor',down:'backdoor'},necromancer:{up:'backdoor',down:'backdoor'}};
 // Where those up/down exits sit in a room: x across, y = their base, ay = where a character stands to use them.
 const EXIT={backdoor:{x:72,y:66,ay:69},shelf:{x:68,y:66,ay:69}};
 const WEAPONS=['shield','spear','glaive','longsword'];
@@ -106,6 +106,9 @@ const ODDS={visit:.2,visitFriend:.45,spar:.02,hangout:.25,idle:.4,zeal:.6,tentac
  eknightCat:.01};
 // Coins: +1 every COIN_EVERY seconds while the game is open; the Priest's tithe prayer gives TITHE.
 const COIN_EVERY=30,TITHE=5;
+// Wizard brewing next to a Merchant costs BREW_COST coins; a crusade lasts CRUSADE_TIME seconds; holding MERCHANT_COINS coins at once unlocks the Fruit Merchant.
+const BREW_COST=5,CRUSADE_TIME=120,CRUSADE_GOLD=10,MERCHANT_COINS=30;
+Object.assign(ODDS,{wizBrew:.01,forge:.01,crusade:.02,crusadeGold:.7,bronze:.01});
 const $=s=>document.querySelector(s),pick=a=>a[Math.floor(Math.random()*a.length)],cl=(v,a,b)=>Math.min(b,Math.max(a,v));
 
 const TALK=[
@@ -138,3 +141,17 @@ NAMES.sleep='Sleep spell (everyone to his right, 1 min)';NAMES.dknight='Death Kn
 NAMES.purge='Ghosts or zombies to purge';NAMES.debate='Holy vs unholy argument';NAMES.duel='Lightning duel';NAMES.craft='Crafting a scroll (20 coins)';NAMES.golem='Clay golem escapes';NAMES.tomes='Reading tomes together';NAMES.swap='Swapping rooms';
 // The Priest's blessing for a visiting farmer
 const FARM_PRAYER=['Bless your fields and your flock.','May your harvest be plenty.'];
+
+// ---------- variants and the Fruit Merchant ----------
+// Knight armor: steel normally, bronze 1% of the time (easter egg). Stored in the unit's color.
+const BC={body:'#b07a3a',bodyD:'#8a5a2a',pants:'#6a4a2a',boot:'#3a2a1a',belt:'#d8b860'};
+CH.knight_steel=CH.knight;
+CH.knight_bronze={name:'Knight',eye:O,a:arms(BC),p:[...B(BC),[4,1,8,3,'#c89050'],[4,4,1,4,'#b07a3a'],[11,4,1,4,'#8a5a2a'],[7,0,2,2,'#2a6ac0']]};
+// Priest: 50% male (short hair), 50% female (long hair)
+CH.priest_m=CH.priest;
+CH.priest_f={name:'Priest',eye:O,a:CH.priest.a,p:[...CH.priest.p.filter(r=>r[4]!=='#7a5a3a'),[4,1,8,2,'#8a5a32'],[4,3,1,8,'#8a5a32'],[11,3,1,8,'#8a5a32'],[5,3,6,1,'#8a5a32']]};
+// Fruit Merchant: a Merchant. Unlocked by holding MERCHANT_COINS coins at once. No special mechanics yet.
+const MC={body:'#d8c8a0',bodyD:'#b8a880',pants:'#5a4a3a',boot:'#3a2a1a',belt:'#4a8a3a'};
+CH.merchant={name:'Fruit Merchant',eye:O,a:arms(MC),p:[...B(MC),[5,11,6,6,'#4a8a3a'],[6,12,4,1,'#6aaa5a'],[4,1,8,2,'#c04040'],[3,2,10,1,'#a02a2a'],[6,8,4,1,'#5a3a2a']]};
+NAMES.brew='Brewing a potion (next to a Merchant, 5 coins)';NAMES.forge='Making a scroll or potion';NAMES.crusade='Holy crusade (2 min)';NAMES.cleanse='Cleansing the Death Knight';
+NAMES.relic='Artifact on Priest: destroy the Necromancer';NAMES.artifact='Artifact';NAMES.merchant='Fruit Merchant';
