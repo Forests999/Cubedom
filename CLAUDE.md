@@ -131,3 +131,4 @@ Achievements and unlockables, more character classes, customizable dialogue, mor
 - Make small changes and test each one. Explain changes in plain language; the owner is a beginner.
 - Use git; commit after each working change. Commit as Forests999 with the GitHub noreply email (already set in this repo's git config); never use the owner's real name or email.
 - Ask before pushing, since pushing publishes to the public site.
+- Before every push, raise the release number `?v=` in `index.html` (on style.css, data.js, art.js and game.js, all four the same, e.g. 10 -> 11) so browsers and phones load the new files instead of old cached ones.
