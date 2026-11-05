@@ -15,7 +15,7 @@ A web-based, fantasy-medieval sandbox inspired by the 2000s toy "Cube World". Ea
 Plain script files with no modules, so double-clicking `index.html` still works. They load in this order and share global variables, so the order matters:
 - `index.html`: page layout only (board, character shelf `#tray`, item tray `#items`, Reset button, `#toast` message, `#modal` purchase popup). File links carry a release number `?v=`.
 - `style.css`: all styling.
-- `data.js`: constants, characters and sprite pixels (`CH`), arm poses (`POSE`), classes and tag icons (`CLASS`, `TAG_ICON`), wizard outfits (`WIZ_COLORS`), shelf characters (`SHELF_CHARS`), items (`ITEMS`), room exits (`TR`, `EXIT`), `WEAPONS`, the neighbor interaction table (`PAIRS`), potion-teleport scenes (`POTION_KINDS`), all odds (`ODDS`), timers and prices (constants like `SLEEP_TIME`, `APOTH_COST`), dialogue (`TALK`, `GOSSIP`, `PRAYERS`, `NECRO_TALK`, `DEBATE`, `MERCH_ADS`, `JOKES`, `FARM_PRAYER`), display names (`NAMES`), Compendium tabs (`COMP_TABS`, `EGGS`), and small helpers (`$`, `pick`, `cl`).
+- `data.js`: constants, characters and sprite pixels (`CH`), arm poses (`POSE`), classes and tag icons (`CLASS`, `TAG_ICON`), wizard outfits (`WIZ_COLORS`), shelf characters (`SHELF_CHARS`), items (`ITEMS`), room exits (`TR`, `EXIT`), `WEAPONS`, the neighbor interaction table (`PAIRS`), potion-teleport scenes (`POTION_KINDS`), all odds (`ODDS`), timers and prices (constants like `SLEEP_TIME`, `APOTH_COST`), dialogue (`TALK`, `GOSSIP`, `PRAYERS`, `NECRO_TALK`, `DEBATE`, `MERCH_ADS`, `JOKES`, `FARM_PRAYER`), display names (`NAMES`), Compendium tabs (`COMP_TABS`, `EGGS`, `PAIR_WITH`), and small helpers (`$`, `pick`, `cl`).
 - `art.js`: room walls and backgrounds (`WALL`, `bg`, `BACKDOOR`, `BACKDOOR_L`, `SHELF2`, `WINDOW`) and all drawing functions (sprites, `poseOf`, rooms, exits, activities, weapon swings `pracAnim`, creatures, effects, item icons `drawItem`).
 - `game.js`: rules, decisions (`decide`, `startAct`, `acting`), movement (`route`, `run`), interaction scenes (`talk`), items (`useItem`), shops, the render loop, input, the shelf (`buildShelf`), the Compendium (`buildRef`), and saving/loading.
 All odds live in `ODDS`; the game and the Compendium both read from it, so change odds only there.
@@ -31,17 +31,17 @@ All odds live in `ODDS`; the game and the Compendium both read from it, so chang
 ## Characters
 | Character | Class | Look and room | How you get it |
 |---|---|---|---|
-| Knight | Fighter (sword tag) | Steel armor (1% bronze, easter egg). Room: armor stand, his random wall weapon (shield, spear, glaive, longsword), back-wall door. | On the shelf |
-| Wizard | Mage (star tag) | Random outfit blue/purple/red (black + red orb = easter egg). Room: big bookshelf, second bookshelf hiding a spiral staircase. | On the shelf |
-| Priest | Mage | White robes, gold cross; 50% male / 50% female. Room: stained glass window, candle, back-wall door. | On the shelf |
-| Necromancer | Mage | Dark green hood, pale skin, skull staff. Room: skulls, green candles, back-wall door. | 25% chance whenever a Priest dies (`ODDS.necro`) |
-| Fruit Merchant | Merchant (coin tag) | Apron and red cap. Room: striped awning, fruit crates, back-wall door. | Hold 30 coins at once (`MERCHANT_COINS`) |
-| Apothecary | Merchant | A woman with long auburn hair, green robe. Room: herb planters, potion shelves and counter, back door on the LEFT. Placing her box costs 20 coins (asks first). | Place any Merchant next to any Mage |
+| Knight | Fighter (sword tag) | Steel armor (1% bronze, easter egg). Room: armor stand, his random wall weapon (shield, spear, glaive, longsword; kept short so it stays below the name label), back-wall door. | On the shelf |
+| Wizard | Mage (star tag) | Random outfit blue/purple/red (black + red orb = easter egg). Room: big bookshelf (set lower so the name label does not cover it), second bookshelf hiding a spiral staircase. | On the shelf |
+| Priest | Mage | White robes, gold cross; 50% male / 50% female. Room: stained glass window (set lower, below the name label), candle, back-wall door. | On the shelf |
+| Necromancer | Mage | Dark green hood, pale skin, skull staff. Room: skull shelves (set lower, below the name label), green candles, back-wall door. | 25% chance whenever a Priest dies (`ODDS.necro`) |
+| Fruit Merchant | Merchant (coin tag) | Apron and red cap. Room: red and white striped awning (just below the name label), fruit crates, back-wall door. | Hold 30 coins at once (`MERCHANT_COINS`) |
+| Apothecary | Merchant | A woman with long auburn hair, green robe. Room: a window with blue sky, herb planters, potion shelves and counter, back door on the LEFT. Placing her box costs 20 coins (asks first). | Place any Merchant next to any Mage |
 | Farmer | Merchant | Straw hat. Room: sky, fence, a growing field. Temporary (not on the shelf, not saved). | Fruit Merchant left of Apothecary, 3% |
 
 Forms that replace a character for a while: Eldritch Knight (permanent, purple armor), Death Knight (permanent until cleansed, skeleton in dark armor; only follows the Necromancer), Monkey (Fruit Merchant, 2 minutes; only hops around and eats bananas). Death Knights and monkeys take no part in interactions, idles or items, and nobody visits them.
 
-Visitors who are not boxes: farmer, possessed farmer, ghost, squire, nobles, farmer mob, orc, skeletons, zombies, demon, golem, horse, cat.
+Visitors who are not boxes: commoner customer, farmer, possessed farmer, ghost, squire, nobles, farmer mob, orc, skeletons, zombies, demon, golem, horse, cat.
 
 ## How characters decide (timing)
 - Each idle character rolls about every 5-10 seconds (wait after an idle activity 1.5-4 s, after a visit or wander 2-5 s, plus the activity itself).
@@ -99,14 +99,14 @@ Visitors who are not boxes: farmer, possessed farmer, ghost, squire, nobles, far
 - Priest above Merchant (Merchant below): **Cursed fruit** (cast). The Merchant's fruit rots for 60 s; meanwhile nothing he does earns coins.
 
 ### Fruit Merchant & Wizard (Merchant relative to Wizard)
-- Merchant left: **Wizard advertises.** For 60 s the coin timer gives 2 coins every 30 s.
+- Merchant left: **Wizard advertises.** Each time, the coin timer gives one more coin every 30 s (2, then 3, up to `BOOST_MAX` 4) for the next 60 s; each new advert restarts the 60 s, and when it runs out it drops back to 1.
 - Merchant right: 99.5% **Jokes and laughter** (`JOKES`); 0.5% (`ODDS.murder`) **A dark turn**: the Merchant kills the Wizard.
 - Merchant above: **A giant banana.** The Wizard magics it huge.
 - Merchant below: **Durian.** +10 coins; the Wizard hates the smell.
 
 ### Apothecary & Fruit Merchant
 - Apothecary left of Merchant: **A gift.** She gives him a potion; it has its usual effect on him (backwards speech toggles).
-- Merchant left of Apothecary: 97% **Trading wares** (apples for potions); 3% (`ODDS.farm`) **A farm appears**: a temporary Farmer box on the nearest empty cell grows wheat (80%) or apples (20%) for 3 minutes, then harvests for +30 coins and disappears.
+- Merchant left of Apothecary: 97% **Trading wares** (apples for potions); 3% (`ODDS.farm`) **A farm appears**: a temporary Farmer box on the nearest empty cell grows wheat (80%) or apples (20%) for 3 minutes, then harvests for +30 coins (halved to 15 if the Necromancer is next to the Farmer on any side) and disappears.
 - Above / below: hangouts only.
 
 ### Pairs with only hangouts
@@ -120,8 +120,8 @@ Knight & Fruit Merchant, Knight & Apothecary, Wizard & Apothecary, Priest & Apot
 - **Wizard:** read 60%, practice magic 38%, summon a demon 2% (it drags him down; he dies). Next to a Merchant with 5 coins: 1% he brews a potion (-5 coins, +1 potion).
 - **Priest:** kneel and pray 50% (golden ceiling light), bless a farmer 35%, tithe prayer 10% (+5 coins), exorcism 5%.
 - **Necromancer:** commune with spirits 50%, candles and chalk circle 25%, red lightning 24%, raise a skeleton in another character's room 1% (Fighters and Mages beat it; anyone else dies).
-- **Fruit Merchant:** call out adverts 70%, sell apples to a neighbor 29% (+2 coins), a mob of farmers pelts him with fruit 1%.
-- **Apothecary:** trip 5%, trip and smash a potion 5%, brew potions 50% (just for show), water and pick herbs 40%.
+- **Fruit Merchant:** a customer comes in 15% (a commoner walks in through his back door and buys fruit, +2 coins `CUSTOMER_FRUIT`; nothing while his fruit is rotten), call out adverts 55%, sell apples to a neighbor 29% (+2 coins), a mob of farmers pelts him with fruit 1%.
+- **Apothecary:** a customer comes in 15% (a commoner walks in through her left door and buys a remedy, +5 coins `CUSTOMER_REMEDY`), trip 5%, trip and smash a potion 5%, brew potions 35% (just for show), water and pick herbs 40%.
 - **Farmer:** tends his field until harvest.
 
 ## Items, coins and shops
@@ -129,7 +129,7 @@ Knight & Fruit Merchant, Knight & Apothecary, Wizard & Apothecary, Priest & Apot
 - **Spell scroll:** Wizard = fireball destroys a random neighboring room and everyone in it; Knight = golden glow 30 s; Priest = banishes a ghost; Necromancer = raises a skeleton next door; Fruit Merchant = monkey for 2 minutes; Apothecary = +1 potion.
 - **Potion:** Wizard = teleports to a random character anywhere, does one of their scenes (`POTION_KINDS`), portals home; Knight = flexes; Priest = angel wings 30 s; Necromancer = sniffs it and smashes it on the wall; Fruit Merchant = speaks backwards until another potion; Apothecary = +10 coins; anyone asleep = wakes up.
 - **Artifact:** only the Priest easter egg uses it so far.
-- **Coins:** +1 every 30 s while the game is open (2 during the Wizard's advertising). Also from scenes (tithe, sales, starfruit, durian, crusade, farm) and Compendium rewards.
+- **Coins:** +1 every 30 s while the game is open (up to 4 during the Wizard's advertising). Also from scenes (tithe, sales, customers, starfruit, durian, crusade, farm) and Compendium rewards.
 - **Where items come from:** scrolls from Necromancer + Wizard crafting (20 coins), their 1% joint making, or the Wizard's writing desk (50 coins; 30 for the black Wizard); potions from the Apothecary (30 coins), the Wizard brewing next to a Merchant (5 coins), the joint making, or a scroll on the Apothecary; artifacts from the crusade.
 - **Shops:** tap the Apothecary's room to buy a potion; tap the Wizard's room while his writing desk shows (a Merchant AND another Mage next to him) to buy a scroll. Shop rooms have a thin silver border. Every purchase asks first in the in-page popup (`ask`; not the browser pop-up).
 
@@ -147,10 +147,12 @@ Knight & Fruit Merchant, Knight & Apothecary, Wizard & Apothecary, Priest & Apot
   - **Artifact on the Priest** while the Necromancer is his neighbor: the Necromancer is destroyed AND removed from the shelf; he must be unlocked again by a Priest dying.
 
 ## Compendium tab
-- Tabs per character (`COMP_TABS`): Knight, Wizard, Priest, Necromancer, Fruit Merchant, Apothecary. Each lists everything that character takes part in (shared scenes appear in both tabs), grouped as With neighbors / Idle activities / Items, shops and secrets, with found / total counts (totals include hidden easter eggs).
+- Tabs per character (`COMP_TABS`): Knight, Wizard, Priest, Necromancer, Fruit Merchant, Apothecary. Each lists everything that character takes part in (shared scenes appear in both tabs), grouped as With neighbors / Idle activities / Items and shops / Secrets, with found / total counts (totals include hidden easter eggs).
+- With neighbors is split into one sub-section per neighbor ("with the Knight", ...), in alphabetical order. Who takes part in each neighbor scene comes from `PAIR_WITH` (data.js); add new pair scenes there too.
+- Secrets (easter eggs) are their own group at the bottom of a tab: hidden until found ("Not found yet" until then), but always counted.
 - Tiles show the chance in the top right (from `ODDS`), icons in the bottom left for anything a scene gives you (`GAINS`), and a gold border once it has happened (`markSeen`, `S.seen`). Found easter eggs get a purple dashed outline.
 - Every 5 different discoveries pay 10 coins (`DISCOVER_EVERY`, `DISCOVER_REWARD`, `S.rewarded`).
-- Whenever an interaction, idle activity or item effect is added or changed: add it to `COMP_TABS`, give it a tile in `buildRef`/`idleTile`/`pairDiagram`, and make sure the game calls `markSeen` for it.
+- Whenever an interaction, idle activity or item effect is added or changed: add it to `COMP_TABS` (and `PAIR_WITH` for neighbor scenes), give it a tile in `buildRef`/`idleTile`/`pairDiagram`, and make sure the game calls `markSeen` for it.
 
 ## Drawing and animation conventions
 - Pixel art: 16x22 character grid drawn from rectangles with an automatic dark outline. Rooms have plain walls and floor, a background element for the class, and their up/down exit. Fantasy medieval theme.

@@ -221,3 +221,23 @@ const COMP_TABS=[
  {id:'merchant',name:'Fruit Merchant',pairs:['apple','slip','feast','fruitfall','starfruit','curse','banana','durian','jokes','murder','advertW','apgift','mtrade','farm'],idle:['advert','sell','mob'],items:['monkey','backwards']},
  {id:'apothecary',name:'Apothecary',pairs:['apgift','mtrade','farm'],idle:['trip','tripbreak','abrew','herbs'],items:['apoth','apcoins','appotion']}];
 const DISCOVER_EVERY=5,DISCOVER_REWARD=10; // every 5 different things discovered = +10 coins
+const BOOST_MAX=4; // most coins per 30 s the Wizard's advertising can stack up to
+// Commoner customer who comes in to buy from the Fruit Merchant or the Apothecary
+const CM={body:'#9a7a5a',bodyD:'#7a5a40',pants:'#5a5a6a',boot:'#3a2a1a',belt:'#5a3a1e'};
+CH.commoner={name:'Customer',eye:O,a:arms(CM),p:[...B(CM),[5,2,6,2,'#4a3a2a'],[4,3,1,3,'#4a3a2a']]};
+// 15% of their idle time a customer comes in and buys something (customer share added; adverts and brewing reduced to fit)
+ODDS.merchant={customer:.15,advert:.55,sell:.29,mob:.01};
+ODDS.apothecary={customer:.15,trip:.05,tripbreak:.05,abrew:.35,herbs:.4};
+const CUSTOMER_FRUIT=2,CUSTOMER_REMEDY=5;
+NAMES.mcust='A customer buys fruit (+2 coins)';NAMES.acust='A customer buys a remedy (+5 coins)';
+COMP_TABS.find(t=>t.id==='merchant').idle.push('mcust');COMP_TABS.find(t=>t.id==='apothecary').idle.push('acust');
+// Who takes part in each neighbor scene; the Compendium groups a tab's neighbor scenes by the other character
+const PAIR_WITH={friend:['knight','wizard'],learn:['knight','wizard'],bolt:['knight','wizard'],chat:['knight','wizard'],spar:['knight','wizard'],
+ study:['priest','wizard'],gossip:['priest','wizard'],undead:['priest','wizard'],light:['priest','wizard'],
+ zeal:['knight','priest'],crusade:['knight','priest'],pray:['knight','priest'],bless:['knight','priest'],sermon:['knight','priest'],tentacle:['knight','priest'],
+ sleep:['knight','necromancer'],dknight:['knight','necromancer'],horde:['knight','necromancer'],nchat:['knight','necromancer'],
+ purge:['priest','necromancer'],debate:['priest','necromancer'],cleanse:['priest','necromancer'], // the Knight sees Cleansing under the Priest
+ duel:['wizard','necromancer'],craft:['wizard','necromancer'],golem:['wizard','necromancer'],tomes:['wizard','necromancer'],swap:['wizard','necromancer'],forge:['wizard','necromancer'],
+ apple:['priest','merchant'],slip:['priest','merchant'],feast:['priest','merchant'],fruitfall:['priest','merchant'],starfruit:['priest','merchant'],curse:['priest','merchant'],
+ banana:['wizard','merchant'],durian:['wizard','merchant'],jokes:['wizard','merchant'],murder:['wizard','merchant'],advertW:['wizard','merchant'],
+ apgift:['apothecary','merchant'],mtrade:['apothecary','merchant'],farm:['apothecary','merchant']};

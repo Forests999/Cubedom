@@ -1,29 +1,35 @@
 // ---------- art: room backgrounds and drawing ----------
 const WALL={farmer:['#8ab8e0','#6a4a24'],apothecary:['#3e4a3a','#2a3226'],merchant:['#5a4430','#3a2a1c'],knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40'],priest:['#4a4458','#30293c'],necromancer:['#26262c','#18181c']};
 // Priest's stained glass window (frame 16..44 x 12..52, center x 30, y 32). Tentacles can smash through it.
-const WINDOW=[[16,12,28,40,'#2a2434'],[18,16,7,10,'#c04040'],[26,16,8,10,'#3a6ad0'],[35,16,7,10,'#d0b030'],[18,27,7,10,'#40a060'],[26,27,8,10,'#c890ff'],[35,27,7,10,'#c04040'],[18,38,7,12,'#3a6ad0'],[26,38,8,12,'#d0b030'],[35,38,7,12,'#40a060'],[29,19,2,8,'#f2e8a0'],[27,21,6,2,'#f2e8a0'],[20,12,20,2,'#3a3448']];
-const WIN_C={x:30,y:32};
+const WINDOW=[[16,12,28,40,'#2a2434'],[18,16,7,10,'#c04040'],[26,16,8,10,'#3a6ad0'],[35,16,7,10,'#d0b030'],[18,27,7,10,'#40a060'],[26,27,8,10,'#c890ff'],[35,27,7,10,'#c04040'],[18,38,7,12,'#3a6ad0'],[26,38,8,12,'#d0b030'],[35,38,7,12,'#40a060'],[29,19,2,8,'#f2e8a0'],[27,21,6,2,'#f2e8a0'],[20,12,20,2,'#3a3448']].map(r=>[r[0],r[1]+12,r[2],r[3],r[4]]); // moved down, clear of the name label
+const WIN_C={x:30,y:44};
 // Knight's back-wall door (hides the stairs). Center x 72, bottom at the floor line (y 66).
 const BACKDOOR=[[61,31,22,35,'#1e2030'],[63,33,18,33,'#6a4420'],[69,33,1,33,'#5a3a1e'],[75,33,1,33,'#5a3a1e'],[63,38,18,2,'#3a2a1a'],[63,58,18,2,'#3a2a1a'],[65,49,2,2,'#f2c84a']];
 const BACKDOOR_L=BACKDOOR.map(r=>[r[0]-48,r[1],r[2],r[3],r[4]]); // same door, on the left side of the room (Apothecary)
 // Wizard's second bookshelf (slides aside to reveal the spiral staircase). Center x 68, bottom y 66.
 const SHELF2=[[56,30,24,36,'#6a4a2a'],[58,32,20,32,'#3a2410'],[58,47,20,2,'#6a4a2a'],[59,35,4,12,'#c04040'],[64,37,3,10,'#40a0c0'],[68,35,4,12,'#d0b030'],[73,36,4,11,'#40c070'],[59,51,3,13,'#8a5ae0'],[63,52,5,12,'#c04040'],[69,50,3,14,'#40a0c0'],[73,53,4,11,'#d0b030']];
+// Room backgrounds. The top-left corner (about y < 24) is kept clear so the name label never covers the decor.
+const down=(list,dy)=>list.map(r=>[r[0],r[1]+dy,r[2],r[3],r[4]]);
 function bg(id,w){
- // Fruit Merchant: striped awning and crates of fruit
- // Apothecary: shelves of colored bottles, hanging herbs, a mortar
-// Apothecary: herbs growing in planters (left), potions on display (right), back door on the LEFT
- // Farmer: open sky, sun, a fence and a little shed door (the crops are drawn by drawField)
+ // Farmer: open sky, sun (top right, clear of the label), a fence and a little shed door (crops drawn by drawField)
  if(id==='farmer')return [[74,10,10,10,'#f8e070'],[72,12,14,6,'#f8e070'],[6,52,84,2,'#a07840'],[10,48,2,18,'#a07840'],[30,48,2,18,'#a07840'],[50,48,2,18,'#a07840'],[61,31,22,35,'#7a5030'],...BACKDOOR];
- if(id==='apothecary')return [...BACKDOOR_L,[40,10,2,10,'#4a7a3a'],[44,10,2,7,'#6a9a4a'],[48,10,2,12,'#4a7a3a'],[52,10,2,8,'#6a9a4a'],
+ // Apothecary: a window to the blue sky, herbs growing in planters, potions on display shelves, back door on the LEFT
+ if(id==='apothecary')return [...BACKDOOR_L,
+  [37,24,24,18,'#5a4024'],[39,26,20,14,'#8ac8f0'],[39,34,20,6,'#a8d8f8'],[44,29,7,3,'#ffffff'],[42,30,4,2,'#ffffff'],[48,33,2,7,'#5a4024'],[39,32,20,2,'#5a4024'],
   [38,56,22,10,'#8a5a2a'],[38,56,22,2,'#6a4420'],[40,46,2,10,'#4a9a3a'],[39,44,4,4,'#6aba4a'],[45,48,2,8,'#3a8a3a'],[44,46,4,3,'#d8e070'],[50,44,2,12,'#4a9a3a'],[48,42,6,4,'#6aba4a'],[55,49,2,7,'#3a8a3a'],[54,47,4,3,'#c890ff'],
-  [62,22,30,2,'#6a4a2a'],[62,40,30,2,'#6a4a2a'],[64,13,4,9,'#d03050'],[70,15,4,7,'#4fb0ff'],[76,12,5,10,'#7aff7a'],[83,15,4,7,'#f2c84a'],[64,32,5,8,'#c890ff'],[71,30,4,10,'#f08a20'],[77,33,4,7,'#4fb0ff'],[83,31,5,9,'#d03050'],[65,14,2,2,'#ffffff'],[77,13,2,2,'#ffffff'],[72,31,2,2,'#ffffff'],
+  ...down([[62,22,30,2,'#6a4a2a'],[62,40,30,2,'#6a4a2a'],[64,13,4,9,'#d03050'],[70,15,4,7,'#4fb0ff'],[76,12,5,10,'#7aff7a'],[83,15,4,7,'#f2c84a'],[64,32,5,8,'#c890ff'],[71,30,4,10,'#f08a20'],[77,33,4,7,'#4fb0ff'],[83,31,5,9,'#d03050'],[65,14,2,2,'#ffffff'],[77,13,2,2,'#ffffff'],[72,31,2,2,'#ffffff']],10),
   [64,58,26,8,'#7a4a22'],[64,58,26,2,'#5a3418'],[68,53,3,5,'#7aff7a'],[74,52,3,6,'#d03050'],[80,53,3,5,'#4fb0ff']];
- if(id==='merchant')return [[6,8,84,6,'#c04040'],[6,8,12,6,'#f0e8d8'],[30,8,12,6,'#f0e8d8'],[54,8,12,6,'#f0e8d8'],[78,8,12,6,'#f0e8d8'],[8,46,22,18,'#8a5a2a'],[8,46,22,2,'#6a4420'],[11,42,4,4,'#d03030'],[16,41,4,4,'#e04040'],[21,42,4,4,'#c02828'],[13,38,4,4,'#d83838'],[32,50,20,14,'#8a5a2a'],[32,50,20,2,'#6a4420'],[34,46,4,4,'#f08a20'],[39,45,4,4,'#f8a030'],[44,46,4,4,'#e88018'],[48,38,3,8,'#f2d040'],[51,37,3,8,'#e8c830'],[54,38,3,8,'#f2d040'],...BACKDOOR];
+ // Fruit Merchant: striped banner just below the name label, crates of fruit
+ if(id==='merchant')return [[6,24,84,6,'#c04040'],[6,24,12,6,'#f0e8d8'],[30,24,12,6,'#f0e8d8'],[54,24,12,6,'#f0e8d8'],[78,24,12,6,'#f0e8d8'],[8,46,22,18,'#8a5a2a'],[8,46,22,2,'#6a4420'],[11,42,4,4,'#d03030'],[16,41,4,4,'#e04040'],[21,42,4,4,'#c02828'],[13,38,4,4,'#d83838'],[32,50,20,14,'#8a5a2a'],[32,50,20,2,'#6a4420'],[34,46,4,4,'#f08a20'],[39,45,4,4,'#f8a030'],[44,46,4,4,'#e88018'],[48,38,3,8,'#f2d040'],[51,37,3,8,'#e8c830'],[54,38,3,8,'#f2d040'],...BACKDOOR];
  if(id==='priest')return [...WINDOW,[48,52,4,14,'#d8d0b0'],[47,50,6,2,'#a08a50'],[49,47,2,3,'#ffd060'],...BACKDOOR];
- if(id==='necromancer')return [[10,22,40,3,'#3a3028'],[10,42,40,3,'#3a3028'],[14,14,7,8,'#e8e4d0'],[15,16,2,2,O],[18,16,2,2,O],[30,15,6,7,'#e8e4d0'],[31,17,2,2,O],[33,17,2,2,O],[40,16,3,6,'#2a2a2a'],[40,13,3,3,'#7aff7a'],[16,34,4,8,'#2a2a2a'],[16,31,4,3,'#7aff7a'],[26,36,10,6,'#4a3a5a'],[38,33,6,9,'#e8e4d0'],[39,35,2,2,O],[41,35,2,2,O],...BACKDOOR];
- if(id==='wizard')return [[10,14,38,42,'#6a4a2a'],[12,18,5,14,'#c04040'],[18,18,5,14,'#40a0c0'],[24,18,5,14,'#d0b030'],[30,18,5,14,'#8a5ae0'],[36,18,5,14,'#40c070'],[10,34,38,3,'#3a2410'],[12,38,5,14,'#d0b030'],[18,38,8,14,'#c04040'],[28,38,5,14,'#40a0c0'],[34,38,6,14,'#8a5ae0'],...SHELF2];
- const a=[[12,64,22,3,'#4a4e5a'],[16,60,5,5,'#8a94a8'],[25,60,5,5,'#8a94a8'],[14,44,16,16,'#8a94a8'],[24,44,6,16,'#667088'],[10,44,4,10,'#aab4c8'],[30,44,4,10,'#aab4c8'],[16,28,12,16,'#aab4c8'],[18,34,8,2,O],[21,23,2,5,'#c03030'],...BACKDOOR];
- const m={shield:[[40,36,16,20,'#3a5aa8'],[42,38,12,16,'#2a4488'],[46,42,4,8,'#f2c84a']],spear:[[47,14,2,52,'#8a5a2a'],[45,6,6,10,'#cfd6e0'],[47,4,2,4,'#fff']],glaive:[[47,18,2,48,'#8a5a2a'],[47,8,8,12,'#cfd6e0'],[49,10,4,8,'#8a94a8']],longsword:[[46,16,4,36,'#cfd6e0'],[40,52,16,3,'#c0a030'],[46,55,4,9,'#6a4420'],[45,64,6,2,'#c0a030']]};
+ if(id==='necromancer')return [...down([[10,22,40,3,'#3a3028'],[10,42,40,3,'#3a3028'],[14,14,7,8,'#e8e4d0'],[15,16,2,2,O],[18,16,2,2,O],[30,15,6,7,'#e8e4d0'],[31,17,2,2,O],[33,17,2,2,O],[40,16,3,6,'#2a2a2a'],[40,13,3,3,'#7aff7a'],[16,34,4,8,'#2a2a2a'],[16,31,4,3,'#7aff7a'],[26,36,10,6,'#4a3a5a'],[38,33,6,9,'#e8e4d0'],[39,35,2,2,O],[41,35,2,2,O]],10),...BACKDOOR];
+ if(id==='wizard')return [...down([[10,14,38,42,'#6a4a2a'],[12,18,5,14,'#c04040'],[18,18,5,14,'#40a0c0'],[24,18,5,14,'#d0b030'],[30,18,5,14,'#8a5ae0'],[36,18,5,14,'#40c070'],[10,34,38,3,'#3a2410'],[12,38,5,14,'#d0b030'],[18,38,8,14,'#c04040'],[28,38,5,14,'#40a0c0'],[34,38,6,14,'#8a5ae0']],10),...SHELF2];
+ // Knight: armor stand, back door, and a shorter wall weapon (kept below the label)
+ const a=[[12,64,22,3,'#4a4e5a'],[16,60,5,5,'#8a94a8'],[25,60,5,5,'#8a94a8'],[14,44,16,16,'#8a94a8'],[24,44,6,16,'#667088'],[10,44,4,10,'#aab4c8'],[30,44,4,10,'#aab4c8'],[16,28,12,16,'#aab4c8'],[18,34,8,2,O],[21,24,2,4,'#c03030'],...BACKDOOR];
+ const m={shield:[[41,40,14,17,'#3a5aa8'],[43,42,10,13,'#2a4488'],[46,45,4,7,'#f2c84a']],
+  spear:[[47,32,2,34,'#8a5a2a'],[45,25,6,8,'#cfd6e0'],[47,23,2,3,'#fff']],
+  glaive:[[47,34,2,32,'#8a5a2a'],[47,26,8,10,'#cfd6e0'],[49,28,4,6,'#8a94a8']],
+  longsword:[[46,32,4,22,'#cfd6e0'],[41,54,14,3,'#c0a030'],[46,57,4,7,'#6a4420'],[45,64,6,2,'#c0a030']]};
  return a.concat(m[w||'longsword']);
 }
 // Fill a list of [x,y,w,h,color] rects offset by (ox,oy); with outline=true, a 2px dark outline goes behind
@@ -312,8 +318,8 @@ function drawGreenCircle(c,x,y,k,t){for(let i=0;i<18;i++){const a=i/18*Math.PI*2
 function drawTentacles(c,bx,by,e,t,blink){
  c.save();c.beginPath();c.rect(bx+4,by+4,88,88);c.clip();
  const wx=bx+WIN_C.x,wy=by+WIN_C.y;
- c.fillStyle='#0a0610';c.fillRect(bx+18,by+14,24,36); // broken window: dark hole with leftover shards
- c.fillStyle='#c04040';c.fillRect(bx+18,by+14,4,5);c.fillStyle='#3a6ad0';c.fillRect(bx+38,by+14,4,4);c.fillStyle='#40a060';c.fillRect(bx+18,by+44,3,6);c.fillStyle='#d0b030';c.fillRect(bx+37,by+45,5,5);
+ c.fillStyle='#0a0610';c.fillRect(bx+18,by+26,24,36); // broken window: dark hole with leftover shards
+ c.fillStyle='#c04040';c.fillRect(bx+18,by+26,4,5);c.fillStyle='#3a6ad0';c.fillRect(bx+38,by+26,4,4);c.fillStyle='#40a060';c.fillRect(bx+18,by+56,3,6);c.fillStyle='#d0b030';c.fillRect(bx+37,by+57,5,5);
  if(e>0&&!(blink>0&&Math.floor(blink*14)%2)){
   const ends=[[bx+60,by+70],[bx+44,by+80],[bx+70,by+50]];
   ends.forEach((q,k)=>{const n=12;for(let i=n;i>=0;i--){const s=i/n*e,px=lerp(wx,q[0],s)+Math.sin(t*4+i*.7+k*2)*5*s,py=lerp(wy,q[1],s)+Math.cos(t*3+i*.6+k)*3*s,w=Math.max(2,Math.round(8-i*.45));
