@@ -1,5 +1,5 @@
 // ---------- art: room backgrounds and drawing ----------
-const WALL={apothecary:['#3e4a3a','#2a3226'],merchant:['#5a4430','#3a2a1c'],knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40'],priest:['#4a4458','#30293c'],necromancer:['#26262c','#18181c']};
+const WALL={farmer:['#8ab8e0','#6a4a24'],apothecary:['#3e4a3a','#2a3226'],merchant:['#5a4430','#3a2a1c'],knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40'],priest:['#4a4458','#30293c'],necromancer:['#26262c','#18181c']};
 // Priest's stained glass window (frame 16..44 x 12..52, center x 30, y 32). Tentacles can smash through it.
 const WINDOW=[[16,12,28,40,'#2a2434'],[18,16,7,10,'#c04040'],[26,16,8,10,'#3a6ad0'],[35,16,7,10,'#d0b030'],[18,27,7,10,'#40a060'],[26,27,8,10,'#c890ff'],[35,27,7,10,'#c04040'],[18,38,7,12,'#3a6ad0'],[26,38,8,12,'#d0b030'],[35,38,7,12,'#40a060'],[29,19,2,8,'#f2e8a0'],[27,21,6,2,'#f2e8a0'],[20,12,20,2,'#3a3448']];
 const WIN_C={x:30,y:32};
@@ -12,6 +12,8 @@ function bg(id,w){
  // Fruit Merchant: striped awning and crates of fruit
  // Apothecary: shelves of colored bottles, hanging herbs, a mortar
 // Apothecary: herbs growing in planters (left), potions on display (right), back door on the LEFT
+ // Farmer: open sky, sun, a fence and a little shed door (the crops are drawn by drawField)
+ if(id==='farmer')return [[74,10,10,10,'#f8e070'],[72,12,14,6,'#f8e070'],[6,52,84,2,'#a07840'],[10,48,2,18,'#a07840'],[30,48,2,18,'#a07840'],[50,48,2,18,'#a07840'],[61,31,22,35,'#7a5030'],...BACKDOOR];
  if(id==='apothecary')return [...BACKDOOR_L,[40,10,2,10,'#4a7a3a'],[44,10,2,7,'#6a9a4a'],[48,10,2,12,'#4a7a3a'],[52,10,2,8,'#6a9a4a'],
   [38,56,22,10,'#8a5a2a'],[38,56,22,2,'#6a4420'],[40,46,2,10,'#4a9a3a'],[39,44,4,4,'#6aba4a'],[45,48,2,8,'#3a8a3a'],[44,46,4,3,'#d8e070'],[50,44,2,12,'#4a9a3a'],[48,42,6,4,'#6aba4a'],[55,49,2,7,'#3a8a3a'],[54,47,4,3,'#c890ff'],
   [62,22,30,2,'#6a4a2a'],[62,40,30,2,'#6a4a2a'],[64,13,4,9,'#d03050'],[70,15,4,7,'#4fb0ff'],[76,12,5,10,'#7aff7a'],[83,15,4,7,'#f2c84a'],[64,32,5,8,'#c890ff'],[71,30,4,10,'#f08a20'],[77,33,4,7,'#4fb0ff'],[83,31,5,9,'#d03050'],[65,14,2,2,'#ffffff'],[77,13,2,2,'#ffffff'],[72,31,2,2,'#ffffff'],
@@ -74,6 +76,10 @@ function poseOf(act,at){
  if(act==='brew')return Math.floor(at*2)%2?'fwd':'up';
  if(act==='fruitdrop')return Math.floor(at*2.5)%2?'up':'fwd';
  if(act==='curse'||act==='growb')return 'both';
+ if(act==='abrew')return Math.floor(at*2)%2?'fwd':'up';
+ if(act==='herbs')return at>1.2?'fwd':'none';
+ if(act==='harvest')return Math.floor(at*3)%2?'fwd':'up';
+ if(act==='tend')return 'fwd';
  if(act==='eatbanana')return 'up';
  if(act==='advert')return Math.floor(at*1.5)%2?'both':'up';
  if(act==='write')return 'fwd';
@@ -189,6 +195,9 @@ function drawAct(c,u){
  else if(a==='curse'){swirl(c,x,y,t,3,1);swirl(c,x,y,t+.7,1,.6)}
  else if(a==='growb'){swirl(c,x,y,t,2,1)}
  else if(a==='eatbanana'){drawItem(c,'banana',Math.round(x+f*9),Math.round(y-38),1)}
+ else if(a==='abrew'){drawCauldron(c,Math.round(x+f*18),Math.round(y),t);if(t>3.2)drawItem(c,'potion',Math.round(x+f*18),Math.round(y-20-(t-3.2)*10),1)}
+ else if(a==='herbs'&&t>1.2&&t<3.4){const hx=Math.round(x+f*14),hy=Math.round(y-22);c.fillStyle=O;c.fillRect(hx-4,hy-4,9,7);c.fillStyle='#8a94a8';c.fillRect(hx-3,hy-3,7,5);c.fillRect(hx+f*4,hy-5,2,2);c.fillStyle='#8fd0ff';for(let i=0;i<3;i++)c.fillRect(Math.round(hx+f*(6+i*2)),Math.round(hy+((t*20+i*5)%16)),1,2)}
+ else if(a==='herbs'&&t>=3.4){c.fillStyle='#6aba4a';c.fillRect(Math.round(x+f*12),Math.round(y-26),3,4);c.fillRect(Math.round(x+f*15),Math.round(y-24),2,3)}
  else if(a==='brew'){drawCauldron(c,Math.round(x+f*18),Math.round(y),t);if(t>3)drawItem(c,'potion',Math.round(x+f*18),Math.round(y-20-(t-3)*12),1)}
  else if(a==='relic'&&t<2.6){drawItem(c,'artifact',Math.round(x+f*9),Math.round(y-40),1);c.fillStyle='rgba(255,240,170,'+(.35+.25*Math.sin(t*10))+')';c.beginPath();c.arc(x+f*9,y-40,9,0,Math.PI*2);c.fill()}
  else if(a==='sniff'&&t<1.1){drawItem(c,'potion',Math.round(x+f*8),Math.round(y-36),1)}
@@ -410,3 +419,11 @@ function drawRot(c,bx,by,t){c.fillStyle='#5a4a1e';[[11,42,4,4],[16,41,4,4],[21,4
  c.fillStyle='#1a1a1a';for(let i=0;i<4;i++)c.fillRect(Math.round(bx+20+i*9+Math.sin(t*9+i)*5),Math.round(by+32+Math.cos(t*7+i*2)*4),2,1)}
 // Soft holy glow over a whole room (the great prayer)
 function drawRoomGlow(c,bx,by,a,t){if(a<=0)return;drawCeilingLight(c,bx,by,a,t);c.fillStyle='rgba(255,244,200,'+(.16*a)+')';c.fillRect(bx+4,by+4,88,88)}
+
+// ---------- the Farmer's field ----------
+// kind = 'wheat' or 'apple', g = growth 0..1 (grows over the Farmer's 3 minutes)
+function drawField(c,bx,by,kind,g,t){
+ c.fillStyle='#5a3a1a';for(let i=0;i<4;i++)c.fillRect(bx+8,by+70+i*6,80,2); // furrows
+ if(kind==='wheat'){for(let i=0;i<11;i++){const x=bx+10+i*7,h=Math.round(4+g*22),sway=Math.round(Math.sin(t*2+i)*1);c.fillStyle='#8aa040';c.fillRect(x+sway,by+66-h,2,h);if(g>.5){c.fillStyle=g>.9?'#e8c050':'#c8b850';c.fillRect(x-1+sway,by+66-h,4,Math.round(3+g*3))}}}
+ else{for(let i=0;i<3;i++){const x=bx+18+i*28,h=Math.round(6+g*22);c.fillStyle='#6a4420';c.fillRect(x-1,by+66-h,3,h);if(g>.2){const r=Math.round(3+g*8);c.fillStyle='#4a8a3a';c.fillRect(x-r,by+66-h-r,r*2+1,r+2);if(g>.6){c.fillStyle='#d83030';c.fillRect(x-3,by+66-h-r+3,2,2);c.fillRect(x+2,by+66-h-r+5,2,2);c.fillRect(x-1,by+66-h-2,2,2)}}}}
+}

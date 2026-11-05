@@ -1,6 +1,6 @@
 const cv=$('#cv'),g=cv.getContext('2d'),W=COLS*CELL,H=ROWS*CELL,tray=$('#tray'),itemsEl=$('#items'),bub=$('#bub');cv.width=W;cv.height=H;g.imageSmoothingEnabled=false;
 let boostT=0; // Wizard advertising fruit: coins come 2 at a time while this counts down
-const U={};let S={un:{},coins:0,inv:{scroll:0,potion:0,artifact:0},seen:{},secDone:{}},drag=null,td=null,hover=null,parts=[],bolts=[],demons=[],cats=[],fbs=[],flashes=[],thrown=[],splats=[],zaps=[],waves=[],holes=[],coinT=0,bubU=null,T=0;
+const U={};let S={un:{},coins:0,inv:{scroll:0,potion:0,artifact:0},seen:{},rewarded:0},drag=null,td=null,hover=null,parts=[],bolts=[],demons=[],cats=[],fbs=[],flashes=[],thrown=[],splats=[],zaps=[],waves=[],holes=[],coinT=0,bubU=null,T=0;
 
 // ---------- units ----------
 const at=(r,c)=>Object.keys(U).find(i=>U[i].r===r&&U[i].c===c);
@@ -9,7 +9,9 @@ const cellX=u=>Math.floor(u.x/CELL),cellY=u=>Math.floor((u.y-1)/CELL); // the ro
 // Where a is relative to b (by their home rooms): left, right, above, below, or null if not neighbors
 function rel(a,b){if(a.r===b.r&&a.c===b.c-1)return 'left';if(a.r===b.r&&a.c===b.c+1)return 'right';if(a.c===b.c&&a.r===b.r-1)return 'above';if(a.c===b.c&&a.r===b.r+1)return 'below';return null}
 // Which neighbor interaction two characters have, from PAIRS in data.js
-function pairKind(a,b){if(!a||!b||a.form==='dknight'||b.form==='dknight'||a.form==='monkey'||b.form==='monkey')return null;let t=PAIRS[a.id+'>'+b.id];if(t){const r=rel(a,b);return r?t[r]:null}t=PAIRS[b.id+'>'+a.id];if(t){const r=rel(b,a);return r?t[r]:null}return null}
+function pairKind(a,b){if(!a||!b||a.form==='dknight'||b.form==='dknight'||a.form==='monkey'||b.form==='monkey')return null;
+ let t=PAIRS[a.id+'>'+b.id],r;if(t&&(r=rel(a,b))&&t[r])return t[r];
+ t=PAIRS[b.id+'>'+a.id];if(t&&(r=rel(b,a))&&t[r])return t[r];return null} // checks both directions
 // Name label text plus the small class symbol (sword = Fighter, star = Mage, coin = Merchant)
 const tagImg=id=>CLASS[id]?'<img class="tag" src="'+tagURL(CLASS[id])+'" alt="'+CLASS[id]+'">':'';
 function setLabel(u){u.lb.innerHTML='';u.lb.append(CH[u.form||u.id].name);u.lb.insertAdjacentHTML('beforeend',tagImg(u.id))}
@@ -23,19 +25,22 @@ function addUnit(id,r,c,quiet,weapon,form,color){
  setLabel(U[id]);label(U[id]);if(!quiet){poof(c*CELL+48,r*CELL+FY-16);save();checkUnlocks()}ui();
 }
 // Clear everything an interaction leaves on a character (but not the teleport flag)
-function clearFx(u){u.big=null;u.gather=null;u.gatherOf=null;u.crowd=null;u.table=null;u.show=null;u.feastHost=null;u.fall=false;u.act=null;u.orc=null;u.tent=null;u.und=null;u.lite=null;u.dark=null;u.ward=null;u.kneel=false;u.after=null;u.mv=false;u.npc=null;u.def=null;u.ghost=null;u.spirit=null;u.mobs=null;u.made=null;u.swapWith=null}
-function toHome(u){u.fxs.forEach(hide);clearFx(u);u.tp=false;for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===u.id)demons.splice(i,1);u.x=u.c*CELL+48;u.y=u.r*CELL+FY;u.path=[];u.st='idle';u.wait=1;u.al=1;u.sk=1;u.mood='ok';u.mt=0;u.gt=0;label(u)}
+function clearFx(u){u.show2=null;u.big=null;u.gather=null;u.gatherOf=null;u.crowd=null;u.table=null;u.show=null;u.feastHost=null;u.fall=false;u.act=null;u.orc=null;u.tent=null;u.und=null;u.lite=null;u.dark=null;u.ward=null;u.kneel=false;u.after=null;u.mv=false;u.npc=null;u.def=null;u.ghost=null;u.spirit=null;u.mobs=null;u.made=null;u.swapWith=null}
+function toHome(u){u.fxs=[];u.npcDoor=null; // drop every doorway/stairs this character had open
+ clearFx(u);u.tp=false;for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===u.id)demons.splice(i,1);u.x=u.c*CELL+48;u.y=u.r*CELL+FY;u.path=[];u.st='idle';u.wait=1;u.al=1;u.sk=1;u.mood='ok';u.mt=0;u.gt=0;label(u)}
 function freeHost(h){h.hosting=null;h.st='idle';h.wait=2;h.act=null;h.kneel=false;h.ward=null}
 function detach(u){
  if(u.target){const h=U[u.target];if(h&&h.hosting===u.id)freeHost(h);u.target=null}
  if(u.hosting){const v=U[u.hosting];if(v){v.target=null;toHome(v)}u.hosting=null}
 }
+// Anyone with a doorway, stairs or portal open in these rooms is sent home (so nothing is left behind when a box moves)
+function clearRooms(cells,except){Object.values(U).forEach(v=>{if(except.includes(v))return;if(v.fxs.some(f=>cells.some(q=>{const fc=Math.floor(f.x/CELL),fr=Math.floor((f.y-1)/CELL);return fr===q[0]&&(fc===q[1]||(f.type==='door'&&fc-1===q[1]))})))toHome(v)})}
 function relocate(id,r,c){
  const u=U[id],oid=at(r,c);detach(u);
  if(oid){const o=U[oid];detach(o);o.r=u.r;o.c=u.c;toHome(o)}
- u.r=r;u.c=c;toHome(u);checkUnlocks();
+ const cells=[[u.r,u.c],[r,c]];u.r=r;u.c=c;toHome(u);clearRooms(cells,[u,oid&&U[oid]].filter(Boolean));checkUnlocks();
 }
-function removeUnit(id,quiet){const u=U[id];detach(u);for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===id)demons.splice(i,1);if(!quiet)poof(u.c*CELL+48,u.r*CELL+48);u.lb.remove();delete U[id];ui()}
+function removeUnit(id,quiet){const u=U[id];detach(u);clearRooms([[u.r,u.c]],[u]);for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===id)demons.splice(i,1);if(!quiet)poof(u.c*CELL+48,u.r*CELL+48);u.lb.remove();delete U[id];ui()}
 function poof(x,y,c){parts.push({x,y,t:0,life:.5,c:c||'#eadcb4'})}
 function hearts(u){parts.push({x:u.x,y:u.y-44,t:0,life:1.3,k:'h'})}
 function say(u,t){if(u.backwards)t=t.split('').reverse().join('');bubU={u,t:2.1};bub.textContent=t;bub.style.display='block'}
@@ -81,6 +86,9 @@ function startAct(u){
   if(r>=M.advert&&r<M.advert+M.sell&&o.length){visit(u,pick(o),'sell');return true}
   if(r>=M.advert+M.sell){beginAct(u,'mob');u.dur=7;mobEnter(u);return true}
   beginAct(u,'advert');u.dur=4.5;return true}
+ if(u.id==='apothecary'){const A=ODDS.apothecary,a=r<A.trip?'trip':r<A.trip+A.tripbreak?'tripbreak':r<A.trip+A.tripbreak+A.abrew?'abrew':'herbs';
+  beginAct(u,a);u.dur={trip:3,tripbreak:3.4,abrew:4.4,herbs:5}[a];u.hx=u.c*CELL+64;return true}
+ if(u.id==='farmer'){beginAct(u,'tend');u.dur=3;return true}
  if(u.id!=='knight')return false;
  // Eldritch Knight only: a black cat wanders across the back of the Wizard's room
  if(u.form==='eknight'&&U.wizard&&Math.random()<ODDS.eknightCat){cats.push({t:0,dir:pick([1,-1])});markSeen('cat');u.st='idle';u.wait=3;return true}
@@ -143,6 +151,16 @@ function acting(u,dt){
   once('a',.3,()=>say(u,'May your fruit wither on the vine!'));
   once('b',1.2,()=>{if(M){u.beam={x:M.x,y:M.y-24,t:0,col:'140,220,90'};flashes.push({x:M.c*CELL,y:M.r*CELL,t:0,col:'120,160,60'})}});
   once('c',1.7,()=>{if(M){M.rotT=ROT_TIME;M.mood='hurt';M.mt=2;say(M,'My beautiful fruit! Rotten!');markSeen('curse')}})}
+ // ---- Apothecary idles ----
+ if(u.act==='trip'||u.act==='tripbreak'){
+  once('h',.3,()=>{u.hop=.3;u.mood='shock';u.mt=.4});once('f',.6,()=>{u.fall=true;u.mood='hurt';u.mt=1.8});
+  if(u.act==='tripbreak')once('b',.7,()=>thrown.push({sx:u.x+u.face*8,sy:u.y-24,ex:u.x+u.face*22,ey:u.y-3,t:0}));
+  once('u',2.2,()=>{u.fall=false;u.mood='ok';u.hop=.3})}
+ if(u.act==='herbs'){u.mv=false;if(u.at<1.2&&Math.abs(u.hx-u.x)>.5){const d=u.hx-u.x,s=30*dt;u.face=d>0?1:-1;u.x+=Math.abs(d)<s?d:Math.sign(d)*s;u.mv=true;u.t+=dt}else if(u.at>=1.2)u.face=-1;
+  once('p',3.4,()=>poof(u.x-12,u.y-20,'#6aba4a'))}
+ // ---- Farmer: harvest time ----
+ if(u.act==='harvest'){once('c',2.2,()=>{u.harvested=true;addCoins(FARM_GAIN,u.x,u.y-50);toast('Harvest time! The '+(u.crop==='wheat'?'wheat field':'apple orchard')+' brings in '+FARM_GAIN+' coins.')});
+  if(u.at>=u.dur){removeUnit(u.id);return}}
  // ---- Wizard brewing next to a Merchant ----
  if(u.act==='brew')once('p',3,()=>{if(S.coins>=BREW_COST){S.coins-=BREW_COST;showCoins();save();parts.push({k:'txt',s:'-'+BREW_COST,x:u.x-14,y:u.y-56,t:0,life:1.4,icon:'coin'});addItem('potion',1,u.x+u.face*18,u.y-34);u.mood='happy';u.mt=1.5}});
  // ---- Priest using an artifact on the Necromancer ----
@@ -204,6 +222,15 @@ function writeScroll(w){const cost=w.color==='black'?DESK_COST_BLACK:DESK_COST;
  if(!freeU(w)||cellX(w)!==w.c||cellY(w)!==w.r){poof(w.x,w.y-30,'#8a8a9a');return}
  if((S.coins||0)<cost){say(w,'Parchment and ink cost '+cost+' coins.');return}
  ask('Have the Wizard write a spell scroll for '+cost+' coins?','Write',()=>{if(!U[w.id]||!freeU(w)||S.coins<cost)return;beginAct(w,'write');w.dur=2.6;w.cost=cost})}
+// ---- items on the Apothecary ----
+function apScroll(u){addItem('potion',1,u.x,u.y-50);poof(u.x,u.y-24,'#c890ff');u.hop=.4;u.mood='happy';u.mt=1.2;say(u,'A scroll? I can brew with this!')}
+function apPotion(u){addCoins(AP_POTION_COINS,u.x,u.y-50);u.hop=.4;u.mood='happy';u.mt=1.2;say(u,'Fine work! I will buy it.')}
+// ---- temporary Farmer box: appears on the nearest empty cell, grows a field for FARM_TIME seconds, then harvests ----
+function spawnFarm(near){if(U.farmer)return false;const seen={},q=[[near.r,near.c]];seen[near.r+','+near.c]=1;
+ while(q.length){const[r,c]=q.shift();if(!at(r,c)){addUnit('farmer',r,c,false);const fm=U.farmer;fm.farmT=FARM_TIME;fm.crop=Math.random()<.8?'wheat':'apple';fm.wait=2;
+   toast('A Farmer has set up a field next door! Harvest in '+Math.round(FARM_TIME/60)+' minutes.');return true}
+  [[0,1],[0,-1],[1,0],[-1,0]].forEach(d=>{const k=(r+d[0])+','+(c+d[1]);if(r+d[0]>=0&&r+d[0]<ROWS&&c+d[1]>=0&&c+d[1]<COLS&&!seen[k]){seen[k]=1;q.push([r+d[0],c+d[1]])}})}
+ return false}
 // ---- purchase popup (in the page; browser pop-ups can be blocked) ----
 function ask(text,yes,onYes){const m=$('#modal');m.querySelector('p').textContent=text;const y=$('#mYes'),n=$('#mNo');y.textContent=yes||'Yes';
  m.hidden=false;const close=()=>{m.hidden=true;y.onclick=n.onclick=null};y.onclick=()=>{close();onYes()};n.onclick=close;y.focus()}
@@ -223,29 +250,20 @@ function startGather(P,list){beginAct(P,'massprayer');P.dur=999;P.gather={ids:li
 // ---- coins ----
 function addCoins(n,x,y){S.coins=(S.coins||0)+n;showCoins();checkUnlocks();save();if(x!=null)parts.push({k:'txt',s:'+'+n,x,y,t:0,life:1.4})}
 // ---- unlocks that depend on what you hold ----
-function checkUnlocks(){if(!S.un.merchant&&(S.coins||0)>=MERCHANT_COINS){S.un.merchant=true;buildShelf();toast('Business is booming! A Fruit Merchant box has appeared on the shelf.')}
+function checkUnlocks(){checkEggs();if(!S.un.merchant&&(S.coins||0)>=MERCHANT_COINS){S.un.merchant=true;buildShelf();toast('Business is booming! A Fruit Merchant box has appeared on the shelf.')}
  if(!S.un.apothecary&&Object.values(U).some(m=>CLASS[m.id]==='merchant'&&nextTo(m,'mage'))){S.un.apothecary=true;buildShelf();save();toast('Word of trade reaches the mages... an Apothecary box has appeared on the shelf.')}}
 // ---- Compendium: remember every interaction/idle/item effect that has happened (gold border) ----
-const SEEN_ALIAS={sleepc:'sleep',swapc:'swap'};
-function markSeen(k){k=SEEN_ALIAS[k]||k;if(!k||S.seen[k])return;S.seen[k]=1;save();document.querySelectorAll('.tile[data-k="'+k+'"]').forEach(t=>t.classList.add('seen'));checkSections()}
-// Compendium sections and the tiles in them. Filling a whole section with gold borders pays SECTION_REWARD coins (once each).
-const SECTIONS=[
- ['Arrangements: Wizard & Knight',['friend','learn','bolt','chat','spar']],
- ['Arrangements: Priest & Wizard',['study','gossip','undead','light']],
- ['Arrangements: Priest & Knight',['zeal','crusade','pray','bless','sermon','tentacle']],
- ['Arrangements: Necromancer & Knight',['sleep','dknight','horde','nchat']],
- ['Arrangements: Necromancer & Priest (left/right: no interaction)',['purge','debate','cleanse']],
- ['Arrangements: Necromancer & Wizard',['duel','craft','golem','tomes','swap','forge']],
- ['Arrangements: Priest & Fruit Merchant',['apple','slip','feast','fruitfall','starfruit','curse']],
- ['Arrangements: Wizard & Fruit Merchant',['banana','durian','jokes','murder','advertW']],
- ['Wizard idle',['read','magic','demon','brew']],
- ['Knight idle',['prac:shield','prac:spear','prac:glaive','prac:longsword','orc','horse','cat']],
- ['Priest idle',['pray1','farmer','tithe','exorcise','massprayer']],
- ['Necromancer idle',['spirits','candles','lightning','raise']],
- ['Fruit Merchant idle',['advert','sell','mob']],
- ['Items',['fireball','glow','banish','raise','monkey','teleport','flex','wings','sniff','backwards','relic']],
- ['Shops',['apoth','desk']]];
-function checkSections(){SECTIONS.forEach(([t,keys])=>{if(S.secDone[t]||!keys.every(k=>S.seen[k]))return;S.secDone[t]=1;addCoins(SECTION_REWARD);toast('Compendium section complete: '+t.replace(/ \(.*\)/,'')+'! +'+SECTION_REWARD+' coins');document.querySelectorAll('h2.sec').forEach(h=>{if(h.dataset.t===t)h.classList.add('done')})})}
+const SEEN_ALIAS={sleepc:'sleep',swapc:'swap',fruitdrop:'fruitfall'};
+function markSeen(k){k=SEEN_ALIAS[k]||k;if(!k||S.seen[k])return;S.seen[k]=1;save();
+ document.querySelectorAll('.tile[data-k="'+k+'"]').forEach(t=>t.classList.add('seen'));checkDiscoveries();
+ if(!tabRef.hidden&&(EGGS.includes(k)||ALL_KEYS.includes(k)))buildRef(compTab)} // refresh the open Compendium (counts, newly found easter eggs)
+// Every DISCOVER_EVERY different things discovered (easter eggs included) pays DISCOVER_REWARD coins
+const ALL_KEYS=[...new Set(COMP_TABS.flatMap(t=>[...t.pairs,...t.idle,...t.items]))];
+const foundCount=()=>ALL_KEYS.filter(k=>S.seen[k]).length;
+function checkDiscoveries(){const n=foundCount(),due=Math.floor(n/DISCOVER_EVERY);
+ while((S.rewarded||0)<due){S.rewarded=(S.rewarded||0)+1;addCoins(DISCOVER_REWARD);toast(n+' things discovered! +'+DISCOVER_REWARD+' coins')}}
+// Easter eggs that are noticed just by being on the board
+function checkEggs(){const N=U.necromancer;if(N&&N.r===ROWS-1)markSeen('skulls');if(U.wizard&&U.wizard.color==='black')markSeen('blackwiz');if(U.knight&&U.knight.color==='bronze')markSeen('bronze')}
 // ---- walk back to your own room from wherever you are ----
 function goHome(v){const r=cellY(v),c=cellX(v);v.st='back';v.path=r===v.r&&c===v.c?[{k:'walk',x:v.c*CELL+48,y:v.r*CELL+FY}]:route(v,r,c,v.r,v.c,home(v))}
 // ---- holy crusade: Priest and Knight leave the board for CRUSADE_TIME seconds, then come back with a reward ----
@@ -302,16 +320,16 @@ function stepSleep(v,dt){v.sleepT-=dt;v.zT+=dt;if(v.zT>1.1){v.zT=0;parts.push({k
 function cast(w,k){markSeen('bolt');w.st='cast';w.tt=0;w.ev={};w.path=[];k.path=[];k.st='idle';k.wait=8;w.face=k.x>w.x?1:-1}
 function casting(w,dt){
  const k=U.knight;if(!k||pairKind(w,k)!=='bolt'){w.st='idle';w.wait=1;return}
- w.tt+=dt;const once=(n,t,f)=>{if(!w.ev[n]&&w.tt>=t){w.ev[n]=1;f()}};
+ w.tt+=dt*SCENE_PACE;const once=(n,t,f)=>{if(!w.ev[n]&&w.tt>=t){w.ev[n]=1;f()}};
  once('c',.4,()=>{w.hop=.5;w.mood='happy';w.mt=2});
  once('x',1,()=>{bolts.push(mkBolt(w,k));k.blink=.8;k.mood='hurt';k.mt=2});
  once('y',1.7,()=>{kill(k);w.st='idle';w.wait=3});
 }
 
 // ---------- items (drag from the item tray onto a room; the room's owner must be home) ----------
-const ITEM_FX={scroll:{wizard:fireball,knight:goldGlow,priest:banish,necromancer:nscroll,merchant:monkeyfy},potion:{wizard:potionTeleport,knight:flex,priest:wings,necromancer:sniff,merchant:backwards},artifact:{priest:relic}};
+const ITEM_FX={scroll:{wizard:fireball,knight:goldGlow,priest:banish,necromancer:nscroll,merchant:monkeyfy,apothecary:apScroll},potion:{wizard:potionTeleport,knight:flex,priest:wings,necromancer:sniff,merchant:backwards,apothecary:apPotion},artifact:{priest:relic}};
 // Which Compendium tile each item effect lights up
-const ITEM_KEY={scroll:{wizard:'fireball',knight:'glow',priest:'banish',necromancer:'raise',merchant:'monkey'},potion:{wizard:'teleport',knight:'flex',priest:'wings',necromancer:'sniff',merchant:'backwards'},artifact:{priest:'relic'}};
+const ITEM_KEY={scroll:{wizard:'fireball',knight:'glow',priest:'banish',necromancer:'raise',merchant:'monkey',apothecary:'appotion'},potion:{wizard:'teleport',knight:'flex',priest:'wings',necromancer:'sniff',merchant:'backwards',apothecary:'apcoins'},artifact:{priest:'relic'}};
 // Items are a counted inventory (S.inv). Using one takes it away; they are earned in the game (e.g. crafting).
 function addItem(kind,n,x,y){S.inv[kind]=(S.inv[kind]||0)+n;showItems();save();if(x!=null)parts.push({k:'txt',s:'+'+n,x,y,t:0,life:1.6,icon:kind})}
 function useItem(kind,r,c){
@@ -417,6 +435,7 @@ function decide(u){
    // Merchant below the Priest: the Priest curses his fruit (from his own room)
    if(kd==='curse'&&special){const M=U.merchant,P=U.priest;if(freeU(M)&&freeU(P)&&!(M.rotT>0)){beginAct(P,'curse');P.dur=3;M.path=[];M.st='idle';M.wait=4}else u.wait=1;return}
    if(kd==='mabove'||kd==='curse')kd=null;
+   if(kd==='mtrade'&&Math.random()<ODDS.farm)kd='farm'; // Merchant left of the Apothecary: 3% a farm appears
    if(kd==='zeal')markSeen('zeal');
    if(isPair(u,h)&&Math.random()<ODDS.spar){visit(u,h,'spar');return} // any arrangement
    const hang=Math.random()<ODDS.hangout;
@@ -477,11 +496,12 @@ function run(u,dt){
 // ---------- interactions (the visitor u runs the show in the host h's room) ----------
 function talk(u,dt){
  const h=U[u.target];if(!h){toHome(u);return}
- u.tt+=dt;if(Math.abs(h.x-u.x)>2)u.face=h.x>u.x?1:-1; // only turn when clearly to one side (stops flip-flopping)
+ u.tt+=dt*SCENE_PACE;if(Math.abs(h.x-u.x)>2)u.face=h.x>u.x?1:-1; // only turn when clearly to one side (stops flip-flopping)
  const pp={[u.id]:u,[h.id]:h},K=pp.knight,Wz=pp.wizard,Pr=pp.priest,N=pp.necromancer;
  const need={friend:K&&Wz,learn:K&&Wz,chat:K&&Wz,spar:K&&Wz,study:Pr&&Wz,gossip:Pr&&Wz,undead:Pr&&Wz,light:Pr&&Wz,pray:Pr&&K,bless:Pr&&K,sermon:Pr&&K,tentacle:Pr&&K,
   dknight:N&&K,horde:N&&K,nchat:N&&K,purge:N&&Pr,debate:N&&Pr,duel:N&&Wz,craft:N&&Wz,golem:N&&Wz,tomes:N&&Wz,forge:N&&Wz,crusade:Pr&&K,cleanse:Pr&&N,apple:Pr&&pp.merchant,feast:Pr&&pp.merchant,
-  starfruit:Pr&&pp.merchant,banana:Wz&&pp.merchant,durian:Wz&&pp.merchant,jokes:Wz&&pp.merchant,advertW:Wz&&pp.merchant};
+  starfruit:Pr&&pp.merchant,banana:Wz&&pp.merchant,durian:Wz&&pp.merchant,jokes:Wz&&pp.merchant,advertW:Wz&&pp.merchant,
+  apgift:pp.apothecary&&pp.merchant,mtrade:pp.apothecary&&pp.merchant,farm:pp.apothecary&&pp.merchant};
  const k=u.kind in need?(need[u.kind]?u.kind:null):u.kind,once=(n,t,f)=>{if(!u.ev[n]&&u.tt>=t){u.ev[n]=1;f()}};let end=3.4;
  const lines=(sc,who)=>{end=sc.length*2.3+.8;sc.forEach((l,i)=>once('l'+i,.6+i*2.3,()=>{const s=who||U[l[0]];if(s){say(s,who?l:l[1]);gest(s,'fwd',1.2)}}))};
  if(k==='friend'){
@@ -644,6 +664,18 @@ function talk(u,dt){
   once('a',.3,()=>{say(Mr,'Fresh fruit! Magic-blessed fruit!');gest(Mr,'both',1.2)});
   once('b',1.9,()=>{say(Wz,'Enchanted apples! One bite, pure wonder!');gest(Wz,'both',1.4);Wz.act='magic';Wz.at=0});
   once('c',3.4,()=>{Wz.act=null;if(Mr.rotT>0){parts.push({k:'txt',s:'rotten!',x:Mr.x,y:Mr.y-50,t:0,life:1.4,icon:'apple'})}else{boostT=BOOST_TIME;toast('Business is booming: 2 coins every 30 seconds for the next minute!')}Mr.hop=Wz.hop=.4})}
+ // ---------- Apothecary + Fruit Merchant ----------
+ else if(k==='apgift'){end=4.6;const Ap=pp.apothecary,Mr=pp.merchant;// Apothecary left of the Merchant: she gives him a potion (its usual effect: backwards speech)
+  once('a',.3,()=>{say(Ap,'Try my newest tonic, it is on the house!');gest(Ap,'fwd',1.4);u.show={icon:'potion',x:Ap.x+Ap.face*14,y:Ap.y-26}});
+  once('b',1.6,()=>{if(u.show){u.show.x=Mr.x+Mr.face*9;u.show.y=Mr.y-38}gest(Mr,'up',1)});
+  once('c',2.6,()=>{u.show=null;backwards(Mr);Mr.mood='shock';Mr.mt=1.2})}
+ else if(k==='mtrade'){end=4.6;const Ap=pp.apothecary,Mr=pp.merchant;// they swap wares: fruit for potions
+  once('a',.3,()=>{say(Mr,'Two apples for one of your tonics?');gest(Mr,'fwd',1.6);gest(Ap,'fwd',1.6);u.show={icon:'apple',x:Mr.x+Mr.face*14,y:Mr.y-26};u.show2={icon:'potion',x:Ap.x+Ap.face*14,y:Ap.y-26}});
+  once('b',1.8,()=>{if(u.show){u.show.x=Ap.x+Ap.face*14}if(u.show2){u.show2.x=Mr.x+Mr.face*14}});
+  once('c',2.8,()=>{u.show=u.show2=null;say(Ap,'A fair trade!');Mr.hop=Ap.hop=.4;Mr.mood=Ap.mood='happy';Mr.mt=Ap.mt=1.4})}
+ else if(k==='farm'){end=4.4;const Ap=pp.apothecary,Mr=pp.merchant;// 3%: they hire a farmer, who sets up a field nearby
+  once('a',.3,()=>{say(Mr,'We need more crops. Let us hire a farmer!');gest(Mr,'both',1);gest(Ap,'up',1)});
+  once('b',2.4,()=>{spawnFarm(h);Mr.hop=Ap.hop=.4;Mr.mood=Ap.mood='happy';Mr.mt=Ap.mt=1.4})}
  else if(k==='forge'){end=4.6;// Wizard + Necromancer (any side, 1%): together they make a scroll or a potion
   once('a',.4,()=>{gest(Wz,'fwd',2.4);gest(N,'fwd',2.4);u.made={x:(u.x+h.x)/2,y:u.y-40,t:0,icon:Math.random()<.5?'scroll':'potion'}});
   once('b',3.2,()=>{if(u.made)addItem(u.made.icon,1,u.made.x,u.made.y-10);u.made=null;Wz.mood=N.mood='happy';Wz.mt=N.mt=1.5;Wz.hop=N.hop=.5})}
@@ -689,6 +721,7 @@ function step(dt){
   if(u.st==='sleep'){stepSleep(u,dt);continue}
   if(u.st==='away'){stepAway(u,dt);continue} // on crusade
   if(u.monkeyT>0&&(u.monkeyT-=dt)<=0){u.form=null;setLabel(u);poof(u.x,u.y-24,'#f2d040');u.mood='shock';u.mt=1.5;u.st='idle';u.path=[];u.act=null;u.wait=2}
+  if(u.farmT>0)u.farmT-=dt;if(u.id==='farmer'&&u.farmT<=0&&u.act!=='harvest'&&(u.st==='idle'||u.st==='walk'||u.st==='act')){u.path=[];beginAct(u,'harvest');u.dur=3.4}
   if(u.rotT>0&&(u.rotT-=dt)<=0){poof(u.c*CELL+30,u.r*CELL+46,'#f08a20');say(u,'My fruit is fresh again!')}
   if(u.st==='gathered'){const P=U[u.gatherOf];if(!P||!P.gather){u.gatherOf=null;goHome(u)}else if(Math.abs(P.x-u.x)>2)u.face=P.x>u.x?1:-1;continue}
   stepNpc(u,dt);stepCrowd(u,dt);
@@ -717,6 +750,7 @@ function render(){
   if(id==='necromancer'&&id!==dm&&u.r===ROWS-1)drawSkulls(g,x,y); // easter egg: skulls on the bottom row
   if(id==='wizard'&&id!==dm&&deskOn(u))drawDesk(g,x,y); // writing desk (Merchant + Mage next door)
   if(id==='merchant'&&u.rotT>0&&id!==dm)drawRot(g,x,y,T); // cursed: rotten fruit
+  if(id==='farmer'&&id!==dm)drawField(g,x,y,u.crop||'wheat',u.harvested?.05:cl(1-u.farmT/FARM_TIME,0,1),T); // the growing field
   if(id!==dm&&(id==='apothecary'||deskOn(u))){g.strokeStyle='#d8dee8';g.lineWidth=2;g.strokeRect(x+5,y+5,CELL-10,CELL-10)}} // silver border = tap to buy
  Object.values(U).forEach(u=>u.fxs.forEach(f=>drawFx(f)));
  // background details behind the characters: horse, cat, tentacles through the Priest's window
@@ -752,6 +786,7 @@ function render(){
    g.save();g.beginPath();g.rect(s.x-24,s.y-60,48,60);g.clip();spr(g,'skeleton',hit?'hurt':'mad',s.x,s.y+(1-rise)*44,u.x>s.x?1:-1,0,hit&&Math.floor(s.blink*14)%2?.2:1,1);g.restore()}
   if(u.mobs)u.mobs.forEach(m=>drawMob(g,m));
   if(u.show)drawItem(g,u.show.icon,Math.round(u.show.x),Math.round(u.show.y),1);
+  if(u.show2)drawItem(g,u.show2.icon,Math.round(u.show2.x),Math.round(u.show2.y),1);
   if(u.big){const q=u.big;drawItem(g,'banana',Math.round(q.x),Math.round(q.y-6-q.s*4),Math.max(1,Math.round(q.s)))}
   if(u.beam){const Pr=U.priest;if(Pr){g.save();g.globalAlpha=cl(1-u.beam.t/.5,0,1);g.strokeStyle='rgba('+(u.beam.col||'255,236,150')+',.95)';g.lineWidth=5;g.beginPath();g.moveTo(Pr.x+Pr.face*8,Pr.y-36);g.lineTo(u.beam.x,u.beam.y);g.stroke();g.restore()}}
   if(u.made){const m=u.made;swirl(g,m.x,m.y+24,T,1,1);swirl(g,m.x,m.y+24,T+1,2,.6);if(m.t>2)drawItem(g,m.icon||'scroll',Math.round(m.x),Math.round(m.y-(m.t-2)*10),1)}
@@ -873,6 +908,7 @@ function diagram(k){
 const PD={study:['wizard','right'],gossip:['wizard','left'],undead:['wizard','below'],light:['wizard','above'],zeal:['knight','above'],pray:['knight','right'],bless:['knight','below'],sermon:['knight','left'],tentacle:['knight','left'],
  crusade:['knight','above'],cleanse:['necromancer','left'],apple:['merchant','left'],slip:['merchant','left'],feast:['merchant','left'],
  fruitfall:['merchant','below'],starfruit:['merchant','below'],curse:['merchant','above'],
+ apgift:['merchant','left','apothecary'],mtrade:['apothecary','left','merchant'],
  banana:['wizard','above','merchant'],durian:['wizard','below','merchant'],jokes:['wizard','right','merchant'],murder:['wizard','right','merchant'],advertW:['wizard','left','merchant'],
  sleep:['knight','left','necromancer'],dknight:['knight','above','necromancer'],horde:['knight','right','necromancer'],nchat:['knight','below','necromancer'],
  purge:['priest','below','necromancer'],debate:['priest','above','necromancer'],
@@ -909,6 +945,8 @@ function pairDiagram(k){
  if(k==='apple'){op='fwd';pm='happy'}
  if(k==='slip'){pm='hurt';om='shock';low=0}
  if(k==='feast'){pm=om='happy';op='both'}
+ if(k==='apgift'){pp='fwd';om='shock'}
+ if(k==='mtrade'){pp=op='fwd';pm=om='happy'}
  if(k==='fruitfall'){pm='mad';om='happy';op='up'}
  if(k==='starfruit'){pm=om='happy';op='fwd'}
  if(k==='curse'){pp='both';om='hurt'}
@@ -927,6 +965,8 @@ function pairDiagram(k){
  if(k==='slip'){drawItem(x,'apple',p[0]+58,p[1]+FY-3,1);x.fillStyle='rgba(26,18,38,.5)';x.fillRect(p[0]+30,p[1]+FY-2,36,3)}
  if(k==='fruitfall'){[[40,70],[56,80],[48,104]].forEach((q,i)=>drawItem(x,['apple','orange','banana'][i],q[0],q[1],1))}
  if(k==='starfruit')drawItem(x,'starfruit',62,96,2);
+ if(k==='apgift')drawItem(x,'potion',96,52,2);
+ if(k==='mtrade'){drawItem(x,'apple',84,48,2);drawItem(x,'potion',108,48,2)}
  if(k==='curse'){drawRot(x,q[0],q[1],1);x.strokeStyle='rgba(140,220,90,.9)';x.lineWidth=4;x.beginPath();x.moveTo(52,52);x.lineTo(50,150);x.stroke()}
  if(k==='banana')drawItem(x,'banana',48,120,5);
  if(k==='durian'){drawItem(x,'durian',48,150,2);[[40,124],[50,118],[60,124]].forEach(d=>{x.fillStyle='#8aba5a';x.fillRect(d[0],d[1],2,6)})}
@@ -1021,6 +1061,19 @@ function idleTile(kind,wp){
    if(tt>1&&tt<2.6)drawItem(x,'potion',62,Math.round(FY-40-(tt-1)*8),1);if(tt>.6&&tt<1.4){x.fillStyle='rgba(255,255,255,.6)';x.fillRect(40,10,16,16)}}
   else if(kind==='desk'){const tt=t%4;box(x,'wizard',0,0);drawDesk(x,0,0);spr(x,'wizard','ok',56,FY,-1,0,1,1,tt<2.6?'fwd':'none');
    if(tt<2.6){x.fillStyle='#ffffff';x.fillRect(Math.round(30+Math.sin(tt*8)*3),50,1,6)}if(tt>2&&tt<3.6)drawItem(x,'scroll',36,Math.round(40-(tt-2)*10),1)}
+  // ---- Apothecary ----
+  else if(kind==='trip'||kind==='tripbreak'){const tt=t%3.6,down=tt>.6&&tt<2.2;box(x,'apothecary',0,0);
+   if(kind==='tripbreak'&&tt>.7){const k=cl((tt-.7)/.35,0,1);if(k<1)drawItem(x,'potion',Math.round(lerp(56,70,k)),Math.round(lerp(60,80,k)),1);else drawSplat(x,70,82,cl((3.4-tt)/1,0,1))}
+   x.save();x.beginPath();x.rect(0,0,96,FY);x.clip();spr(x,'apothecary',down?'hurt':tt<.6&&tt>.3?'shock':'ok',48,FY+(down?12:0),1,tt>.3&&tt<.6?-4:0);x.restore()}
+  else if(kind==='abrew'){const tt=t%5;box(x,'apothecary',0,0);spr(x,'apothecary','ok',60,FY,-1,0,1,1,poseOf('abrew',tt));drawAct(x,{act:'abrew',at:tt,x:60,y:FY,face:-1})}
+  else if(kind==='herbs'){const tt=t%5.4,a=Math.min(tt,5);box(x,'apothecary',0,0);spr(x,'apothecary','ok',64,FY,-1,0,1,1,poseOf('herbs',a));drawAct(x,{act:'herbs',at:a,x:64,y:FY,face:-1})}
+  else if(kind==='apcoins'||kind==='appotion'){const tt=t%3.4,it=kind==='apcoins'?'potion':'scroll',gain=kind==='apcoins'?'coin':'potion';box(x,'apothecary',0,0);spr(x,'apothecary',tt>1?'happy':'ok',48,FY,1,tt>1&&tt<1.5?-Math.sin((tt-1)/.5*Math.PI)*6:0);
+   if(tt<1)drawItem(x,it,48,Math.round(10+tt*30),2);else if(tt<2.4)drawItem(x,gain,62,Math.round(40-(tt-1)*10),2)}
+  else if(kind==='farm'){const tt=t%9,g=cl(tt/7,0,1),hv=tt>7;box(x,'farmer',0,0);drawField(x,0,0,Math.floor(t/9)%5===4?'apple':'wheat',hv?.05:g,t);spr(x,'farmer',hv?'happy':'ok',40,FY,1,hv?-Math.abs(Math.sin(tt*6))*5:0,1,1,hv?poseOf('harvest',tt):'tend')}
+  // ---- easter eggs (only shown once found) ----
+  else if(kind==='blackwiz'){box(x,'wizard',0,0);spr(x,'wizard_black','ok',48,FY,1,0)}
+  else if(kind==='bronze'){box(x,'knight',0,0,'longsword');spr(x,'knight_bronze','ok',48,FY,1,0)}
+  else if(kind==='skulls'){box(x,'necromancer',0,0);drawSkulls(x,0,0);spr(x,'necromancer','ok',48,FY,1,0)}
   else if(kind==='massprayer'){const tt=t%6,on=tt>.6&&tt<5.4;box(x,'priest',0,0);if(on)drawRoomGlow(x,0,0,cl((tt-.6)/.6,0,1)*cl((5.4-tt)/.6,0,1),t);
    x.save();x.beginPath();x.rect(0,0,96,FY);x.clip();
    [['knight',16,74],['wizard_blue',33,78],['necromancer',63,78],['merchant',80,74]].forEach(q=>spr(x,q[0],'ok',q[1],q[2]+(on?6:0),q[1]<48?1:-1,0,1,.8,on?'pray':'none'));
@@ -1039,15 +1092,15 @@ function idleTile(kind,wp){
  });
  return c}
 // Things a scene gives you, shown as small icons in the bottom-left of its Compendium tile
-const GAINS={starfruit:['coin'],durian:['coin'],advertW:['coin'],tithe:['coin'],crusade:['coin','artifact'],craft:['scroll'],forge:['scroll','potion'],brew:['potion'],sell:['coin'],apple:['coin'],apoth:['potion'],desk:['scroll']};
+const GAINS={farm:['coin'],apcoins:['coin'],appotion:['potion'],starfruit:['coin'],durian:['coin'],advertW:['coin'],tithe:['coin'],crusade:['coin','artifact'],craft:['scroll'],forge:['scroll','potion'],brew:['potion'],sell:['coin'],apple:['coin'],apoth:['potion'],desk:['scroll']};
 const ICONURL={};function iconURL(k){if(!ICONURL[k]){const c=document.createElement('canvas');c.width=16;c.height=16;const x=c.getContext('2d');drawItem(x,k,8,9,1);ICONURL[k]=c.toDataURL()}return ICONURL[k]}
-const ITEMLBL={monkey:'scroll',backwards:'potion',fireball:'scroll',glow:'scroll',banish:'scroll',raise:'scroll',teleport:'potion',flex:'potion',wings:'potion',sniff:'potion',relic:'artifact'};
-function buildRef(){
+const ITEMLBL={apcoins:'potion',appotion:'scroll',monkey:'scroll',backwards:'potion',fireball:'scroll',glow:'scroll',banish:'scroll',raise:'scroll',teleport:'potion',flex:'potion',wings:'potion',sniff:'potion',relic:'artifact'};
+function buildRef(t){if(t)compTab=t;anim.length=0;
  const b=$('#refs');b.innerHTML='';
  // % chance (or a short label) in the top right corner
  const fmt=p=>{if(typeof p==='string')return p;const v=p*100;return(v<10&&Math.abs(v-Math.round(v))>.05?v.toFixed(1):Math.round(v))+'%'};
  const ev=(1-ODDS.spar)*(1-ODDS.hangout),arr=k=>(k==='friend'?ODDS.visitFriend:ODDS.visit)*ev,pv=ODDS.visit*(1-ODDS.hangout);
- const W=ODDS.wizard,K=ODDS.knight,PR=ODDS.priest,NE=ODDS.necromancer,MR=ODDS.merchant;
+ const W=ODDS.wizard,K=ODDS.knight,PR=ODDS.priest,NE=ODDS.necromancer,MR=ODDS.merchant,AP=ODDS.apothecary;
  // How to draw each tile, and its chance. D = Wizard/Knight diagram, P = other pair diagram, I = animated tile
  const D=k=>()=>diagram(k),P=k=>()=>pairDiagram(k),I=(k,w)=>()=>idleTile(k,w);
  const T={friend:[D('friend'),arr('friend')],learn:[D('learn'),arr('learn')],bolt:[D('bolt'),arr('bolt')],chat:[D('chat'),arr('chat')],spar:[I('spar'),ODDS.visit*ODDS.spar],
@@ -1066,27 +1119,38 @@ function buildRef(){
   apoth:[I('apoth'),APOTH_COST+' coins'],desk:[I('desk'),DESK_COST+' coins'],
   fruitfall:[P('fruitfall'),pv*ODDS.fruitfall],starfruit:[P('starfruit'),pv*(1-ODDS.fruitfall)],curse:[P('curse'),pv],
   banana:[P('banana'),pv],durian:[P('durian'),pv],jokes:[P('jokes'),pv*(1-ODDS.murder)],murder:[P('murder'),pv*ODDS.murder],advertW:[P('advertW'),pv],
-  massprayer:[I('massprayer'),'5% (4 neighbors)'],monkey:[I('monkey')],backwards:[I('backwards')]};
+  massprayer:[I('massprayer'),'5% (4 neighbors)'],monkey:[I('monkey')],backwards:[I('backwards')],
+  trip:[I('trip'),AP.trip],tripbreak:[I('tripbreak'),AP.tripbreak],abrew:[I('abrew'),AP.abrew],herbs:[I('herbs'),AP.herbs],
+  apgift:[P('apgift'),pv],mtrade:[P('mtrade'),pv*(1-ODDS.farm)],farm:[I('farm'),pv*ODDS.farm],apcoins:[I('apcoins')],appotion:[I('appotion')],
+  blackwiz:[I('blackwiz'),'secret'],bronze:[I('bronze'),'secret'],skulls:[I('skulls'),'secret']};
  WEAPONS.forEach(w=>T['prac:'+w]=[I('prac',w),K.prac]);
- SECTIONS.forEach(([title,keys])=>{
-  const h=document.createElement('h2');h.className='sec'+(S.secDone[title]?' done':'');h.dataset.t=title;h.textContent=title;
+ // Tabs, one per character type, with "found / total" (hidden easter eggs count in the total)
+ const tab=COMP_TABS.find(t=>t.id===compTab)||COMP_TABS[0],bar=document.createElement('div');bar.className='ctabs';
+ COMP_TABS.forEach(t=>{const all=[...t.pairs,...t.idle,...t.items],btn=document.createElement('button');btn.className='ctab'+(t===tab?' on':'');
+  btn.innerHTML=t.name+tagImg(t.id)+' <small>'+all.filter(k=>S.seen[k]).length+'/'+all.length+'</small>';btn.onclick=()=>buildRef(t.id);bar.append(btn)});
+ const n=foundCount(),left=DISCOVER_EVERY-n%DISCOVER_EVERY,info=document.createElement('p');info.className='cinfo';
+ info.textContent='Discovered '+n+' of '+ALL_KEYS.length+'. Every '+DISCOVER_EVERY+' discoveries pay '+DISCOVER_REWARD+' coins ('+left+' more to the next reward).';
+ b.append(bar,info);
+ [['With neighbors',tab.pairs],['Idle activities',tab.idle],['Items, shops and secrets',tab.items]].forEach(([title,keys])=>{
+  const h=document.createElement('h2');h.className='sec';h.textContent=title+'  '+keys.filter(k=>S.seen[k]).length+' / '+keys.length;
   const d=document.createElement('div');d.className='cg';
-  keys.forEach(k=>{const[make,p]=T[k],tile=document.createElement('div'),s=document.createElement('span');
-   tile.className='tile'+(S.seen[k]?' seen':'');tile.dataset.k=k;s.className='pct';s.textContent=fmt(title==='Items'?ITEMLBL[k]:p);tile.append(make(),s);
+  keys.filter(k=>!EGGS.includes(k)||S.seen[k]).forEach(k=>{const[make,p]=T[k],tile=document.createElement('div'),s=document.createElement('span');
+   tile.className='tile'+(S.seen[k]?' seen':'')+(EGGS.includes(k)?' egg':'');tile.dataset.k=k;s.className='pct';s.textContent=fmt(ITEMLBL[k]&&title.startsWith('Items')?ITEMLBL[k]:p);tile.append(make(),s);
    if(GAINS[k]){const gn=document.createElement('span');gn.className='gain';GAINS[k].forEach(i=>{const im=document.createElement('img');im.src=iconURL(i);im.alt=i;gn.append(im)});tile.append(gn)}
    d.append(tile)});
   b.append(h,d)});
 }
+let compTab='knight';
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
  $('#tab-board').hidden=b.dataset.t!=='board';tabRef.hidden=b.dataset.t!=='ref';
- if(b.dataset.t==='ref'&&!anim.length)buildRef()});
+ if(b.dataset.t==='ref')buildRef(compTab)});
 
 // ---------- state ----------
 function ui(){document.querySelectorAll('.it[data-id]').forEach(b=>b.classList.toggle('used',!!U[b.dataset.id]))}
-function save(){if(resetting)return;try{const b={};for(const i in U)b[i]=[U[i].r,U[i].c,U[i].weapon,U[i].form==='monkey'?null:U[i].form,U[i].color,U[i].backwards?1:0];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,inv:S.inv,seen:S.seen,secDone:S.secDone}))}catch(e){}}
+function save(){if(resetting)return;try{const b={};for(const i in U)if(i!=='farmer')b[i]=[U[i].r,U[i].c,U[i].weapon,U[i].form==='monkey'?null:U[i].form,U[i].color,U[i].backwards?1:0];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,inv:S.inv,seen:S.seen,rewarded:S.rewarded||0}))}catch(e){}}
 function load(){let d=null;try{d=JSON.parse(localStorage.getItem(KEY))}catch(e){}
- if(d){S.un=d.un||{};S.coins=d.coins||0;S.inv=Object.assign({scroll:0,potion:0,artifact:0},d.inv);S.seen=d.seen||{};S.secDone=d.secDone||{}}
+ if(d){S.un=d.un||{};S.coins=d.coins||0;S.inv=Object.assign({scroll:0,potion:0,artifact:0},d.inv);S.seen=d.seen||{};S.rewarded=d.rewarded!=null?d.rewarded:Math.floor(ALL_KEYS.filter(k=>S.seen[k]).length/DISCOVER_EVERY)}
  showCoins();showItems();checkUnlocks();
  buildShelf();
  if(d&&d.boxes){for(const i in d.boxes)if(CH[i]){const q=d.boxes[i];addUnit(i,q[0],q[1],true,q[2],q[3],q[4]);if(q[5])U[i].backwards=true}}

@@ -78,3 +78,11 @@ h2.sec.done::after{content:' \2605 complete';color:#f2c84a;font-size:13px}
 #modal p{margin:0 0 12px}
 #modal .mrow{display:flex;gap:12px;justify-content:center}
 #mYes{background:#c8a030;color:#1a1733}
+/* Compendium character tabs */
+.ctabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:4px 0 6px}
+.ctab{font:inherit;font-size:13px;background:var(--stone);color:var(--parch);border:3px solid #000;padding:2px 8px;cursor:pointer}
+.ctab.on{background:var(--amber);color:#1a1733}
+.ctab small{opacity:.8}
+.cinfo{text-align:center;font-size:13px;margin:2px 0 4px;opacity:.9}
+.tile.egg>canvas{border-color:#c890ff}
+.tile.egg.seen>canvas{border-color:#f2c84a;outline:2px dashed #c890ff;outline-offset:2px}

@@ -146,7 +146,7 @@ Whenever an interaction, idle activity or item effect is added or changed, updat
 - Apothecary (class Merchant): unlocked when any Merchant box sits next to any Mage (`checkUnlocks`, on place/move). Tap its room to buy a potion for `APOTH_COST` (30) coins. No idles yet.
 - Writing desk: while the Wizard has a Merchant neighbor AND another Mage neighbor, a desk appears in his room. Tap his room (while he's home and free) to write a spell scroll for `DESK_COST` (50) coins, or `DESK_COST_BLACK` (30) for the black-robed Wizard.
 - Crowds: extra people in a scene (squire, nobles, farmer mob) live in `u.crowd` and are stepped and drawn with the characters.
-- Compendium: built from `SECTIONS` (title + tile keys). Filling a whole section with gold borders pays `SECTION_REWARD` (10) coins once (`S.secDone`, saved; shown as "complete"). Tiles that give you something show small item icons in the bottom-left (`GAINS`).
+- Compendium tiles that give you something show small item icons in the bottom-left (`GAINS`). (The old per-section reward was replaced, see below.)
 
 ## Shops, more Fruit Merchant, great prayer
 - Hangout share is now 15% (`ODDS.hangout`), so arrangement scenes play more often (about 17% per idle check for a normal pair).
@@ -165,6 +165,19 @@ Whenever an interaction, idle activity or item effect is added or changed, updat
 - Spell scroll on the Fruit Merchant: he becomes a monkey (`form` 'monkey') for `MONKEY_TIME` (120) seconds: no interactions or idles, nobody visits him, he hops around his room and eats bananas. (Not saved: a reload ends it.)
 - Potion on the Fruit Merchant: everything he says comes out backwards until another potion is used on him (saved).
 - Bug fix: Wizard idle activities now mark the Compendium (they started without `beginAct`).
+
+## Apothecary, Farmer, Compendium tabs
+- Apothecary is a woman (long auburn hair). Idles (`ODDS.apothecary`): trips 5%, trips and smashes a potion 5%, brews potions 50% (just for show, no item), waters and picks herbs 40% (walks to her planters with a watering can).
+- Spell scroll on the Apothecary: +1 potion. Potion on the Apothecary: +`AP_POTION_COINS` (10) coins.
+- Apothecary left of the Fruit Merchant: she gives him a potion; its usual effect on him applies (backwards speech toggles).
+- Fruit Merchant left of the Apothecary: 97% they trade wares (apples for potions); 3% (`ODDS.farm`) they hire a Farmer:
+  - A temporary Farmer box (class Merchant, not on the shelf, not saved) appears on the nearest empty cell for `FARM_TIME` (180) seconds. His room is open sky, a fence and a field of wheat (80%) or apple trees (20%) that grows over the 3 minutes. Then he harvests (+`FARM_GAIN` 30 coins, message) and the box disappears.
+- All special interaction scenes play at `SCENE_PACE` (0.65) speed, so they last a few seconds longer (walking and idles are unchanged).
+- Moving or removing a box sends home anyone with a doorway, stairs or portal open in those rooms (`clearRooms`), and `toHome` drops every exit a character had open, so nothing is left behind.
+- `pairKind` now checks both directions of the pair table, so pairs listed in both directions (Apothecary/Merchant) work.
+- Compendium is tabbed by character (`COMP_TABS`): Knight, Wizard, Priest, Necromancer, Fruit Merchant, Apothecary. Each tab lists every interaction involving that character (shared scenes appear in both tabs) in three groups: With neighbors, Idle activities, Items, shops and secrets. Each tab and group shows found / total.
+- Easter eggs (`EGGS`: black Wizard, bronze Knight, bottom-row skulls, artifact on the Priest) are hidden until found (then shown with a purple dashed outline) but always count in the totals. They're marked automatically (`checkEggs`).
+- Rewards: every `DISCOVER_EVERY` (5) different things discovered, anywhere, pays `DISCOVER_REWARD` (10) coins (`S.rewarded`, saved). This replaces the old per-section reward.
 ## Art style
 Pixel art, 16x22 character grid drawn from rectangles with an automatic dark outline. Each room has plain walls and floor, one background element representing its class, and its up/down exit (Knight/Priest/Necromancer: back-wall door; Wizard: second bookshelf). Fantasy medieval theme.
 

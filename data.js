@@ -194,3 +194,30 @@ const JOKES=[
 Object.assign(NAMES,{massprayer:'Great prayer (4 neighbors, 20 s)',fruitfall:'Fruit thrown down at the Priest',starfruit:'Starfruit for the Priest (+5 coins)',curse:'Cursed fruit rots (1 min, no coins)',
  banana:'A giant banana',durian:'Durian for the Wizard (+10 coins)',jokes:'Jokes and laughter',murder:'A dark turn (0.5%)',advertW:'Wizard advertises (2 coins / 30 s, 1 min)',
  monkey:'Scroll on Fruit Merchant: monkey for 2 min',backwards:'Potion on Fruit Merchant: speaks backwards'});
+
+// ---------- Apothecary (now a woman), Farmer, scene pace ----------
+CH.apothecary={name:'Apothecary',eye:O,a:arms(AP),p:[...B(AP),[4,10,8,9,AP.body],[10,10,2,9,AP.bodyD],[4,14,8,1,AP.belt],[4,1,8,2,'#7a3a2a'],[4,3,1,9,'#7a3a2a'],[11,3,1,9,'#7a3a2a'],[5,3,6,1,'#7a3a2a'],[6,9,4,1,'#e8e4d0'],[11,13,3,4,'#8a6a3a'],[12,12,1,1,'#d03050']]};
+ODDS.apothecary={trip:.05,tripbreak:.05,abrew:.5,herbs:.4};
+ODDS.farm=.03; // Fruit Merchant left of the Apothecary: 3% a temporary Farmer box, else they trade
+PAIRS['apothecary>merchant']={left:'apgift'}; // Apothecary left of the Merchant: she gives him a potion
+PAIRS['merchant>apothecary']={left:'mtrade'}; // Merchant left of the Apothecary: farm (3%) or trading
+// Farmer (Merchant): a temporary box that appears on the nearest empty cell for FARM_TIME seconds, then harvests for FARM_GAIN coins
+CLASS.farmer='merchant';TR.farmer={up:'backdoor',down:'backdoor'};
+CH.farmerbox=Object.assign({},CH.farmer,{name:'Farmer'});
+const FARM_TIME=180,FARM_GAIN=30,AP_POTION_COINS=10;
+// Special interaction scenes play at this speed (lower = slower, so they last a few seconds longer)
+const SCENE_PACE=.65;
+Object.assign(NAMES,{trip:'Clumsy trip',tripbreak:'Clumsy trip, smashed potion',abrew:'Brewing potions',herbs:'Watering and picking herbs',
+ apgift:'Apothecary gives the Merchant a potion',mtrade:'Trading wares',farm:'A farm appears (3 min, +30 coins)',apcoins:'Potion on Apothecary: +10 coins',appotion:'Scroll on Apothecary: +1 potion',
+ blackwiz:'Easter egg: the black Wizard',bronze:'Easter egg: bronze armor',skulls:'Easter egg: skulls on the bottom row'});
+// Compendium tabs: one per character type. Each lists every interaction that involves that character
+// (shared scenes appear in both tabs). Easter eggs stay hidden until found but count in the totals.
+const EGGS=['blackwiz','bronze','skulls','relic'];
+const COMP_TABS=[
+ {id:'knight',name:'Knight',pairs:['friend','learn','bolt','chat','spar','zeal','crusade','pray','bless','sermon','tentacle','sleep','dknight','horde','nchat','cleanse'],idle:['prac:shield','prac:spear','prac:glaive','prac:longsword','orc','horse','cat'],items:['glow','flex','bronze']},
+ {id:'wizard',name:'Wizard',pairs:['friend','learn','bolt','chat','spar','study','gossip','undead','light','duel','craft','golem','tomes','swap','forge','banana','durian','jokes','murder','advertW'],idle:['read','magic','demon','brew'],items:['fireball','teleport','desk','blackwiz']},
+ {id:'priest',name:'Priest',pairs:['study','gossip','undead','light','zeal','crusade','pray','bless','sermon','tentacle','purge','debate','cleanse','apple','slip','feast','fruitfall','starfruit','curse'],idle:['pray1','farmer','tithe','exorcise','massprayer'],items:['banish','wings','relic']},
+ {id:'necromancer',name:'Necromancer',pairs:['sleep','dknight','horde','nchat','purge','debate','cleanse','duel','craft','golem','tomes','swap','forge'],idle:['spirits','candles','lightning','raise'],items:['sniff','skulls','relic']},
+ {id:'merchant',name:'Fruit Merchant',pairs:['apple','slip','feast','fruitfall','starfruit','curse','banana','durian','jokes','murder','advertW','apgift','mtrade','farm'],idle:['advert','sell','mob'],items:['monkey','backwards']},
+ {id:'apothecary',name:'Apothecary',pairs:['apgift','mtrade','farm'],idle:['trip','tripbreak','abrew','herbs'],items:['apoth','apcoins','appotion']}];
+const DISCOVER_EVERY=5,DISCOVER_REWARD=10; // every 5 different things discovered = +10 coins
