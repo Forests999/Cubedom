@@ -22,12 +22,16 @@ function rects(c,list,ox,oy,outline){
 }
 
 // ---------- characters ----------
-// Moods: ok, happy, mad (red eyes, only for real anger), hurt (eyes squeezed shut, used when taking damage)
+// Moods: ok, happy, mad (red eyes, only for real anger), hurt (eyes squeezed shut, taking damage), shock (wide eyes, surprise)
+// Small class symbol image (data URL) for name labels, from TAG_ICON in data.js
+const TAGURL={};
+function tagURL(cls){if(!TAGURL[cls]){const c=document.createElement('canvas');c.width=7;c.height=7;const x=c.getContext('2d');TAG_ICON[cls].forEach(r=>{x.fillStyle=r[4];x.fillRect(r[0],r[1],r[2],r[3])});TAGURL[cls]=c.toDataURL()}return TAGURL[cls]}
 function drawSprite(c,id,mood,pose){
  const x=c.getContext('2d'),ch=CH[id],f=(a,b,w,h,k)=>{x.fillStyle=k;x.fillRect(a,b,w,h)};
  const A=ch.a?POSE[pose||'none'](ch.a):[],R=[...A.filter(r=>!r[5]),...ch.p,...A.filter(r=>r[5])]; // front-of-body arm pieces last
  R.forEach(p=>f(p[0]-1,p[1]-1,p[2]+2,p[3]+2,O));R.forEach(p=>f(p[0],p[1],p[2],p[3],p[4]));
  if(mood==='hurt'){f(5,6,2,1,O);f(9,6,2,1,O);f(7,8,2,1,'#a22');return}
+ if(mood==='shock'){f(5,4,2,3,'#ffffff');f(9,4,2,3,'#ffffff');f(6,5,1,2,ch.eye);f(9,5,1,2,ch.eye);f(7,8,2,2,'#5a2a2a');return} // wide eyes, open mouth (surprise)
  const e=mood==='mad'?'#e03030':ch.eye;f(6,5,1,2,e);f(9,5,1,2,e);
  if(mood==='happy'){f(7,8,2,1,'#7a2a2a');f(5,7,1,1,'#f08080');f(10,7,1,1,'#f08080')}
  else if(mood==='mad'){f(6,4,2,1,O);f(9,4,2,1,O);f(7,8,2,1,'#a22')}else f(7,8,2,1,'#8a4a4a');
@@ -46,6 +50,15 @@ function poseOf(act,at){
  if(act==='fireball')return at<1.3?'up':'none';
  if(act==='sip')return at<.8?'up':'none';
  if(act==='flex')return at<.7?'up':Math.floor(at*2.5)%2?'flex2':'flex';
+ // Priest
+ if(act==='farmer')return at>4.4&&at<5.6?(Math.floor(at*4)%2?'up':'fwd'):at>2.2&&at<4.4?'fwd':'none';
+ if(act==='tithe'||act==='spirits'||act==='raise')return 'both';
+ if(act==='exorcise')return at>2.2&&at<4.6?'both':'none';
+ if(act==='banish')return at>1.2&&at<3.2?'both':'none';
+ // Necromancer
+ if(act==='candles')return at<1.6?'fwd':at<3.2?'up':'none';
+ if(act==='lightning')return 'hold';
+ if(act==='sniff')return at<1.1?'up':at<1.5?'fwd':'none';
  if(act==='prac')return 'noR';
  if(act==='learn'||act==='cast')return 'up';
  if(act==='demon')return at<1.6?'both':'up';
@@ -113,7 +126,7 @@ const weaponOf=u=>u.form==='eknight'?'magic':(u.weapon||'longsword');
 const actDx=u=>u.act==='prac'?Math.round(pracAnim(weaponOf(u),u.at).dx)*u.face:0;
 
 // Swirling sparkles around a character: pur = 0 blue, 1 purple (eldritch), 2 gold (holy); k = how strong (0..1)
-const SWIRL=[['#2a6af0','#4fb0ff','#bfe8ff'],['#c890ff','#e8d0ff','#8a5ae0'],['#f2c84a','#fff0a0','#d8a030']];
+const SWIRL=[['#2a6af0','#4fb0ff','#bfe8ff'],['#c890ff','#e8d0ff','#8a5ae0'],['#f2c84a','#fff0a0','#d8a030'],['#3ac85a','#7aff7a','#1a8a3a']]; // 3 = necromantic green
 function swirl(c,x,y,t,pur,k){const K=SWIRL[pur||0],n=Math.round(14*k);
  for(let i=0;i<n;i++){const an=t*(pur?3:4)+i*Math.PI*2/14,r=13+5*Math.sin(t*3+i),px=x+Math.cos(an)*r*1.2,py=y-24+Math.sin(an)*r*.8-(i%7)*2.5+8,s=i%3===2?2:3;
   c.fillStyle=K[i%3];c.fillRect(Math.round(px-s/2),Math.round(py-s/2),s,s)}}
@@ -125,19 +138,31 @@ function drawWard(c,x,y,t,hit){const a=cl(t/.4,0,1);if(a<=0)return;
 // Activity overlays drawn in front of the character. u needs: act, at (seconds), x, y (feet), face, and for the knight weapon/form.
 function drawAct(c,u){
  const f=u.face,a=u.act,t=u.at,x=u.x,y=u.y;
- if(a==='read'||a==='tome'||a==='holy'){
+ if(a==='lightning')drawRedLightning(c,x,y,t);
+ if(a==='read'||a==='tome'||a==='holy'||a==='lightning'){
   // Held up and open toward the reader: we see the covers and spine, page tops, and pages turning over the top.
-  // tome = the Wizard's eldritch spellbook (dark purple, glowing runes, purple sparkles); holy = the Priest's white book with a gold cross
-  const tm=a==='tome',hb=a==='holy',bx=Math.round(x+f*2),by=Math.round(y-20),pf=(t*.9)%1;
+  // tome = the Wizard's eldritch spellbook; holy = the Priest's white book with a gold cross; lightning = the Necromancer's black book with red runes
+  const tm=a==='tome',hb=a==='holy',nb=a==='lightning',bx=Math.round(x+f*2),by=Math.round(y-20),pf=(t*.9)%1;
   if(tm)swirl(c,x,y,t,1,cl(t/1.5,0,1));
   c.fillStyle=O;c.fillRect(bx-8,by-7,16,13);
   c.fillStyle='#f2ead0';c.fillRect(bx-7,by-6,14,2);
-  c.fillStyle=tm?'#3a1a5a':hb?'#f0f0f8':'#7a4a22';c.fillRect(bx-7,by-4,7,9);c.fillStyle=tm?'#2e1448':hb?'#d4d4e0':'#6a3e1c';c.fillRect(bx,by-4,7,9);
-  c.fillStyle=tm?'#1a0a2a':hb?'#b0b0c0':'#4a2a12';c.fillRect(bx-1,by-4,2,9);
+  c.fillStyle=tm?'#3a1a5a':hb?'#f0f0f8':nb?'#24222a':'#7a4a22';c.fillRect(bx-7,by-4,7,9);c.fillStyle=tm?'#2e1448':hb?'#d4d4e0':nb?'#18161c':'#6a3e1c';c.fillRect(bx,by-4,7,9);
+  c.fillStyle=tm?'#1a0a2a':hb?'#b0b0c0':nb?'#0a090c':'#4a2a12';c.fillRect(bx-1,by-4,2,9);
   if(hb){c.fillStyle='#f2c84a';c.fillRect(bx-5,by-3,1,6);c.fillRect(bx-6,by-1,3,1);c.fillRect(bx+4,by-3,1,6);c.fillRect(bx+3,by-1,3,1)}
-  else{c.fillStyle=tm?(Math.floor(t*6)%2?'#c890ff':'#e8d0ff'):'#f2c84a';c.fillRect(bx-5,by-1,2,2);c.fillRect(bx+3,by-1,2,2)}
+  else{c.fillStyle=tm?(Math.floor(t*6)%2?'#c890ff':'#e8d0ff'):nb?(Math.floor(t*6)%2?'#ff3030':'#ff9090'):'#f2c84a';c.fillRect(bx-5,by-1,2,2);c.fillRect(bx+3,by-1,2,2)}
   if(pf<.35){const k=pf/.35,px=Math.round(bx+f*(6-12*k)),py=Math.round(by-6-Math.sin(k*Math.PI)*6);c.fillStyle='#fff';c.fillRect(px-1,py,2,by-5-py)}}
- else if(a==='smite'){swirl(c,x,y,t,2,1)} // priest's holy power (gold)
+ else if(a==='smite'||a==='tithe'){swirl(c,x,y,t,2,1)} // priest's holy power (gold)
+ else if(a==='raise'){swirl(c,x,y,t,3,1)} // necromancer raising the dead (green)
+ else if(a==='exorcise'&&t>2.2&&t<4.6){swirl(c,x,y,t,2,1)}
+ else if(a==='farmer'&&t>4.4&&t<5.6){const up=Math.floor(t*4)%2,hx=Math.round(x+f*(up?11:16)),hy=Math.round(y-(up?36:22));
+  c.fillStyle=O;c.fillRect(hx-3,hy-7,6,9);c.fillStyle='#a8d8ff';c.fillRect(hx-2,hy-4,4,5);c.fillStyle='#e8f6ff';c.fillRect(hx-2,hy-6,4,2);c.fillStyle='#8a5a2a';c.fillRect(hx-1,hy-7,2,1)}
+ else if(a==='spirits'){const bx=Math.floor(x/CELL)*CELL,by=Math.floor((y-1)/CELL)*CELL;drawWisps(c,bx,by,t,cl(t/.8,0,1)*cl((5-t)/.6,0,1))}
+ else if(a==='banish'&&u.ghost){ // a ghost appears; the priest drives it off with holy light
+  const gh=u.ghost,ga=t<.8?t/.8:t<2?1:cl(1-(t-2)/1.2,0,1);
+  if(t>1.2&&t<3.2){const la=cl((t-1.2)/.4,0,1)*cl((3.2-t)/.4,0,1);c.save();c.globalAlpha=la;c.strokeStyle='rgba(255,236,150,.9)';c.lineWidth=5;c.beginPath();c.moveTo(x+f*6,y-36);c.lineTo(gh.x,gh.y-26);c.stroke();
+   c.fillStyle='rgba(255,250,210,.6)';c.beginPath();c.arc(x,y-38,10,0,Math.PI*2);c.fill();c.restore()}
+  if(ga>0)spr(c,'ghost',t>2?'hurt':'ok',gh.x,gh.y-6-Math.sin(t*3)*3-(t>2?(t-2)*14:0),gh.x>x?-1:1,0,.75*ga,1)}
+ else if(a==='sniff'&&t<1.1){drawItem(c,'potion',Math.round(x+f*8),Math.round(y-36),1)}
  else if(a==='sprinkle'){ // a little flask of holy water in the hand
   const up=Math.floor(t*4)%2,hx=Math.round(x+f*(up?11:16)),hy=Math.round(y-(up?36:22));
   c.fillStyle=O;c.fillRect(hx-3,hy-7,6,9);c.fillStyle='#a8d8ff';c.fillRect(hx-2,hy-4,4,5);c.fillStyle='#e8f6ff';c.fillRect(hx-2,hy-6,4,2);c.fillStyle='#8a5a2a';c.fillRect(hx-1,hy-7,2,1)}
@@ -203,6 +228,7 @@ const sinkOf=at=>cl((at-1.9)/1,0,1);
 function drawItem(c,kind,x,y,s){
  const R=kind==='scroll'
   ?[[-6,-3,12,6,'#eadcb4'],[-7,-4,2,8,'#c8b890'],[5,-4,2,8,'#c8b890'],[-4,-1,6,1,'#9a8a68'],[-1,1,3,3,'#c03030']]
+  :kind==='coin'?[[-2,-4,5,1,'#f2c84a'],[-3,-3,7,7,'#f2c84a'],[-2,4,5,1,'#f2c84a'],[-4,-2,1,5,'#f2c84a'],[4,-2,1,5,'#f2c84a'],[0,-2,1,5,'#b8862a'],[-2,-2,1,1,'#fff6c0']]
   :[[-1,-6,2,1,'#8a5a2a'],[-1,-5,2,2,'#cfe8f0'],[-3,-3,6,6,'#cfe8f0'],[-2,-1,4,3,'#d03050'],[-2,-2,1,1,'#ffffff']];
  c.fillStyle=O;R.forEach(r=>c.fillRect(Math.round(x+(r[0]-1)*s),Math.round(y+(r[1]-1)*s),(r[2]+2)*s,(r[3]+2)*s));
  R.forEach(r=>{c.fillStyle=r[4];c.fillRect(Math.round(x+r[0]*s),Math.round(y+r[1]*s),r[2]*s,r[3]*s)});
@@ -252,3 +278,53 @@ function drawTentacles(c,bx,by,e,t,blink){
  }
  c.restore();
 }
+
+// ---------- Priest and Necromancer effects ----------
+// Things drawn BEHIND the character for some activities (floor and ceiling effects)
+function drawActBack(c,u){
+ const a=u.act,t=u.at,bx=Math.floor(u.x/CELL)*CELL,by=Math.floor((u.y-1)/CELL)*CELL;
+ if(a==='pray1')drawCeilingLight(c,bx,by,cl((t-.3)/1,0,1)*cl((5-t)/.8,0,1),t);
+ if(a==='candles')drawRitual(c,u.x,u.y,t,cl((5.5-t)/.6,0,1));
+}
+// Soft golden light across the ceiling of a room (the Priest praying)
+function drawCeilingLight(c,bx,by,a,t){
+ if(a<=0)return;c.save();c.beginPath();c.rect(bx+4,by+4,88,88);c.clip();
+ const gr=c.createLinearGradient(0,by,0,by+46);gr.addColorStop(0,'rgba(255,226,130,'+(.55*a)+')');gr.addColorStop(1,'rgba(255,226,130,0)');
+ c.fillStyle=gr;c.fillRect(bx,by,CELL,46);
+ c.fillStyle='rgba(255,246,200,'+a+')';for(let i=0;i<7;i++){const px=bx+10+i*12+Math.round(Math.sin(t*1.5+i)*3),py=by+8+((t*8+i*9)%28);c.fillRect(px,Math.round(py),2,2)}
+ c.restore();
+}
+// Blue wisps of the dead swirling around a room (the Necromancer communing)
+function drawWisps(c,bx,by,t,a){
+ if(a<=0)return;c.save();c.globalAlpha=a;const cx=bx+48,cy=by+44;
+ for(let i=0;i<7;i++){for(let j=4;j>=0;j--){const tt=t-j*.06,an=tt*(1+i*.12)+i*.9,px=cx+Math.cos(an)*(30+6*Math.sin(tt*2+i)),py=cy+Math.sin(an)*(18+4*Math.cos(tt*1.7+i));
+  c.fillStyle=j?'rgba(79,176,255,'+(.7-j*.13)+')':'#d8f2ff';const s=j?2:3;c.fillRect(Math.round(px-s/2),Math.round(py-s/2),s,s)}}
+ c.restore();
+}
+// Chalk ritual circle on the floor around (x,y), drawn over time, then five candles light one by one
+function drawRitual(c,x,y,t,a){
+ if(a<=0)return;c.save();c.globalAlpha=a;const k=cl(t/1.5,0,1),rx=26,ry=7,cy=y-1;
+ c.strokeStyle='#e8e8e0';c.lineWidth=1.5;c.beginPath();c.ellipse(x,cy,rx,ry,0,0,Math.PI*2*k);c.stroke();
+ const P=[0,1,2,3,4].map(i=>{const an=-Math.PI/2+i*Math.PI*2/5;return[x+Math.cos(an)*rx*.85,cy+Math.sin(an)*ry*.85]});
+ if(t>1.5){c.beginPath();[0,2,4,1,3,0].forEach((q,i)=>i?c.lineTo(P[q][0],P[q][1]):c.moveTo(P[q][0],P[q][1]));c.stroke()}
+ P.forEach((q,i)=>{if(t<1.2)return;const px=Math.round(q[0]),py=Math.round(q[1]);c.fillStyle=O;c.fillRect(px-2,py-7,5,7);c.fillStyle='#e8e4d0';c.fillRect(px-1,py-6,3,6);
+  if(t>1.8+i*.25){c.fillStyle=Math.floor(t*10+i)%2?'#ffb030':'#ffe080';c.fillRect(px,py-10,1,3);c.fillStyle='#ffe080';c.fillRect(px,py-8,1,1)}});
+ c.restore();
+}
+// Red lightning crackling around the Necromancer while he reads his black book
+function drawRedLightning(c,x,y,t){
+ const k=Math.floor(t*6);if(k%2)return;
+ for(let b=0;b<2;b++){const s=k*7+b*13,ang=Math.sin(s)*Math.PI,r0=10,r1=30;let px=x+Math.cos(ang)*r0,py=y-24+Math.sin(ang)*r0*.8;
+  c.beginPath();c.moveTo(px,py);for(let i=1;i<=4;i++){const rr=r0+(r1-r0)*i/4;px=x+Math.cos(ang+Math.sin(s+i)*.4)*rr;py=y-24+Math.sin(ang+Math.sin(s+i)*.4)*rr*.8+Math.cos(s*i)*3;c.lineTo(px,py)}
+  c.strokeStyle='#ff2020';c.lineWidth=3;c.stroke();c.strokeStyle='#ffb0b0';c.lineWidth=1;c.stroke()}
+}
+// Glowing angel wings behind a character (potion on the Priest). t = time, for the gentle flap
+function drawWings(c,x,y,t){
+ const fl=Math.round(Math.sin(t*3)*2),gr=c.createRadialGradient(x,y-30,4,x,y-30,34);gr.addColorStop(0,'rgba(255,240,180,.45)');gr.addColorStop(1,'rgba(255,240,180,0)');
+ c.fillStyle=gr;c.fillRect(x-36,y-64,72,64);
+ const W=[[4,-8,6,3],[6,-5,12,3],[6,-2,15,3],[6,1,13,3],[6,4,9,3],[6,7,5,2]];
+ [-1,1].forEach(s=>{W.forEach((r,i)=>{const yy=y-30+r[1]-(i<2?fl:0),xx=s>0?x+r[0]:x-r[0]-r[2];c.fillStyle=O;c.fillRect(xx-1,yy-1,r[2]+2,r[3]+2)});
+  W.forEach((r,i)=>{const yy=y-30+r[1]-(i<2?fl:0),xx=s>0?x+r[0]:x-r[0]-r[2];c.fillStyle=i%2?'#e8eef8':'#ffffff';c.fillRect(xx,yy,r[2],r[3]);c.fillStyle='#f2d870';c.fillRect(s>0?xx+r[2]-2:xx,yy,2,r[3])})});
+}
+// Smashed potion splat on the back wall (fades out). a = 0..1
+function drawSplat(c,x,y,a){c.save();c.globalAlpha=a;c.fillStyle='#d03050';[[-6,-2,12,4],[-3,-6,6,12],[-8,2,3,3],[6,-5,3,3],[-1,6,2,6],[4,4,2,5]].forEach(r=>c.fillRect(x+r[0],y+r[1],r[2],r[3]));c.fillStyle='#cfe8f0';[[-9,-6,2,2],[8,1,2,2],[2,-9,2,2]].forEach(r=>c.fillRect(x+r[0],y+r[1],r[2],r[3]));c.restore()}

@@ -45,6 +45,17 @@ const CH={
  demon:{name:'Demon',eye:'#ffd34e',p:[[0,5,3,9,'#6a1a1a'],[13,5,3,9,'#6a1a1a'],[4,17,3,3,'#8a2020'],[9,17,3,3,'#8a2020'],[4,10,8,8,'#b82a2a'],[6,12,4,5,'#d86a4a'],[2,10,2,6,'#b82a2a'],[12,10,2,6,'#b82a2a'],[4,3,8,7,'#d03a3a'],[3,0,2,4,'#2a1a1a'],[11,0,2,4,'#2a1a1a'],[14,15,1,6,'#2a1a1a']]}
 };
 for(const c in WIZ_COLORS)CH['wizard_'+c]=wizardCH(c);
+// Visitors who aren't boxes: a common farmer (Priest idles) and a ghost (scroll on the Priest)
+const FC={body:'#8a6a44',bodyD:'#6a5034',pants:'#4a6a9a',boot:'#3a2a1a',belt:'#4a6a9a'};
+CH.farmer={name:'Farmer',eye:O,a:arms(FC),p:[...B(FC),[5,10,1,4,'#4a6a9a'],[10,10,1,4,'#4a6a9a'],[3,2,10,2,'#d8b860'],[5,0,6,2,'#d8b860'],[5,2,6,1,'#a8883a']]};
+CH.ghost={name:'Ghost',eye:O,p:[[3,2,10,14,'#e8eef8'],[2,6,12,10,'#e8eef8'],[2,16,3,3,'#e8eef8'],[6,16,3,2,'#e8eef8'],[10,16,3,3,'#e8eef8'],[11,3,2,12,'#c8d0e0']]};
+
+// Class tags shown as a small symbol next to each name. Merchants: coin, Fighters: sword, Mages: magic star.
+const CLASS={knight:'fighter',wizard:'mage',priest:'mage',necromancer:'mage'};
+const TAG_ICON={ // 7x7 pixel icons: [x,y,w,h,color]
+ merchant:[[2,0,3,1,'#f2c84a'],[1,1,5,5,'#f2c84a'],[2,6,3,1,'#f2c84a'],[0,2,1,3,'#f2c84a'],[6,2,1,3,'#f2c84a'],[3,2,1,3,'#b8862a']],
+ fighter:[[3,0,1,5,'#e0e6f0'],[1,4,5,1,'#d8b040'],[3,5,1,2,'#8a5a2a']],
+ mage:[[3,0,1,7,'#c890ff'],[0,3,7,1,'#c890ff'],[2,2,3,3,'#f0e0ff'],[1,1,1,1,'#c890ff'],[5,1,1,1,'#c890ff'],[1,5,1,1,'#c890ff'],[5,5,1,1,'#c890ff']]};
 // Character boxes on the shelf. The Necromancer only appears once unlocked (see ODDS.necro).
 const SHELF_CHARS=['knight','wizard','priest'];
 const ITEMS=['scroll','potion']; // consumables, infinite use for now
@@ -73,10 +84,15 @@ const POTION_KINDS={knight:['friend','learn','chat','spar'],priest:['study','gos
 // necro = chance a dying Priest unlocks the Necromancer box on the shelf.
 // wizard/knight = how the idle activity is picked. horse needs no box to the Knight's right.
 // eknightCat = extra chance the Eldritch Knight's idle activity is the black cat (needs a Wizard on the board).
+// priest/necromancer = how their idle activity is picked.
 const ODDS={visit:.2,visitFriend:.45,spar:.02,hangout:.25,idle:.4,zeal:.6,tentacle:.1,necro:.25,
  wizard:{read:.6,magic:.38,demon:.02},
  knight:{prac:.75,orc:.2,horse:.05},
+ priest:{pray:.5,farmer:.35,tithe:.1,exorcise:.05},
+ necromancer:{spirits:.5,candles:.25,lightning:.24,raise:.01},
  eknightCat:.01};
+// Coins: +1 every COIN_EVERY seconds while the game is open; the Priest's tithe prayer gives TITHE.
+const COIN_EVERY=30,TITHE=5;
 const $=s=>document.querySelector(s),pick=a=>a[Math.floor(Math.random()*a.length)],cl=(v,a,b)=>Math.min(b,Math.max(a,v));
 
 const TALK=[
@@ -95,4 +111,9 @@ const NAMES={friend:'Old Friends',learn:'Eldritch Awakening',bolt:'Thunderstruck
  zeal:'Zeal: Knight visits 60% more',pray:'Praying together',bless:'Holy water blessing',sermon:'A short prayer',tentacle:'Eldritch tentacles',
  read:'Reading',magic:'Practicing magic',demon:'Summoning a demon',prac:'Weapon practice',orc:'Fighting an orc',horse:'Feeding the horse',cat:'Black cat',
  fireball:'Scroll on Wizard: fireball',glow:'Scroll on Knight: golden glow',teleport:'Potion on Wizard: teleport visit',flex:'Potion on Knight: flex',
- scroll:'Spell scroll',potion:'Potion'};
+ banish:'Scroll on Priest: banish a ghost',wings:'Potion on Priest: angel wings',nscroll:'Scroll on Necromancer: raise a skeleton',sniff:'Potion on Necromancer: smashed in disgust',
+ pray1:'Praying',farmer:'Blessing a farmer',tithe:'Prayer for coins',exorcise:'Exorcism',
+ spirits:'Communing with spirits',candles:'Candles and chalk circle',lightning:'Red lightning spell',raise:'Raising a skeleton next door',
+ scroll:'Spell scroll',potion:'Potion',coin:'Gold coins'};
+// The Priest's blessing for a visiting farmer
+const FARM_PRAYER=['Bless your fields and your flock.','May your harvest be plenty.'];

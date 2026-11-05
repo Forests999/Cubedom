@@ -30,19 +30,26 @@ All odds live in `ODDS`; the game (`decide`, `startAct`) and the Compendium both
 - Hidden easter egg (not shown in the Compendium): a Wizard whose first placement is a drag onto the top-left cell wears a black outfit with a red staff orb (and a red glow when practicing magic). Tapping the shelf to auto-place never triggers it.
 - The Knight (and Eldritch Knight) holds no weapon by default. A weapon is drawn only while he uses it: weapon practice, the orc fight, tentacles and sparring (his room's weapon; the Eldritch Knight uses a magic sword). Weapon drawings are clipped to the room he stands in.
 - Characters always move a little during interactions: arm gestures (`gest`), hops, cheers.
-- Taking damage shows a "hurt" face (eyes squeezed shut, no red eyes). Red eyes ("mad") are only for anger.
+- Moods: ok, happy, mad (red eyes; only real anger and monsters), hurt (eyes squeezed shut; taking damage), shock (wide white eyes and open mouth; surprise). Never use red eyes for surprise.
+- Class tags: a small pixel symbol after every name (labels and shelf), from `CLASS` and `TAG_ICON`: Fighter = sword, Mage = magic star, Merchant = coin. Knight = Fighter; Wizard, Priest, Necromancer = Mage.
+- Spacing: visitors stand beside their host, at least 30px apart (`standBy`), never on top of them. If needed the host steps aside (orc fight) or backs away (tentacles).
+- Hops: `u.hop` is remembered with its starting length (`u.hd`), so short hops are small nods that start from the ground (no popping). Facing only flips when the other character is clearly to one side (no flip-flopping).
 
 ## Characters
-- Priest: white robes, gold rope belt, gold cross necklace. Room: stained glass window, candle, back-wall door with stone stairs. No idle activities yet (he wanders and visits).
-- Necromancer: dark green hooded robe, pale skin, skull staff. Room: skulls and green candles on shelves, back-wall door. Unlock: when a Priest dies there is a 25% chance (`ODDS.necro`) the Necromancer box appears on the shelf (saved in `S.un.necromancer`; the Priest box stays too). No idle activities or special interactions yet (only plain hangouts).
+- Priest: white robes, gold rope belt, gold cross necklace. Room: stained glass window, candle, back-wall door with stone stairs.
+- Necromancer: dark green hooded robe, pale skin, skull staff. Room: skulls and green candles on shelves, back-wall door. Unlock: when a Priest dies there is a 25% chance (`ODDS.necro`) the Necromancer box appears on the shelf (saved in `S.un.necromancer`; the Priest box stays too). No neighbor interactions yet (only plain hangouts; the owner will add them later). The unlock is a real 25% roll on every Priest death, including fireball deaths (tested: about 25% over thousands of deaths).
 
 ## Items (consumables)
-- An item tray under the shelf. Items are infinite use for now (may be purchasable later). Drag one onto a room: it works only if the room's owner is at home (not visiting, not hosting, not in the middle of a demon/fireball/flex/horse). Otherwise, or if the item does nothing for that character, a grey puff.
+- An item tray under the shelf. Items are infinite use for now (may be purchasable later with coins). Drag one onto a room: it works only if the room's owner is at home (not visiting, not hosting, not in the middle of a big activity such as demon, fireball, flex, horse, raising, banishing, sniffing, or a farmer visit). Otherwise, or if the item does nothing for that character, a grey puff.
 - Spell scroll on Wizard: fireball. He charges his staff and throws a fireball at a random neighboring room that has a box (or an empty neighboring cell if none). That room is destroyed and everyone inside dies, including visitors (whose own boxes are destroyed too).
 - Spell scroll on Knight: his armor shines with a golden glow for 30 seconds.
 - Potion on Wizard: he drinks, teleports to a random free character anywhere on the board, does a random interaction with them (`POTION_KINDS`: Knight = Old Friends/Eldritch Awakening/Tales of Old/Sparring; Priest = his four; others = hangout), then portals back home. With nobody free, he just sparkles.
 - Potion on Knight: he drinks and flexes his muscles.
-- Scroll/potion on Priest or Necromancer: nothing yet.
+- Spell scroll on Priest: a ghost floats in; he raises his arms and drives it off with a beam of holy light; it fades away.
+- Potion on Priest: he drinks it and glowing angel wings appear on his back for 30 seconds (`u.wings`).
+- Spell scroll on Necromancer: he raises a skeleton in another character's room (same as his 1% idle). Nobody free: grey puff.
+- Potion on Necromancer: he sniffs it, makes a face, and throws it at the back wall, where it smashes (glass and a red splat that fades).
+- Gold coins: shown in the item tray (not draggable). +1 every `COIN_EVERY` (30) seconds while the game is open, +5 (`TITHE`) from the Priest's tithe prayer. Saved as `coins`. Will be used to buy items later.
 
 ## Transitions between rooms
 - Left/right: the Wizard always uses his portals (one in each room); everyone else walks through the side door, whichever room they're in.
@@ -84,14 +91,16 @@ Priest position relative to Knight:
   - Orc: the orc appears first on the far side of the neighbor's room, the Knight glares, then walks over and stands between the orc and his host to fight.
   - Horse: a horse's head and neck lean in from the right edge of his room; he walks over and holds out hay, the horse eats it, he hops happily, the horse leaves.
 - Eldritch Knight only: 1% extra chance (`eknightCat`) that a small black cat walks across the back of the Wizard's room (needs a Wizard on the board).
-- Priest, Necromancer: none yet.
+- Priest (`ODDS.priest`): kneel and pray 50% (soft golden light across the ceiling); bless a farmer 35% (a farmer comes out of the back door, the Priest says a prayer and sprinkles holy water, the farmer cheers and leaves); tithe prayer 10% (+5 coins, shown as a floating "+5"); exorcism 5% (a possessed farmer with red eyes comes in, shakes as the Priest prays with golden power, a demon rises out of him and fades, the farmer is saved and leaves).
+- Necromancer (`ODDS.necromancer`): commune with spirits 50% (blue wisps swirl around the room); candles and chalk circle 25% (draws a chalk circle and pentagram around himself, then five candles light one by one); red lightning 24% (reads a black book with red runes while red lightning crackles around him); raise a skeleton 1% (green power; a skeleton rises beside a random free character in their own room; a Fighter or Mage fights it off and lives, anyone else dies). Falls back to spirits if nobody is free.
+- Visiting non-box characters (farmer, ghost) are drawn from `CH` but are not on the board or shelf.
 - Arm poses (`POSE` in data.js): none, hold, noR (right arm drawn by the weapon swing), fwd, up, both, pray (hands together, drawn in front of the body), flex, flex2. `poseOf` in art.js picks one from the activity.
 
 ## Compendium tab
 Shows every interaction from the start (for development tracking), with no descriptive text: arrangement diagrams and looping animations of each idle activity and item effect. Each tile shows its % chance in the top right corner, computed from `ODDS` (one decimal for small values), or a short label:
 - Arrangements: chance per idle check that a character starts that interaction. Wizard & Knight: visit x not sparring x not a hangout (33% Old Friends, 15% the others), Friendly Sparring 0.4%. Priest pairs: visit x not a hangout (15%); Priest left of Knight splits into prayer 14% / tentacles 1.5%; Zeal shows "+60%".
-- Idle activities: how the activity is picked (Wizard 60/38/2, Knight 75/20/5, black cat 1%).
-- Items: labelled "scroll" or "potion".
+- Idle activities: how the activity is picked (Wizard 60/38/2, Knight 75/20/5, black cat 1%, Priest 50/35/10/5, Necromancer 50/25/24/1).
+- Items: labelled "scroll" or "potion" (one tile per character effect). The hidden black Wizard is not shown.
 Whenever an interaction, idle activity or item effect is added or changed, update the Compendium to match.
 
 ## Art style
