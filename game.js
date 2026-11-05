@@ -528,7 +528,7 @@ function render(){
  people.forEach(u=>{
   if(u.npcOf){const n=u.npcOf.npc,nh=n.hop>0?-Math.sin((1-n.hop/.5)*Math.PI)*8:0;
    spr(g,n.id,n.mood,n.x+(n.shake?Math.round(Math.sin(T*40)):0),n.y,n.face,(n.walk?Math.sin(n.t*14)*1.5:0)+nh,n.al,scl({y:n.y,sk:1}),n.walk?'none':'none');return}
-  const walking=(u.path.length&&u.path[0].k==='walk')||u.mv,hop=u.hop>0?-Math.sin((1-u.hop/u.hd)*Math.PI)*10*Math.min(1,u.hd/.5):0,bl=u.blink>0&&Math.floor(u.blink*14)%2?.2:1;
+  const walking=(u.path.length&&u.path[0].k==='walk')||u.mv,hd=Math.max(u.hd||0,u.hop),hop=u.hop>0?-Math.sin((1-u.hop/hd)*Math.PI)*10*Math.min(1,hd/.5):0,bl=u.blink>0&&Math.floor(u.blink*14)%2?.2:1;
   const sink=u.act==='demon'?sinkOf(u.at):0,low=sink*46+(u.kneel?6:0)+(u.st==='sleep'?Math.round(Math.sin(T*2)):0);
   if(u.glow>0)drawGlow(g,u.x,u.y,T);
   if(u.wings>0)drawWings(g,u.x,u.y+low+hop,T);
@@ -572,7 +572,9 @@ function render(){
  if(bubU){const u=bubU.u;bub.style.left=cl(u.x/W*100,18,82)+'%';bub.style.top=(u.y-50)/H*100+'%'}
 }
 let last=0;
-function frame(ts){const dt=Math.min(.05,(ts-last)/1000||0);last=ts;T=ts/1000;step(dt);render();if(!tabRef.hidden)anim.forEach(f=>f(T));requestAnimationFrame(frame)}
+// One frame: update, then draw. The next frame is requested first, so a rare error can't freeze the game.
+function frame(ts){requestAnimationFrame(frame);const dt=Math.min(.05,(ts-last)/1000||0);last=ts;T=ts/1000;
+ try{step(dt);render();if(!tabRef.hidden)anim.forEach(f=>f(T))}catch(e){console.error(e)}}
 
 // ---------- input ----------
 const inRect=(el,e)=>{const R=el.getBoundingClientRect();return e.clientX>=R.left&&e.clientX<=R.right&&e.clientY>=R.top&&e.clientY<=R.bottom};
