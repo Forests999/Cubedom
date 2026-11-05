@@ -1,4 +1,4 @@
-# Cubehold
+# Cubedom
 
 A web-based, fantasy-medieval sandbox inspired by the 2000s toy "Cube World". Each character lives in a pixel-art room (a "box"). The player drags boxes onto a 5x4 board. Characters idle inside their box and sometimes visit neighboring boxes. The arrangement of boxes changes what happens.
 
@@ -6,7 +6,7 @@ A web-based, fantasy-medieval sandbox inspired by the 2000s toy "Cube World". Ea
 - Plain HTML + CSS + JavaScript with Canvas. No build tools, no frameworks. It must open by double-clicking `index.html`.
 - Pixel art must stay crisp: `image-rendering: pixelated` and `imageSmoothingEnabled = false`.
 - Text labels (names) are regular HTML over the canvas so they stay sharp.
-- Progress saves in `localStorage` (key `cubehold-v4`).
+- Progress saves in `localStorage` (key `cubehold-v4`, kept from the old name so saves survive).
 - Keep game rules and data (characters, interactions, odds) separate from drawing code so it can be split into files later.
 
 ## Current state

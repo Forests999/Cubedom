@@ -1,6 +1,6 @@
 {
-  "name": "Cubehold",
-  "short_name": "Cubehold",
+  "name": "Cubedom",
+  "short_name": "Cubedom",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "any",
