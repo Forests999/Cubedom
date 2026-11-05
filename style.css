@@ -72,3 +72,9 @@ button{touch-action:manipulation}
 .gain{position:absolute;left:6px;bottom:6px;display:flex;gap:2px;background:rgba(0,0,0,.65);padding:1px 2px;pointer-events:none}
 .gain img{width:16px;height:16px;image-rendering:pixelated}
 h2.sec.done::after{content:' \2605 complete';color:#f2c84a;font-size:13px}
+/* Purchase popup */
+#modal{position:fixed;inset:0;background:rgba(10,8,20,.6);display:flex;align-items:center;justify-content:center;z-index:80}
+#modal .mbox{background:var(--stone);border:4px solid #000;outline:3px solid #d8dee8;padding:14px 16px;max-width:300px;text-align:center}
+#modal p{margin:0 0 12px}
+#modal .mrow{display:flex;gap:12px;justify-content:center}
+#mYes{background:#c8a030;color:#1a1733}

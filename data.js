@@ -175,3 +175,22 @@ const APOTH_COST=30,DESK_COST=50,DESK_COST_BLACK=30,SELL_GAIN=2,APPLE_GAIN=1,SEC
 const MERCH_ADS=['Fresh apples! Crisp and sweet!','Oranges from the south! Two for a coin!','Bananas! Ripe bananas!','Fruit! Get your fruit here!'];
 Object.assign(NAMES,{apothecary:'Apothecary',advert:'Calling out to customers',sell:'Selling apples next door (+2 coins)',mob:'An angry fruit mob',
  apple:'Priest buys an apple (+1 coin)',slip:'Priest slips on an apple',feast:'A feast with the nobles',apoth:'Tap the Apothecary: potion for 30 coins',desk:'Writing desk (Merchant + Mage next to the Wizard): scroll for 50 coins'});
+
+// ---------- more Fruit Merchant, monkey, big prayer ----------
+ODDS.hangout=.15; // plain hangouts are rarer, so arrangement scenes happen more
+Object.assign(ODDS,{massPrayer:.05,fruitfall:.5,murder:.005});
+PAIRS['priest>merchant']={left:'appleshop',below:'mabove',above:'curse'}; // below = Merchant above the Priest, above = Merchant below
+PAIRS['merchant>wizard']={above:'banana',below:'durian',right:'jokes',left:'advertW'};
+const MASS_PRAYER_TIME=20,MONKEY_TIME=120,ROT_TIME=60,BOOST_TIME=60,STARFRUIT_GAIN=5,DURIAN_GAIN=10,APOTH_PLACE_COST=20;
+// The Apothecary's back door is on the LEFT of its room
+EXIT.backdoorL={x:24,y:66,ay:69};TR.apothecary={up:'backdoorL',down:'backdoorL'};
+// Monkey: what a spell scroll turns the Fruit Merchant into for MONKEY_TIME seconds
+const MK={body:'#7a5030',bodyD:'#5a3a20',pants:'#7a5030',boot:'#5a3a20',belt:'#7a5030',skin:'#d8b088',skinD:'#c09870'};
+CH.monkey={name:'Monkey',eye:O,a:arms(MK),p:[...B(MK),[5,2,6,2,'#7a5030'],[3,4,2,3,'#7a5030'],[11,4,2,3,'#7a5030'],[14,10,1,5,'#5a3a20'],[13,15,2,1,'#5a3a20'],[6,7,4,2,'#e8c8a0']]};
+const JOKES=[
+ [['merchant','Why did the banana see a healer?'],['wizard','Why?'],['merchant','It was not peeling well!']],
+ [['wizard','What does a wizard eat for lunch?'],['merchant','Tell me.'],['wizard','A spell-ad sandwich!']],
+ [['merchant','I tried a magic apple once.'],['wizard','And?'],['merchant','It made my pockets disappear. Coins too!']]];
+Object.assign(NAMES,{massprayer:'Great prayer (4 neighbors, 20 s)',fruitfall:'Fruit thrown down at the Priest',starfruit:'Starfruit for the Priest (+5 coins)',curse:'Cursed fruit rots (1 min, no coins)',
+ banana:'A giant banana',durian:'Durian for the Wizard (+10 coins)',jokes:'Jokes and laughter',murder:'A dark turn (0.5%)',advertW:'Wizard advertises (2 coins / 30 s, 1 min)',
+ monkey:'Scroll on Fruit Merchant: monkey for 2 min',backwards:'Potion on Fruit Merchant: speaks backwards'});

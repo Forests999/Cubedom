@@ -62,7 +62,7 @@ All odds live in `ODDS`; the game (`decide`, `startAct`) and the Compendium both
 ## Visits (decided every few seconds per idle character)
 - 20% chance to visit a neighbor (45% for Knight/Wizard when the Wizard is left of the Knight; x1.6 for a Knight with a Priest directly above him).
 - 2% of Knight/Wizard visits are Friendly Sparring, in any arrangement, in whichever room the visit goes to.
-- 25% of the other visits are plain hangouts (a wave and a hop). Otherwise the pair's arrangement interaction plays (`PAIRS`, `pairKind`). Pairs with no table entry (e.g. anyone + Necromancer) only hang out.
+- 15% of the other visits are plain hangouts (a wave and a hop). Otherwise the pair's arrangement interaction plays (`PAIRS`, `pairKind`). Pairs with no table entry (e.g. anyone + Necromancer) only hang out.
 
 ## Arrangement interactions
 Wizard position relative to Knight:
@@ -147,6 +147,24 @@ Whenever an interaction, idle activity or item effect is added or changed, updat
 - Writing desk: while the Wizard has a Merchant neighbor AND another Mage neighbor, a desk appears in his room. Tap his room (while he's home and free) to write a spell scroll for `DESK_COST` (50) coins, or `DESK_COST_BLACK` (30) for the black-robed Wizard.
 - Crowds: extra people in a scene (squire, nobles, farmer mob) live in `u.crowd` and are stepped and drawn with the characters.
 - Compendium: built from `SECTIONS` (title + tile keys). Filling a whole section with gold borders pays `SECTION_REWARD` (10) coins once (`S.secDone`, saved; shown as "complete"). Tiles that give you something show small item icons in the bottom-left (`GAINS`).
+
+## Shops, more Fruit Merchant, great prayer
+- Hangout share is now 15% (`ODDS.hangout`), so arrangement scenes play more often (about 17% per idle check for a normal pair).
+- Buying with coins always goes through the in-page popup (`ask`, the `#modal` box with Buy / Cancel; not the browser pop-up). Rooms you can tap to buy from get a thin silver border: the Apothecary always, the Wizard while his desk is showing.
+- Placing the Apothecary box costs `APOTH_PLACE_COST` (20) coins (asks first; not enough coins = a message, no box).
+- Apothecary room: herbs growing in planters, potions on display shelves and a counter; its back door is on the LEFT (`EXIT.backdoorL`, `BACKDOOR_L`).
+- Great prayer: when a Priest with all four neighbors free decides what to do, 5% (`ODDS.massPrayer`) he calls them in. They walk to spots in his room (`GATHER_SPOTS`), wait until all have arrived (12 s max), then everyone kneels for `MASS_PRAYER_TIME` (20) seconds under a soft holy glow, then all go home.
+- Fruit Merchant + Priest (in addition to the apple/feast arrangement):
+  - Merchant above the Priest: 50% (`ODDS.fruitfall`) he throws fruit down from his room; the Priest gets angry and shouts, the Merchant laughs. 50% he sells the Priest a starfruit (+`STARFRUIT_GAIN` 5 coins).
+  - Merchant below the Priest: the Priest curses him from his room; all his fruit rots for `ROT_TIME` (60) seconds (brown fruit, flies). While rotten, nothing the Merchant does earns coins (`merchantGain`: sales, apple, starfruit, durian, the advertising boost).
+- Fruit Merchant + Wizard (Merchant relative to the Wizard):
+  - Above: the Wizard magics a banana until it is giant.
+  - Below: the Merchant sells him a durian (+`DURIAN_GAIN` 10 coins); the Wizard is horrified by the smell.
+  - Right: 99.5% they tell a joke and laugh (`JOKES`); 0.5% (`ODDS.murder`) the Merchant kills the Wizard (a quick red flash, no gore).
+  - Left: the Wizard helps advertise; for `BOOST_TIME` (60) seconds the coin timer gives 2 coins every 30 seconds instead of 1 (`boostT`).
+- Spell scroll on the Fruit Merchant: he becomes a monkey (`form` 'monkey') for `MONKEY_TIME` (120) seconds: no interactions or idles, nobody visits him, he hops around his room and eats bananas. (Not saved: a reload ends it.)
+- Potion on the Fruit Merchant: everything he says comes out backwards until another potion is used on him (saved).
+- Bug fix: Wizard idle activities now mark the Compendium (they started without `beginAct`).
 ## Art style
 Pixel art, 16x22 character grid drawn from rectangles with an automatic dark outline. Each room has plain walls and floor, one background element representing its class, and its up/down exit (Knight/Priest/Necromancer: back-wall door; Wizard: second bookshelf). Fantasy medieval theme.
 

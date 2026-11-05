@@ -5,12 +5,17 @@ const WINDOW=[[16,12,28,40,'#2a2434'],[18,16,7,10,'#c04040'],[26,16,8,10,'#3a6ad
 const WIN_C={x:30,y:32};
 // Knight's back-wall door (hides the stairs). Center x 72, bottom at the floor line (y 66).
 const BACKDOOR=[[61,31,22,35,'#1e2030'],[63,33,18,33,'#6a4420'],[69,33,1,33,'#5a3a1e'],[75,33,1,33,'#5a3a1e'],[63,38,18,2,'#3a2a1a'],[63,58,18,2,'#3a2a1a'],[65,49,2,2,'#f2c84a']];
+const BACKDOOR_L=BACKDOOR.map(r=>[r[0]-48,r[1],r[2],r[3],r[4]]); // same door, on the left side of the room (Apothecary)
 // Wizard's second bookshelf (slides aside to reveal the spiral staircase). Center x 68, bottom y 66.
 const SHELF2=[[56,30,24,36,'#6a4a2a'],[58,32,20,32,'#3a2410'],[58,47,20,2,'#6a4a2a'],[59,35,4,12,'#c04040'],[64,37,3,10,'#40a0c0'],[68,35,4,12,'#d0b030'],[73,36,4,11,'#40c070'],[59,51,3,13,'#8a5ae0'],[63,52,5,12,'#c04040'],[69,50,3,14,'#40a0c0'],[73,53,4,11,'#d0b030']];
 function bg(id,w){
  // Fruit Merchant: striped awning and crates of fruit
  // Apothecary: shelves of colored bottles, hanging herbs, a mortar
- if(id==='apothecary')return [[10,24,40,3,'#5a4024'],[10,44,40,3,'#5a4024'],[12,17,4,7,'#d03050'],[18,15,4,9,'#4fb0ff'],[24,18,4,6,'#7aff7a'],[30,16,5,8,'#c890ff'],[38,18,4,6,'#f2c84a'],[13,37,5,7,'#7aff7a'],[20,36,4,8,'#d03050'],[27,38,6,6,'#4fb0ff'],[36,35,4,9,'#f08a20'],[56,10,2,12,'#4a7a3a'],[60,10,2,9,'#6a9a4a'],[64,10,2,13,'#4a7a3a'],[16,58,10,6,'#8a8a8a'],[18,56,6,2,'#6a6a6a'],...BACKDOOR];
+// Apothecary: herbs growing in planters (left), potions on display (right), back door on the LEFT
+ if(id==='apothecary')return [...BACKDOOR_L,[40,10,2,10,'#4a7a3a'],[44,10,2,7,'#6a9a4a'],[48,10,2,12,'#4a7a3a'],[52,10,2,8,'#6a9a4a'],
+  [38,56,22,10,'#8a5a2a'],[38,56,22,2,'#6a4420'],[40,46,2,10,'#4a9a3a'],[39,44,4,4,'#6aba4a'],[45,48,2,8,'#3a8a3a'],[44,46,4,3,'#d8e070'],[50,44,2,12,'#4a9a3a'],[48,42,6,4,'#6aba4a'],[55,49,2,7,'#3a8a3a'],[54,47,4,3,'#c890ff'],
+  [62,22,30,2,'#6a4a2a'],[62,40,30,2,'#6a4a2a'],[64,13,4,9,'#d03050'],[70,15,4,7,'#4fb0ff'],[76,12,5,10,'#7aff7a'],[83,15,4,7,'#f2c84a'],[64,32,5,8,'#c890ff'],[71,30,4,10,'#f08a20'],[77,33,4,7,'#4fb0ff'],[83,31,5,9,'#d03050'],[65,14,2,2,'#ffffff'],[77,13,2,2,'#ffffff'],[72,31,2,2,'#ffffff'],
+  [64,58,26,8,'#7a4a22'],[64,58,26,2,'#5a3418'],[68,53,3,5,'#7aff7a'],[74,52,3,6,'#d03050'],[80,53,3,5,'#4fb0ff']];
  if(id==='merchant')return [[6,8,84,6,'#c04040'],[6,8,12,6,'#f0e8d8'],[30,8,12,6,'#f0e8d8'],[54,8,12,6,'#f0e8d8'],[78,8,12,6,'#f0e8d8'],[8,46,22,18,'#8a5a2a'],[8,46,22,2,'#6a4420'],[11,42,4,4,'#d03030'],[16,41,4,4,'#e04040'],[21,42,4,4,'#c02828'],[13,38,4,4,'#d83838'],[32,50,20,14,'#8a5a2a'],[32,50,20,2,'#6a4420'],[34,46,4,4,'#f08a20'],[39,45,4,4,'#f8a030'],[44,46,4,4,'#e88018'],[48,38,3,8,'#f2d040'],[51,37,3,8,'#e8c830'],[54,38,3,8,'#f2d040'],...BACKDOOR];
  if(id==='priest')return [...WINDOW,[48,52,4,14,'#d8d0b0'],[47,50,6,2,'#a08a50'],[49,47,2,3,'#ffd060'],...BACKDOOR];
  if(id==='necromancer')return [[10,22,40,3,'#3a3028'],[10,42,40,3,'#3a3028'],[14,14,7,8,'#e8e4d0'],[15,16,2,2,O],[18,16,2,2,O],[30,15,6,7,'#e8e4d0'],[31,17,2,2,O],[33,17,2,2,O],[40,16,3,6,'#2a2a2a'],[40,13,3,3,'#7aff7a'],[16,34,4,8,'#2a2a2a'],[16,31,4,3,'#7aff7a'],[26,36,10,6,'#4a3a5a'],[38,33,6,9,'#e8e4d0'],[39,35,2,2,O],[41,35,2,2,O],...BACKDOOR];
@@ -67,6 +72,9 @@ function poseOf(act,at){
  if(act==='frost')return 'up';
  if(act==='sniff')return at<1.1?'up':at<1.5?'fwd':'none';
  if(act==='brew')return Math.floor(at*2)%2?'fwd':'up';
+ if(act==='fruitdrop')return Math.floor(at*2.5)%2?'up':'fwd';
+ if(act==='curse'||act==='growb')return 'both';
+ if(act==='eatbanana')return 'up';
  if(act==='advert')return Math.floor(at*1.5)%2?'both':'up';
  if(act==='write')return 'fwd';
  if(act==='mob')return at>1.5&&at<5?'both':'none';
@@ -86,7 +94,7 @@ function box(c,id,x,y,w){
 // ---------- ways between rooms (drawn behind the characters) ----------
 // backdoor and shelf are always part of the room, so only their open state is drawn here.
 function drawFx(f){
- const x=f.x,y=f.y,o=f.open,t=f.type,fixed=t==='backdoor'||t==='shelf';
+ const x=f.x,y=f.y,o=f.open,t=f.type==='backdoorL'?'backdoor':f.type,fixed=t==='backdoor'||t==='shelf';
  g.save();g.globalAlpha=fixed?1:f.a;
  if(t==='door'){
   // The door sits in the wall line between two rooms, so we only see its edge.
@@ -178,6 +186,9 @@ function drawAct(c,u){
   if(t>1.2&&t<3.2){const la=cl((t-1.2)/.4,0,1)*cl((3.2-t)/.4,0,1);c.save();c.globalAlpha=la;c.strokeStyle='rgba(255,236,150,.9)';c.lineWidth=5;c.beginPath();c.moveTo(x+f*6,y-36);c.lineTo(gh.x,gh.y-26);c.stroke();
    c.fillStyle='rgba(255,250,210,.6)';c.beginPath();c.arc(x,y-38,10,0,Math.PI*2);c.fill();c.restore()}
   if(ga>0)spr(c,'ghost',t>2?'hurt':'ok',gh.x,gh.y-6-Math.sin(t*3)*3-(t>2?(t-2)*14:0),gh.x>x?-1:1,0,.75*ga,1)}
+ else if(a==='curse'){swirl(c,x,y,t,3,1);swirl(c,x,y,t+.7,1,.6)}
+ else if(a==='growb'){swirl(c,x,y,t,2,1)}
+ else if(a==='eatbanana'){drawItem(c,'banana',Math.round(x+f*9),Math.round(y-38),1)}
  else if(a==='brew'){drawCauldron(c,Math.round(x+f*18),Math.round(y),t);if(t>3)drawItem(c,'potion',Math.round(x+f*18),Math.round(y-20-(t-3)*12),1)}
  else if(a==='relic'&&t<2.6){drawItem(c,'artifact',Math.round(x+f*9),Math.round(y-40),1);c.fillStyle='rgba(255,240,170,'+(.35+.25*Math.sin(t*10))+')';c.beginPath();c.arc(x+f*9,y-40,9,0,Math.PI*2);c.fill()}
  else if(a==='sniff'&&t<1.1){drawItem(c,'potion',Math.round(x+f*8),Math.round(y-36),1)}
@@ -247,6 +258,9 @@ function drawItem(c,kind,x,y,s){
  const R=kind==='scroll'
   ?[[-6,-3,12,6,'#eadcb4'],[-7,-4,2,8,'#c8b890'],[5,-4,2,8,'#c8b890'],[-4,-1,6,1,'#9a8a68'],[-1,1,3,3,'#c03030']]
   :kind==='artifact'?[[-2,-6,4,1,'#f2c84a'],[-3,-5,6,2,'#f2c84a'],[-4,-3,8,6,'#d8a030'],[-2,-2,4,4,'#7ae0ff'],[-1,-1,1,1,'#ffffff'],[-1,3,2,2,'#d8a030'],[-3,5,6,1,'#f2c84a']]
+  :kind==='banana'?[[-4,-1,2,3,'#f2d040'],[-3,1,6,2,'#f2d040'],[2,-2,2,3,'#f2d040'],[3,-3,1,1,'#6a4420'],[-2,2,4,1,'#c8a020']]
+  :kind==='starfruit'?[[-1,-4,2,8,'#f8d840'],[-4,-1,8,2,'#f8d840'],[-2,-2,4,4,'#ffe868'],[-3,2,2,2,'#f8d840'],[1,2,2,2,'#f8d840']]
+  :kind==='durian'?[[-3,-3,6,6,'#8a9a3a'],[-4,-1,1,2,'#6a7a2a'],[3,-1,1,2,'#6a7a2a'],[-1,-4,2,1,'#6a7a2a'],[-1,3,2,1,'#6a7a2a'],[-2,-2,1,1,'#aaba5a'],[1,0,1,1,'#aaba5a']]
   :kind==='apple'?[[-3,-2,6,5,'#d83030'],[-2,-3,4,1,'#d83030'],[0,-5,1,2,'#6a4420'],[1,-5,2,1,'#4a9a3a'],[-2,-1,1,1,'#ff9090']]
   :kind==='orange'?[[-3,-2,6,5,'#f08a20'],[-2,-3,4,1,'#f08a20'],[0,-4,1,1,'#4a9a3a'],[-2,-1,1,1,'#ffc080']]
   :kind==='coin'?[[-2,-4,5,1,'#f2c84a'],[-3,-3,7,7,'#f2c84a'],[-2,4,5,1,'#f2c84a'],[-4,-2,1,5,'#f2c84a'],[4,-2,1,5,'#f2c84a'],[0,-2,1,5,'#b8862a'],[-2,-2,1,1,'#fff6c0']]
@@ -388,3 +402,11 @@ function drawTable(c,x,y,a){c.save();c.globalAlpha=a;c.fillStyle=O;c.fillRect(x-
 // Writing desk that appears in the Wizard's room when a Merchant and another Mage are his neighbors
 function drawDesk(c,bx,by){const x=bx+14,y=by+66;c.fillStyle=O;c.fillRect(x-1,y-15,32,4);c.fillStyle='#7a4a22';c.fillRect(x,y-14,30,3);c.fillStyle='#5a3418';c.fillRect(x+2,y-11,3,11);c.fillRect(x+25,y-11,3,11);
  c.fillStyle='#eadcb4';c.fillRect(x+4,y-17,10,3);c.fillStyle='#c03030';c.fillRect(x+8,y-17,2,3);c.fillStyle='#eadcb4';c.fillRect(x+16,y-16,8,2);c.fillStyle='#1a1226';c.fillRect(x+26,y-18,3,4);c.fillStyle='#ffffff';c.fillRect(x+27,y-25,1,7)}
+
+// ---------- Fruit Merchant effects ----------
+// Rotten fruit in the Merchant's crates while cursed (with buzzing flies)
+function drawRot(c,bx,by,t){c.fillStyle='#5a4a1e';[[11,42,4,4],[16,41,4,4],[21,42,4,4],[13,38,4,4],[34,46,4,4],[39,45,4,4],[44,46,4,4],[48,38,3,8],[51,37,3,8],[54,38,3,8]].forEach(r=>c.fillRect(bx+r[0],by+r[1],r[2],r[3]));
+ c.fillStyle='#3a6a1a';[[12,40,2,2],[22,43,2,1],[36,47,2,2],[46,47,1,2],[52,40,1,3]].forEach(r=>c.fillRect(bx+r[0],by+r[1],r[2],r[3]));
+ c.fillStyle='#1a1a1a';for(let i=0;i<4;i++)c.fillRect(Math.round(bx+20+i*9+Math.sin(t*9+i)*5),Math.round(by+32+Math.cos(t*7+i*2)*4),2,1)}
+// Soft holy glow over a whole room (the great prayer)
+function drawRoomGlow(c,bx,by,a,t){if(a<=0)return;drawCeilingLight(c,bx,by,a,t);c.fillStyle='rgba(255,244,200,'+(.16*a)+')';c.fillRect(bx+4,by+4,88,88)}
