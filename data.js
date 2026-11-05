@@ -204,7 +204,8 @@ ODDS.farm=.03; // Fruit Merchant left of the Apothecary: 3% a temporary Farmer b
 PAIRS['apothecary>merchant']={left:'apgift'}; // Apothecary left of the Merchant: she gives him a potion
 PAIRS['merchant>apothecary']={left:'mtrade'}; // Merchant left of the Apothecary: farm (3%) or trading
 // Farmer (Merchant): a temporary box that appears on the nearest empty cell for FARM_TIME seconds, then harvests for FARM_GAIN coins
-CLASS.farmer='merchant';TR.farmer={up:'backdoor',down:'backdoor'};
+CLASS.farmer='merchant';TR.farmer={up:'fade',down:'fade'}; // no doors on the farm: people just fade away / appear in the field
+EXIT.fade={x:48,y:66,ay:84};
 CH.farmerbox=Object.assign({},CH.farmer,{name:'Farmer'});
 const FARM_TIME=180,FARM_GAIN=30,AP_POTION_COINS=10;
 // Special interaction scenes play at this speed (lower = slower, so they last a few seconds longer)
@@ -223,7 +224,7 @@ const COMP_TABS=[
  {id:'merchant',name:'Fruit Merchant',pairs:['apple','slip','feast','fruitfall','starfruit','curse','banana','durian','jokes','murder','advertW','apgift','mtrade','farm'],idle:['advert','sell','mob'],items:['monkey','backwards']},
  {id:'apothecary',name:'Apothecary',pairs:['apgift','mtrade','farm'],idle:['trip','tripbreak','abrew','herbs'],items:['apoth','apcoins','appotion']}];
 const DISCOVER_EVERY=5,DISCOVER_REWARD=10; // every 5 different things discovered = +10 coins
-const BOOST_MAX=4; // most coins per 30 s the Wizard's advertising can stack up to
+const BOOST_MAX=2; // the Wizard's advertising: 1 coin every 30 s, stacking up to this many (there is no other passive coin gain)
 // Commoner customer who comes in to buy from the Fruit Merchant or the Apothecary
 const CM={body:'#9a7a5a',bodyD:'#7a5a40',pants:'#5a5a6a',boot:'#3a2a1a',belt:'#5a3a1e'};
 CH.commoner={name:'Customer',eye:O,a:arms(CM),p:[...B(CM),[5,2,6,2,'#4a3a2a'],[4,3,1,3,'#4a3a2a']]};
@@ -431,3 +432,65 @@ Object.assign(DESC,{
  imp:'Wizard above the Apothecary, 40%. He summons an imp, zaps it, and bottles its blood for her.',
  purplepot:'Wizard above the Apothecary, 60%. She mixes a purple potion; he drinks it and tastes colors.',
  bats:'Necromancer above the Apothecary. His bats flap around, and a few swoop down into her shop. She is not pleased.'});
+
+// ---------- Rogue, Alchemist idles and items, Priest / Necromancer with the Merchants ----------
+// Rogue (Fighter): unlocked once you have ROGUE_UNLOCK Compendium discoveries. 3 skin tones. No back door: a rope from a
+// ceiling hatch (going up) and a trapdoor in the floor (going down).
+const RG={body:'#4a3a2a',bodyD:'#3a2c1e',pants:'#2a2a30',boot:'#1a1a1e',belt:'#8a6a3a'};
+CH.rogue={name:'Rogue',eye:O,a:arms(RG),p:[...B(RG),[4,1,8,2,'#2e3a2e'],[3,3,2,6,'#2e3a2e'],[11,3,2,6,'#2e3a2e'],[5,7,6,2,'#2e3a2e'],[4,11,1,3,'#8a6a3a'],[11,12,2,1,'#cfd6e0']]};
+for(let i=1;i<SKINS.length;i++){const[s,d]=SKINS[i],m=k=>k===S1?s:k===S2?d:k,c=CH.rogue;CH['rogue~'+i]=Object.assign({},c,{a:Object.assign({},c.a,{skin:m(c.a.skin)}),p:c.p.map(r=>[r[0],r[1],r[2],r[3],m(r[4]),r[5]])})}
+SKIN_CHARS.push('rogue');ALL_CHARS.push('rogue');CLASS.rogue='fighter';NAMES.rogue='Rogue';
+TR.rogue={up:'rope',down:'trapdoor'};EXIT.rope={x:74,y:84,ay:84};EXIT.trapdoor={x:30,y:84,ay:84};
+const ROGUE_UNLOCK=50,ROGUE_DISGUISE_TIME=120;
+// Rogue idles; assassin = any neighbor visit with the Rogue; rogueArtifact = idle chance to conjure an artifact while he has the Mage tag
+// Alchemist idles; ALC_LUCK = how much his potion raises his neighbors' rarest scene chances, for ALC_LUCK_TIME seconds
+Object.assign(ODDS,{rogue:{daggers:.5,smokebomb:.2,disguise:.05,count:.25},assassin:.005,rogueArtifact:.002,
+ alchemistIdle:{alcbrew:.6,research:.1,smoke:.3},stone:.8,bloodorange:.3,ntradePotion:.2,reveal:.05,healFarm:.02});
+const ALC_LUCK=.3,ALC_LUCK_TIME=60,PSLEEP_TIME=30,RITUAL_TIME=15,FUNERAL_TIME=12,BLOODORANGE_GAIN=3;
+// Priest relative to the Apothecary; Necromancer relative to the Fruit Merchant / Apothecary
+PAIRS['priest>apothecary']={left:'plant',right:'pstudy',above:'psleep',below:'heal'};
+PAIRS['necromancer>merchant']={above:'sacrifice',below:'chant',right:'bloodorange',left:'nrot'};
+PAIRS['necromancer>apothecary']={above:'bats',left:'ntrade',right:'ntrade',below:'ritual'};
+const PSTUDY=[[['priest','This text says lead can become gold.'],['apothecary','And this one says gold can become lead.'],['priest','So... why bother?'],['apothecary','Tax reasons, I think.']],
+ [['apothecary','Mercury, salt and sulfur. The three principles.'],['priest','Faith, hope and charity. Also three.'],['apothecary','Coincidence?'],['priest','Nothing is a coincidence.']]];
+const NYELL=[['merchant','You dripped blood all over my apples!'],['necromancer','A small price for ultimate power.'],['merchant','Nobody buys apples that are REDDER!'],['necromancer','...Fine. I will use a bucket next time.']];
+const NCHANTS=['ZARATHUL! MORGATH! VEXUS!','RISE! RIIIISE! ...no? RISE!','BY THE NINE BONES OF KHAAL!'];
+Object.assign(NAMES,{plant:'Carnivorous plant',pstudy:'Studying alchemy (5%: reveals a secret)',psleep:'Sleeping potion (30 s)',heal:'Healing a sick farmer',funeral:'A funeral',
+ sacrifice:'Blood from above',chant:'Loud chanting',bloodorange:'A blood orange (30%, +3 coins)',nrot:'Rotten fruit and worms',ntrade:'Undead ingredients for a black potion',ritual:'Dark ritual (15 s)',
+ alcbrew:'Brewing at the table',research:'Researching formulas',smoke:'A smoky mistake',alcpotion:'Potion on Alchemist: luck for neighbors',alcscroll:'Scroll on Alchemist: torn up',stone:"Artifact on Alchemist: philosopher's stone",elixir:'Secret: the elixir of life',
+ assassin:'Assassin (0.5%)',daggers:'Throwing daggers',smokebomb:'Smoke bomb',disguise:'Disguise (2 min)',count:'Counting the stash',spook:'Potion on Rogue: invisible prank',roguemage:'Scroll on Rogue: the Mage tag'});
+EGGS.push('elixir');NAMES.advertW='Wizard advertises (1-2 coins / 30 s, 1 min)';
+COMP_TABS.push({id:'alchemist',name:'Alchemist',pairs:[],idle:['alcbrew','research','smoke'],items:['alcpotion','alcscroll','stone','elixir']},
+ {id:'rogue',name:'Rogue',pairs:['assassin'],idle:['daggers','smokebomb','disguise','count'],items:['spook','roguemage']});
+COMP_TABS.forEach(t=>{const add={priest:['plant','pstudy','psleep','heal'],apothecary:['plant','pstudy','psleep','heal','ntrade','ritual'],
+ necromancer:['sacrifice','chant','bloodorange','nrot','ntrade','ritual'],merchant:['sacrifice','chant','bloodorange','nrot']}[t.id];if(add)t.pairs.push(...add);if(t.id==='priest')t.idle.push('funeral')});
+Object.assign(PAIR_WITH,{plant:['priest','apothecary'],pstudy:['priest','apothecary'],psleep:['priest','apothecary'],heal:['priest','apothecary'],
+ sacrifice:['necromancer','merchant'],chant:['necromancer','merchant'],bloodorange:['necromancer','merchant'],nrot:['necromancer','merchant'],
+ ntrade:['necromancer','apothecary'],ritual:['necromancer','apothecary'],assassin:['rogue','anyone']});
+Object.assign(DESC,{
+ advertW:'Fruit Merchant left of the Wizard. The only way coins trickle in by themselves: 1 coin every 30 seconds, stacking to 2, for a minute.',
+ plant:'Priest left of the Apothecary. Her carnivorous plant gets out of hand. The Priest smites it. Repeatedly.',
+ pstudy:'Priest right of the Apothecary. They study alchemy texts together. 5% they find a clue that reveals a hidden secret here.',
+ psleep:'Priest above the Apothecary. He tries her new tonic and falls asleep for 30 seconds. Snore.',
+ heal:'Priest below the Apothecary. A sick farmer comes in; prayer plus medicine fixes him. 2% he sets up a farm next door.',
+ funeral:'When a Fighter next to the Priest dies, he holds a funeral and every free neighbor comes to pay respects.',
+ sacrifice:'Necromancer above the Fruit Merchant. A sacrifice upstairs drips blood onto the fruit. The Merchant storms up to complain.',
+ chant:'Necromancer below the Fruit Merchant. He practices his chants. Loudly. The customer upstairs flees.',
+ bloodorange:'Necromancer right of the Fruit Merchant. He wants a blood orange. 30% there is one left (+3 coins).',
+ nrot:'Necromancer left of the Fruit Merchant. He rots the fruit for a minute and worms crawl out. Nothing sells meanwhile.',
+ ntrade:'Necromancer left or right of the Apothecary. Rare undead ingredients for a black potion. With the Alchemist next to her, 20% you get a potion too.',
+ ritual:'Necromancer below the Apothecary. A 15 second dark ritual by candlelight. Spooky, but she had a nice time.',
+ alcbrew:'The Alchemist brews at his table. Things bubble. Things change color. Nothing explodes. This time.',
+ research:'The Alchemist researches new formulas in a very thick book.',
+ smoke:'The Alchemist mixes the wrong things and the whole room fills with smoke. *cough*',
+ alcpotion:'Potion on the Alchemist: for 1 minute, his neighbors\' rarest scenes are 30% more likely.',
+ alcscroll:'Spell scroll on the Alchemist: he has no idea what it is and tears it up.',
+ stone:"Artifact on the Alchemist, 80%: a philosopher's stone turns one board space golden. Coins earned there are doubled.",
+ elixir:'Secret: 20% the artifact is the elixir of life. The Alchemist drinks it and retires. He must be unlocked again.',
+ assassin:'The Rogue and any neighbor, 0.5%. The Rogue was an assassin all along. The neighbor does not survive.',
+ daggers:'The Rogue throws daggers at a target on his wall. Bullseye. Mostly.',
+ smokebomb:'The Rogue vanishes in a smoke bomb and pops up somewhere else in his room.',
+ disguise:'The Rogue disguises himself as another character for 2 minutes and lives their life: their scenes, their idles, everything.',
+ count:'The Rogue counts his stash: your coin total. He seems pleased.',
+ spook:'Potion on the Rogue: he turns invisible, sneaks up on someone anywhere and shouts BOO.',
+ roguemage:'Spell scroll on the Rogue: he gains the Mage tag. 0.2% of his idle time he conjures an artifact, which uses the tag up.'});
