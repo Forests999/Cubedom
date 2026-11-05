@@ -3,17 +3,23 @@ const CELL=96,COLS=5,ROWS=4,FY=84,KEY='cubehold-v4',O='#1a1226',S1='#f0c8a0',S2=
 // Body without arms. Arms come from POSE so they can move.
 const B=o=>[[4,19,3,2,o.boot||'#3a2a1a'],[9,19,3,2,o.boot||'#3a2a1a'],[5,16,2,3,o.pants||'#4a4a5a'],[9,16,2,3,o.pants||'#4a4a5a'],[4,10,8,6,o.body],[10,10,2,6,o.bodyD],[4,14,8,1,o.belt||'#5a3a1e'],[5,3,6,6,o.skin||S1],[9,3,2,6,o.skinD||S2]];
 // Arm poses on the 16x22 grid (facing right). a = colors {body, bodyD, skin}.
+// A 6th value of 1 means "in front of the body" (drawn after it), e.g. hands pressed together.
 const POSE={
  none:a=>[[2,10,2,5,a.body],[12,10,2,5,a.bodyD],[2,15,2,1,a.skin],[12,15,2,1,a.skin]],
  hold:a=>[[2,10,2,3,a.body],[12,10,2,3,a.bodyD],[3,12,1,2,a.skin],[12,12,1,2,a.skin]], // both hands at the chest (book)
  noR:a=>[[2,10,2,5,a.body],[2,15,2,1,a.skin]],                                          // right arm drawn separately (swinging a weapon)
  fwd:a=>[[2,10,2,5,a.body],[12,10,3,2,a.bodyD],[2,15,2,1,a.skin],[15,10,1,2,a.skin]],  // right arm straight out
  up:a=>[[2,10,2,5,a.body],[12,6,2,5,a.bodyD],[2,15,2,1,a.skin],[12,5,2,1,a.skin]],     // right arm raised
- both:a=>[[2,6,2,5,a.body],[12,6,2,5,a.bodyD],[2,5,2,1,a.skin],[12,5,2,1,a.skin]]      // both arms raised
+ both:a=>[[2,6,2,5,a.body],[12,6,2,5,a.bodyD],[2,5,2,1,a.skin],[12,5,2,1,a.skin]],     // both arms raised
+ pray:a=>[[2,10,2,3,a.body],[12,10,2,3,a.bodyD],[4,12,3,1,a.body,1],[9,12,3,1,a.bodyD,1],[7,11,2,2,a.skin,1]], // hands together
+ flex:a=>[[0,10,3,2,a.body],[0,7,2,3,a.body],[0,6,2,1,a.skin],[13,10,3,2,a.bodyD],[14,7,2,3,a.bodyD],[14,6,2,1,a.skin]],          // showing muscles
+ flex2:a=>[[0,10,3,2,a.body],[0,7,2,3,a.body],[1,8,2,2,a.body],[0,6,2,1,a.skin],[13,10,3,2,a.bodyD],[14,7,2,3,a.bodyD],[13,8,2,2,a.bodyD],[14,6,2,1,a.skin]] // bigger bulge
 };
 const KC={body:'#8a94a8',bodyD:'#667088',pants:'#4a5470',boot:'#2a2a3a',belt:'#a0782a'},
  EC={body:'#3a2f66',bodyD:'#2a2150',pants:'#2a2150',boot:'#1a1430',belt:'#6a4cc2'},
- OC={body:'#5a4a3a',bodyD:'#42362a',skin:'#6a9a3a',skinD:'#4a7a2a',pants:'#3a2a1a',boot:'#2a1a10',belt:'#2a1a10'};
+ OC={body:'#5a4a3a',bodyD:'#42362a',skin:'#6a9a3a',skinD:'#4a7a2a',pants:'#3a2a1a',boot:'#2a1a10',belt:'#2a1a10'},
+ PC={body:'#ececf4',bodyD:'#c4c4d4',pants:'#c4c4d4',boot:'#5a4a3a',belt:'#d8b860'},
+ NC={body:'#2a3a2a',bodyD:'#1a2a1a',pants:'#1a2a1a',boot:'#101810',belt:'#6a8a4a',skin:'#c8d0b8',skinD:'#a8b098'};
 const arms=o=>({body:o.body,bodyD:o.bodyD,skin:o.skin||S1});
 // Wizard outfits. A new wizard gets one of WIZ_RANDOM at random (equal chances).
 // Hidden easter egg: a wizard whose very first placement is the top-left cell wears black with a red orb.
@@ -30,23 +36,44 @@ const CH={
  knight:{name:'Knight',eye:O,a:arms(KC),p:[...B(KC),[4,1,8,3,'#aab4c8'],[4,4,1,4,'#8a94a8'],[11,4,1,4,'#667088'],[7,0,2,2,'#c03030']]},
  eknight:{name:'Eldritch Knight',eye:'#c890ff',a:arms(EC),p:[...B(EC),[4,1,8,3,'#4a3f7a'],[4,4,1,4,'#3a2f66'],[11,4,1,4,'#2a2150'],[3,0,2,3,'#8a5ae0'],[11,0,2,3,'#8a5ae0'],[1,9,3,2,'#6a4cc2'],[12,9,3,2,'#6a4cc2']]},
  wizard:wizardCH('purple'),
+ // Priest: white robes, gold rope belt, gold cross necklace
+ priest:{name:'Priest',eye:O,a:arms(PC),p:[...B(PC),[4,10,8,9,PC.body],[10,10,2,9,PC.bodyD],[4,14,8,1,PC.belt],[5,1,6,2,'#7a5a3a'],[5,3,1,2,'#7a5a3a'],[10,3,1,2,'#7a5a3a'],[6,10,1,1,'#f2c84a'],[9,10,1,1,'#f2c84a'],[7,11,2,4,'#f2c84a'],[6,12,4,1,'#f2c84a']]},
+ // Necromancer: dark green hooded robe, pale skin, skull staff
+ necromancer:{name:'Necromancer',eye:'#7aff7a',a:arms(NC),p:[...B(NC),[4,10,8,9,NC.body],[10,10,2,9,NC.bodyD],[4,14,8,1,NC.belt],[4,1,8,2,NC.bodyD],[3,3,2,6,NC.bodyD],[11,3,2,6,NC.bodyD],[5,3,6,1,NC.bodyD],[1,6,1,14,'#4a3a2a'],[0,2,3,4,'#e8e4d0'],[0,3,1,1,O],[2,3,1,1,O]]},
  orc:{name:'Orc',eye:'#ffd34e',a:arms(OC),p:[...B(OC),[4,2,8,3,'#3a3a2a'],[5,8,1,2,'#f0ead0'],[10,8,1,2,'#f0ead0'],[13,3,2,13,'#6a4420'],[12,1,4,5,'#7a5a30']]},
+ skeleton:{name:'Skeleton',eye:'#7aff7a',p:[[5,15,2,5,'#e8e4d0'],[9,15,2,5,'#e8e4d0'],[4,19,3,1,'#e8e4d0'],[9,19,3,1,'#e8e4d0'],[5,13,6,2,'#d8d4c0'],[7,9,2,5,'#d8d4c0'],[5,9,6,1,'#e8e4d0'],[5,11,6,1,'#e8e4d0'],[2,9,2,6,'#e8e4d0'],[12,9,2,6,'#e8e4d0'],[5,2,6,6,'#e8e4d0'],[6,7,4,1,'#c8c4b0']]},
  demon:{name:'Demon',eye:'#ffd34e',p:[[0,5,3,9,'#6a1a1a'],[13,5,3,9,'#6a1a1a'],[4,17,3,3,'#8a2020'],[9,17,3,3,'#8a2020'],[4,10,8,8,'#b82a2a'],[6,12,4,5,'#d86a4a'],[2,10,2,6,'#b82a2a'],[12,10,2,6,'#b82a2a'],[4,3,8,7,'#d03a3a'],[3,0,2,4,'#2a1a1a'],[11,0,2,4,'#2a1a1a'],[14,15,1,6,'#2a1a1a']]}
 };
 for(const c in WIZ_COLORS)CH['wizard_'+c]=wizardCH(c);
+// Character boxes on the shelf. The Necromancer only appears once unlocked (see ODDS.necro).
+const SHELF_CHARS=['knight','wizard','priest'];
+const ITEMS=['scroll','potion']; // consumables, infinite use for now
+
 // Left/right: the Wizard always uses his portals; everyone else walks through the side door.
 // Up/down: each ROOM's own stairs. Leave by your room's exit and arrive by the other room's exit.
-const TR={knight:{up:'backdoor',down:'backdoor'},wizard:{up:'shelf',down:'shelf'}};
+const TR={knight:{up:'backdoor',down:'backdoor'},wizard:{up:'shelf',down:'shelf'},priest:{up:'backdoor',down:'backdoor'},necromancer:{up:'backdoor',down:'backdoor'}};
 // Where those up/down exits sit in a room: x across, y = their base, ay = where a character stands to use them.
 const EXIT={backdoor:{x:72,y:66,ay:69},shelf:{x:68,y:66,ay:69}};
 const WEAPONS=['shield','spear','glaive','longsword'];
+
+// Neighbor interactions. Key 'a>b' = character a's position relative to b (left/right/above/below) -> interaction.
+const PAIRS={
+ 'wizard>knight':{left:'friend',right:'learn',above:'bolt',below:'chat'},
+ 'priest>wizard':{right:'study',left:'gossip',below:'undead',above:'light'},
+ 'priest>knight':{above:'zeal',right:'pray',below:'bless',left:'sermon'}};
+// Potion on the Wizard: he teleports to a random character and does one of these with them
+const POTION_KINDS={knight:['friend','learn','chat','spar'],priest:['study','gossip','undead','light']};
+
 // Odds. Every few seconds each idle character rolls once:
 // visit a neighbor (visit, or visitFriend when Old Friends), else an idle activity (idle), else wander.
 // spar = share of Knight/Wizard visits that become friendly sparring (any arrangement).
 // hangout = share of the remaining visits that are plain hangouts with no special event.
-// wizard/knight = how the idle activity is picked. horse needs no neighbor to the Knight's right.
+// zeal = extra visit chance for a Knight with a Priest directly above him (+60%).
+// tentacle = share of 'sermon' visits (Priest left of Knight) that are an eldritch tentacle attack instead.
+// necro = chance a dying Priest unlocks the Necromancer box on the shelf.
+// wizard/knight = how the idle activity is picked. horse needs no box to the Knight's right.
 // eknightCat = extra chance the Eldritch Knight's idle activity is the black cat (needs a Wizard on the board).
-const ODDS={visit:.2,visitFriend:.45,spar:.02,hangout:.25,idle:.4,
+const ODDS={visit:.2,visitFriend:.45,spar:.02,hangout:.25,idle:.4,zeal:.6,tentacle:.1,necro:.25,
  wizard:{read:.6,magic:.38,demon:.02},
  knight:{prac:.75,orc:.2,horse:.05},
  eknightCat:.01};
@@ -55,4 +82,17 @@ const $=s=>document.querySelector(s),pick=a=>a[Math.floor(Math.random()*a.length
 const TALK=[
  [['knight','Remember the dragon at Ashfell?'],['wizard','My beard still smells of smoke.'],['knight','You froze that bridge in a heartbeat.'],['wizard','And you held it alone until dawn.']],
  [['wizard','The Barrow Downs were your idea.'],['knight','And you woke the dead.'],['wizard','A small miscalculation!'],['knight','We still won the day, old friend.']]];
-const NAMES={friend:'Old Friends',learn:'Eldritch Awakening',bolt:'Thunderstruck',chat:'Tales of Old',spar:'Friendly sparring',read:'Reading',magic:'Practicing magic',demon:'Summoning a demon',prac:'Weapon practice',orc:'Fighting an orc',horse:'Feeding the horse',cat:'Black cat'};
+const GOSSIP=[
+ [['priest','Have you seen the Knight polish his helmet?'],['wizard','Three times a day! He thinks nobody notices.'],['priest','I saw him wink at his own reflection.'],['wizard','Say nothing. It is his only joy.']],
+ [['wizard','The Knight fed my spell herbs to his horse.'],['priest','The horse did seem rather enlightened.'],['wizard','It sneezed sparks all evening.'],['priest','I shall pray for that horse.']],
+ [['priest','Someone keeps borrowing my candles.'],['wizard','The Necromancer, surely. Black wax!'],['priest','He says it is for ambience.'],['wizard','Ambience. Of course it is.']]];
+const PRAYERS=[
+ ['May your blade stay sharp','and your heart stay kind.','Go in peace, brave knight.'],
+ ['Light guard your steps','through dark halls and long nights.','Amen.'],
+ ['Bless this armor','and the one who wears it.','Now go eat something.']];
+const NAMES={friend:'Old Friends',learn:'Eldritch Awakening',bolt:'Thunderstruck',chat:'Tales of Old',spar:'Friendly sparring',
+ study:'Reading together',gossip:'Gossip',undead:'Accidental undead',light:'Holy light vs darkness',
+ zeal:'Zeal: Knight visits 60% more',pray:'Praying together',bless:'Holy water blessing',sermon:'A short prayer',tentacle:'Eldritch tentacles',
+ read:'Reading',magic:'Practicing magic',demon:'Summoning a demon',prac:'Weapon practice',orc:'Fighting an orc',horse:'Feeding the horse',cat:'Black cat',
+ fireball:'Scroll on Wizard: fireball',glow:'Scroll on Knight: golden glow',teleport:'Potion on Wizard: teleport visit',flex:'Potion on Knight: flex',
+ scroll:'Spell scroll',potion:'Potion'};

@@ -1,10 +1,15 @@
 // ---------- art: room backgrounds and drawing ----------
-const WALL={knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40']};
+const WALL={knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40'],priest:['#4a4458','#30293c'],necromancer:['#26262c','#18181c']};
+// Priest's stained glass window (frame 16..44 x 12..52, center x 30, y 32). Tentacles can smash through it.
+const WINDOW=[[16,12,28,40,'#2a2434'],[18,16,7,10,'#c04040'],[26,16,8,10,'#3a6ad0'],[35,16,7,10,'#d0b030'],[18,27,7,10,'#40a060'],[26,27,8,10,'#c890ff'],[35,27,7,10,'#c04040'],[18,38,7,12,'#3a6ad0'],[26,38,8,12,'#d0b030'],[35,38,7,12,'#40a060'],[29,19,2,8,'#f2e8a0'],[27,21,6,2,'#f2e8a0'],[20,12,20,2,'#3a3448']];
+const WIN_C={x:30,y:32};
 // Knight's back-wall door (hides the stairs). Center x 72, bottom at the floor line (y 66).
 const BACKDOOR=[[61,31,22,35,'#1e2030'],[63,33,18,33,'#6a4420'],[69,33,1,33,'#5a3a1e'],[75,33,1,33,'#5a3a1e'],[63,38,18,2,'#3a2a1a'],[63,58,18,2,'#3a2a1a'],[65,49,2,2,'#f2c84a']];
 // Wizard's second bookshelf (slides aside to reveal the spiral staircase). Center x 68, bottom y 66.
 const SHELF2=[[56,30,24,36,'#6a4a2a'],[58,32,20,32,'#3a2410'],[58,47,20,2,'#6a4a2a'],[59,35,4,12,'#c04040'],[64,37,3,10,'#40a0c0'],[68,35,4,12,'#d0b030'],[73,36,4,11,'#40c070'],[59,51,3,13,'#8a5ae0'],[63,52,5,12,'#c04040'],[69,50,3,14,'#40a0c0'],[73,53,4,11,'#d0b030']];
 function bg(id,w){
+ if(id==='priest')return [...WINDOW,[48,52,4,14,'#d8d0b0'],[47,50,6,2,'#a08a50'],[49,47,2,3,'#ffd060'],...BACKDOOR];
+ if(id==='necromancer')return [[10,22,40,3,'#3a3028'],[10,42,40,3,'#3a3028'],[14,14,7,8,'#e8e4d0'],[15,16,2,2,O],[18,16,2,2,O],[30,15,6,7,'#e8e4d0'],[31,17,2,2,O],[33,17,2,2,O],[40,16,3,6,'#2a2a2a'],[40,13,3,3,'#7aff7a'],[16,34,4,8,'#2a2a2a'],[16,31,4,3,'#7aff7a'],[26,36,10,6,'#4a3a5a'],[38,33,6,9,'#e8e4d0'],[39,35,2,2,O],[41,35,2,2,O],...BACKDOOR];
  if(id==='wizard')return [[10,14,38,42,'#6a4a2a'],[12,18,5,14,'#c04040'],[18,18,5,14,'#40a0c0'],[24,18,5,14,'#d0b030'],[30,18,5,14,'#8a5ae0'],[36,18,5,14,'#40c070'],[10,34,38,3,'#3a2410'],[12,38,5,14,'#d0b030'],[18,38,8,14,'#c04040'],[28,38,5,14,'#40a0c0'],[34,38,6,14,'#8a5ae0'],...SHELF2];
  const a=[[12,64,22,3,'#4a4e5a'],[16,60,5,5,'#8a94a8'],[25,60,5,5,'#8a94a8'],[14,44,16,16,'#8a94a8'],[24,44,6,16,'#667088'],[10,44,4,10,'#aab4c8'],[30,44,4,10,'#aab4c8'],[16,28,12,16,'#aab4c8'],[18,34,8,2,O],[21,23,2,5,'#c03030'],...BACKDOOR];
  const m={shield:[[40,36,16,20,'#3a5aa8'],[42,38,12,16,'#2a4488'],[46,42,4,8,'#f2c84a']],spear:[[47,14,2,52,'#8a5a2a'],[45,6,6,10,'#cfd6e0'],[47,4,2,4,'#fff']],glaive:[[47,18,2,48,'#8a5a2a'],[47,8,8,12,'#cfd6e0'],[49,10,4,8,'#8a94a8']],longsword:[[46,16,4,36,'#cfd6e0'],[40,52,16,3,'#c0a030'],[46,55,4,9,'#6a4420'],[45,64,6,2,'#c0a030']]};
@@ -20,7 +25,7 @@ function rects(c,list,ox,oy,outline){
 // Moods: ok, happy, mad (red eyes, only for real anger), hurt (eyes squeezed shut, used when taking damage)
 function drawSprite(c,id,mood,pose){
  const x=c.getContext('2d'),ch=CH[id],f=(a,b,w,h,k)=>{x.fillStyle=k;x.fillRect(a,b,w,h)};
- const R=[...(ch.a?POSE[pose||'none'](ch.a):[]),...ch.p];
+ const A=ch.a?POSE[pose||'none'](ch.a):[],R=[...A.filter(r=>!r[5]),...ch.p,...A.filter(r=>r[5])]; // front-of-body arm pieces last
  R.forEach(p=>f(p[0]-1,p[1]-1,p[2]+2,p[3]+2,O));R.forEach(p=>f(p[0],p[1],p[2],p[3],p[4]));
  if(mood==='hurt'){f(5,6,2,1,O);f(9,6,2,1,O);f(7,8,2,1,'#a22');return}
  const e=mood==='mad'?'#e03030':ch.eye;f(6,5,1,2,e);f(9,5,1,2,e);
@@ -34,8 +39,13 @@ function spr(c,id,m,cx,fy,face,bob,al,sc,pose){c.save();c.globalAlpha=al==null?1
 const sid=u=>u.form||(u.color?u.id+'_'+u.color:u.id);
 // Which arm pose to show for an activity (act) that has run for `at` seconds
 function poseOf(act,at){
- if(act==='read'||act==='tome')return 'hold';
+ if(act==='read'||act==='tome'||act==='holy')return 'hold';
  if(act==='magic')return Math.floor(at*3)%2?'up':'fwd';
+ if(act==='sprinkle')return Math.floor(at*4)%2?'up':'fwd';     // shaking holy water
+ if(act==='smite')return 'both';
+ if(act==='fireball')return at<1.3?'up':'none';
+ if(act==='sip')return at<.8?'up':'none';
+ if(act==='flex')return at<.7?'up':Math.floor(at*2.5)%2?'flex2':'flex';
  if(act==='prac')return 'noR';
  if(act==='learn'||act==='cast')return 'up';
  if(act==='demon')return at<1.6?'both':'up';
@@ -102,8 +112,9 @@ const weaponOf=u=>u.form==='eknight'?'magic':(u.weapon||'longsword');
 // How far the body leans while practicing (so the sprite and the swinging arm move together)
 const actDx=u=>u.act==='prac'?Math.round(pracAnim(weaponOf(u),u.at).dx)*u.face:0;
 
-// Swirling sparkles around a character: pur = purple (eldritch) instead of blue; k = how strong (0..1)
-function swirl(c,x,y,t,pur,k){const K=pur?['#c890ff','#e8d0ff','#8a5ae0']:['#2a6af0','#4fb0ff','#bfe8ff'],n=Math.round(14*k);
+// Swirling sparkles around a character: pur = 0 blue, 1 purple (eldritch), 2 gold (holy); k = how strong (0..1)
+const SWIRL=[['#2a6af0','#4fb0ff','#bfe8ff'],['#c890ff','#e8d0ff','#8a5ae0'],['#f2c84a','#fff0a0','#d8a030']];
+function swirl(c,x,y,t,pur,k){const K=SWIRL[pur||0],n=Math.round(14*k);
  for(let i=0;i<n;i++){const an=t*(pur?3:4)+i*Math.PI*2/14,r=13+5*Math.sin(t*3+i),px=x+Math.cos(an)*r*1.2,py=y-24+Math.sin(an)*r*.8-(i%7)*2.5+8,s=i%3===2?2:3;
   c.fillStyle=K[i%3];c.fillRect(Math.round(px-s/2),Math.round(py-s/2),s,s)}}
 // Magic shield bubble around a character (sparring). t = time since raised, hit = flashes brighter when struck
@@ -114,17 +125,27 @@ function drawWard(c,x,y,t,hit){const a=cl(t/.4,0,1);if(a<=0)return;
 // Activity overlays drawn in front of the character. u needs: act, at (seconds), x, y (feet), face, and for the knight weapon/form.
 function drawAct(c,u){
  const f=u.face,a=u.act,t=u.at,x=u.x,y=u.y;
- if(a==='read'||a==='tome'){
+ if(a==='read'||a==='tome'||a==='holy'){
   // Held up and open toward the reader: we see the covers and spine, page tops, and pages turning over the top.
-  // tome = the Wizard's eldritch spellbook (dark purple, glowing runes, purple sparkles)
-  const tm=a==='tome',bx=Math.round(x+f*2),by=Math.round(y-20),pf=(t*.9)%1;
+  // tome = the Wizard's eldritch spellbook (dark purple, glowing runes, purple sparkles); holy = the Priest's white book with a gold cross
+  const tm=a==='tome',hb=a==='holy',bx=Math.round(x+f*2),by=Math.round(y-20),pf=(t*.9)%1;
   if(tm)swirl(c,x,y,t,1,cl(t/1.5,0,1));
   c.fillStyle=O;c.fillRect(bx-8,by-7,16,13);
   c.fillStyle='#f2ead0';c.fillRect(bx-7,by-6,14,2);
-  c.fillStyle=tm?'#3a1a5a':'#7a4a22';c.fillRect(bx-7,by-4,7,9);c.fillStyle=tm?'#2e1448':'#6a3e1c';c.fillRect(bx,by-4,7,9);
-  c.fillStyle=tm?'#1a0a2a':'#4a2a12';c.fillRect(bx-1,by-4,2,9);
-  c.fillStyle=tm?(Math.floor(t*6)%2?'#c890ff':'#e8d0ff'):'#f2c84a';c.fillRect(bx-5,by-1,2,2);c.fillRect(bx+3,by-1,2,2);
+  c.fillStyle=tm?'#3a1a5a':hb?'#f0f0f8':'#7a4a22';c.fillRect(bx-7,by-4,7,9);c.fillStyle=tm?'#2e1448':hb?'#d4d4e0':'#6a3e1c';c.fillRect(bx,by-4,7,9);
+  c.fillStyle=tm?'#1a0a2a':hb?'#b0b0c0':'#4a2a12';c.fillRect(bx-1,by-4,2,9);
+  if(hb){c.fillStyle='#f2c84a';c.fillRect(bx-5,by-3,1,6);c.fillRect(bx-6,by-1,3,1);c.fillRect(bx+4,by-3,1,6);c.fillRect(bx+3,by-1,3,1)}
+  else{c.fillStyle=tm?(Math.floor(t*6)%2?'#c890ff':'#e8d0ff'):'#f2c84a';c.fillRect(bx-5,by-1,2,2);c.fillRect(bx+3,by-1,2,2)}
   if(pf<.35){const k=pf/.35,px=Math.round(bx+f*(6-12*k)),py=Math.round(by-6-Math.sin(k*Math.PI)*6);c.fillStyle='#fff';c.fillRect(px-1,py,2,by-5-py)}}
+ else if(a==='smite'){swirl(c,x,y,t,2,1)} // priest's holy power (gold)
+ else if(a==='sprinkle'){ // a little flask of holy water in the hand
+  const up=Math.floor(t*4)%2,hx=Math.round(x+f*(up?11:16)),hy=Math.round(y-(up?36:22));
+  c.fillStyle=O;c.fillRect(hx-3,hy-7,6,9);c.fillStyle='#a8d8ff';c.fillRect(hx-2,hy-4,4,5);c.fillStyle='#e8f6ff';c.fillRect(hx-2,hy-6,4,2);c.fillStyle='#8a5a2a';c.fillRect(hx-1,hy-7,2,1)}
+ else if(a==='fireball'&&t<1.3){ // the staff orb glows orange while the fireball charges
+  const gx=Math.round(x-f*14),gy=Math.round(y-38),s=2+Math.round(cl(t/.7,0,1)*3);c.fillStyle='#ff8020';c.fillRect(gx-s,gy-s,s*2+1,s*2+1);c.fillStyle='#ffe080';c.fillRect(gx-1,gy-1,3,3)}
+ else if((a==='flex'||a==='sip')&&t<.8){drawItem(c,'potion',Math.round(x+f*9),Math.round(y-38),1)} // drinking
+ else if(a==='flex'){ // shine on the muscles
+  if(Math.floor(t*5)%2){c.fillStyle='#fff8c0';c.fillRect(Math.round(x-14),Math.round(y-30),2,2);c.fillRect(Math.round(x+13),Math.round(y-30),2,2)}}
  else if(a==='magic'){swirl(c,x,y,t,0,1);
   // glow on the staff orb (red for the black-robed wizard)
   const red=u.color==='black',gx=Math.round(x-f*14),gy=Math.round(y-38);c.fillStyle=red?'#ff6060':'#4fb0ff';c.fillRect(gx-2,gy-2,5,5);c.fillStyle=red?'#ffd0d0':'#bfe8ff';c.fillRect(gx-1,gy-1,3,3)}
@@ -176,3 +197,58 @@ function drawDemon(c,d){
 }
 // How far a wizard being dragged down by a demon has sunk (0..1), from the demon activity time
 const sinkOf=at=>cl((at-1.9)/1,0,1);
+
+// ---------- items (consumables) ----------
+// Icon centered at (x,y); s = pixel size (1 on the board, bigger on the shelf)
+function drawItem(c,kind,x,y,s){
+ const R=kind==='scroll'
+  ?[[-6,-3,12,6,'#eadcb4'],[-7,-4,2,8,'#c8b890'],[5,-4,2,8,'#c8b890'],[-4,-1,6,1,'#9a8a68'],[-1,1,3,3,'#c03030']]
+  :[[-1,-6,2,1,'#8a5a2a'],[-1,-5,2,2,'#cfe8f0'],[-3,-3,6,6,'#cfe8f0'],[-2,-1,4,3,'#d03050'],[-2,-2,1,1,'#ffffff']];
+ c.fillStyle=O;R.forEach(r=>c.fillRect(Math.round(x+(r[0]-1)*s),Math.round(y+(r[1]-1)*s),(r[2]+2)*s,(r[3]+2)*s));
+ R.forEach(r=>{c.fillStyle=r[4];c.fillRect(Math.round(x+r[0]*s),Math.round(y+r[1]*s),r[2]*s,r[3]*s)});
+}
+// Fireball flying from (sx,sy) to (ex,ey); k = 0..1 progress
+function drawFireball(c,sx,sy,ex,ey,k){
+ const x=lerp(sx,ex,k),y=lerp(sy,ey,k)-Math.sin(k*Math.PI)*16;
+ for(let i=1;i<5;i++){const q=Math.max(0,k-i*.05),tx=lerp(sx,ex,q),ty=lerp(sy,ey,q)-Math.sin(q*Math.PI)*16;c.fillStyle=i%2?'#ff6020':'#c03020';c.fillRect(Math.round(tx-4+i),Math.round(ty-4+i),8-i*2,8-i*2)}
+ c.fillStyle='#ff8020';c.fillRect(Math.round(x-6),Math.round(y-6),12,12);c.fillStyle='#ffd040';c.fillRect(Math.round(x-4),Math.round(y-4),8,8);c.fillStyle='#fff8d0';c.fillRect(Math.round(x-2),Math.round(y-2),4,4);
+}
+// Golden glow (spell scroll on the Knight): soft aura behind him. t = time, used for the pulse
+function drawGlow(c,x,y,t){
+ const p=.6+.4*Math.sin(t*4),gr=c.createRadialGradient(x,y-22,4,x,y-22,30);
+ gr.addColorStop(0,'rgba(255,220,100,'+(.55*p)+')');gr.addColorStop(1,'rgba(255,200,60,0)');
+ c.fillStyle=gr;c.fillRect(x-32,y-54,64,62);
+}
+function glowSparkles(c,x,y,t){for(let i=0;i<5;i++){if((Math.floor(t*6)+i)%3)continue;const a=i*1.3+t,px=Math.round(x+Math.cos(a)*10),py=Math.round(y-24+Math.sin(a*1.7)*12);c.fillStyle='#fff6c0';c.fillRect(px,py,2,2)}}
+// Holy light filling a room (bx,by = room top-left) from (x,y) = priest's head; a = strength 0..1
+function drawHolyLight(c,bx,by,x,y,a,t){
+ if(a<=0)return;c.save();c.beginPath();c.rect(bx,by,CELL,CELL);c.clip();
+ c.fillStyle='rgba(255,246,200,'+(.5*a)+')';c.fillRect(bx,by,CELL,CELL);
+ c.strokeStyle='rgba(255,230,120,'+(.7*a)+')';c.lineWidth=3;
+ for(let i=0;i<10;i++){const an=i/10*Math.PI*2+t*.8;c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(an)*70,y+Math.sin(an)*70);c.stroke()}
+ c.fillStyle='rgba(255,255,240,'+a+')';c.beginPath();c.arc(x,y,6+4*a,0,Math.PI*2);c.fill();c.restore();
+}
+// Darkness spell: a spreading black-purple cloud; r = radius, a = strength 0..1
+function drawDarkness(c,bx,by,x,y,r,a,t){
+ if(a<=0)return;c.save();c.beginPath();c.rect(bx,by,CELL,CELL);c.clip();
+ c.fillStyle='rgba(16,8,26,'+(.88*a)+')';c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();
+ c.fillStyle='rgba(140,90,200,'+a+')';for(let i=0;i<12;i++){const an=i*2.1+t*2,d=r*(.4+.5*((i*37)%10)/10);c.fillRect(Math.round(x+Math.cos(an)*d),Math.round(y+Math.sin(an)*d),2,2)}
+ c.restore();
+}
+// Green summoning circle on the floor (undead), k = size 0..1
+function drawGreenCircle(c,x,y,k,t){for(let i=0;i<18;i++){const a=i/18*Math.PI*2+t*1.5;c.fillStyle=i%2?'#7aff7a':'#2a8a3a';c.fillRect(Math.round(x+Math.cos(a)*20*k-1),Math.round(y-3+Math.sin(a)*5*k-1),3,3)}}
+// Priest's stained glass smashed open, with eldritch tentacles reaching into the room.
+// bx,by = room top-left; e = how far out (0..1); t = time; blink = flashing when hit
+function drawTentacles(c,bx,by,e,t,blink){
+ c.save();c.beginPath();c.rect(bx+4,by+4,88,88);c.clip();
+ const wx=bx+WIN_C.x,wy=by+WIN_C.y;
+ c.fillStyle='#0a0610';c.fillRect(bx+18,by+14,24,36); // broken window: dark hole with leftover shards
+ c.fillStyle='#c04040';c.fillRect(bx+18,by+14,4,5);c.fillStyle='#3a6ad0';c.fillRect(bx+38,by+14,4,4);c.fillStyle='#40a060';c.fillRect(bx+18,by+44,3,6);c.fillStyle='#d0b030';c.fillRect(bx+37,by+45,5,5);
+ if(e>0&&!(blink>0&&Math.floor(blink*14)%2)){
+  const ends=[[bx+60,by+70],[bx+44,by+80],[bx+70,by+50]];
+  ends.forEach((q,k)=>{const n=12;for(let i=n;i>=0;i--){const s=i/n*e,px=lerp(wx,q[0],s)+Math.sin(t*4+i*.7+k*2)*5*s,py=lerp(wy,q[1],s)+Math.cos(t*3+i*.6+k)*3*s,w=Math.max(2,Math.round(8-i*.45));
+   c.fillStyle=O;c.fillRect(Math.round(px-w/2-1),Math.round(py-w/2-1),w+2,w+2);c.fillStyle=i%2?'#5a2a6a':'#4a1a5a';c.fillRect(Math.round(px-w/2),Math.round(py-w/2),w,w);
+   if(i%3===1){c.fillStyle='#c890ff';c.fillRect(Math.round(px-1),Math.round(py+w/2-2),2,2)}}});
+ }
+ c.restore();
+}
