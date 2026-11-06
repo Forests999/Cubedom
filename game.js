@@ -6,7 +6,7 @@ const TEMP_FORM={monkey:1,bear:1,beast:1}; // forms that take no part in anythin
 let rf=null; // the grand funeral after the Monarch dies: {id, t}. While it lasts no coins are earned and no items are bought or gained.
 const mourning=()=>!!rf;
 let boostT=0,boostAmt=0; // Wizard advertising fruit: +boostAmt extra coins per tick (stacks up to BOOST_MAX total) while boostT counts down
-const U={};let S={un:{},coins:0,inv:{scroll:0,potion:0,artifact:0,ingot:0},seen:{},rewarded:0,cells:[],bought:0,revealed:{},goldCell:null},drag=null,td=null,hover=null,parts=[],bolts=[],demons=[],cats=[],fbs=[],flashes=[],thrown=[],splats=[],zaps=[],waves=[],holes=[],coinT=0,bubU=null,T=0;
+const U={};let S={un:{},coins:0,inv:{scroll:0,potion:0,artifact:0,ingot:0},seen:{},rewarded:0,cells:[],bought:0,revealed:{},goldCells:[],ever:{}},drag=null,td=null,hover=null,parts=[],bolts=[],demons=[],cats=[],fbs=[],flashes=[],thrown=[],splats=[],zaps=[],waves=[],holes=[],coinT=0,bubU=null,T=0;
 
 // ---------- units ----------
 const at=(r,c)=>Object.keys(U).find(i=>U[i].r===r&&U[i].c===c);
@@ -115,7 +115,7 @@ function kill(v){
 }
 // The Druid dies: buried in his own space. He keeps his box, tags and place, but does nothing and nobody visits him.
 function bury(v){clearFx(v);v.target=null;v.hosting=null;v.fxs=[];v.npcDoor=null;v.sickT=0;v.tinyT=0;v.dead=true;v.asked=false;v.grudge=false; // dying lets him ask the Monarch againtoHome(v);v.al=1;dropBub(v);v.lb.style.opacity=.6;
- poof(v.c*CELL+48,v.r*CELL+70,'#6a5030');toast('The Druid has died and is buried in his grove. A spell scroll on his space could bring him back.')}
+ poof(v.c*CELL+48,v.r*CELL+70,'#6a5030');markSeen('dburied');toast('The Druid has died and is buried in his grove. A spell scroll on his space could bring him back.')}
 function revive(v){v.dead=false;v.st='idle';v.wait=2;v.lb.style.opacity=1;v.mood='happy';v.mt=2;v.hop=.5;poof(v.x,v.y-20,'#6aba4a');poof(v.x,v.y-6,'#f2d870');say(v,'The grove gives me back my life!');save()}
 // ---- the grand funeral: the Monarch lies in state for ROYAL_FUNERAL_TIME seconds and EVERYONE on the board comes, whatever they were doing ----
 // (except anyone away, and the Monarch's killer). Afterwards the Monarch's box goes back to the shelf.
@@ -517,7 +517,7 @@ function startGather(P,list,kind){beginAct(P,kind||'massprayer');P.dur=999;P.gat
  list.sort((a,b)=>a.c-b.c||a.r-b.r).forEach((v,i)=>{const s=GATHER_SPOTS[i];v.gatherOf=P.id;v.st='gather';v.path=route(v,v.r,v.c,P.r,P.c,{x:P.c*CELL+s[0],y:P.r*CELL+s[1]})})}
 // ---- coins ----
 // Coins earned on the golden space (philosopher's stone) are doubled; (x,y) is where the coins pop up (usually above a character)
-const inGold=(x,y)=>S.goldCell&&x!=null&&Math.floor(x/CELL)===S.goldCell[1]&&cl(Math.floor((y+44)/CELL),0,ROWS-1)===S.goldCell[0];
+const inGold=(x,y)=>x!=null&&(S.goldCells||[]).some(q=>Math.floor(x/CELL)===q[1]&&cl(Math.floor((y+44)/CELL),0,ROWS-1)===q[0]); // every golden space stays golden for good
 // The Druid's Sunshine on the space where the coins pop up: a Merchant there earns 20% more, a Farmer 50% more
 function sunBonus(n,x,y){if(x==null)return n;const c=Math.floor(x/CELL),r=cl(Math.floor((y+44)/CELL),0,ROWS-1);if(weatherAt(r,c)!=='sunshine')return n;const v=U[at(r,c)];
  return v&&isFarm(v.id)?Math.ceil(n*(1+ODDS.sunFarmer)):v&&hasClass(v,'merchant')?Math.ceil(n*(1+ODDS.sunMerchant)):n}
@@ -540,7 +540,14 @@ function markSeen(k){k=SEEN_ALIAS[k]||k;if(!k||S.seen[k])return;S.seen[k]=1;save
 // Every DISCOVER_EVERY different things discovered (easter eggs included) pays DISCOVER_REWARD coins
 const ALL_KEYS=[...new Set(COMP_TABS.flatMap(t=>[...t.pairs,...t.idle,...t.items]))];
 const foundCount=()=>ALL_KEYS.filter(k=>S.seen[k]).length;
+// Which characters have a Compendium tab (once unlocked, always; 'anyone' and tags count as unlocked), and the tiles a tab shows
+const compUnl=id=>id==='anyone'||!!TAG_NAMES[id]||SHELF_CHARS.includes(id)||!!S.un[id]||!!(S.ever&&S.ever[id]);
+const tabPairs=t=>t.pairs.filter(k=>(PAIR_WITH[k]||[]).every(compUnl)),tabKeys=t=>[...tabPairs(t),...t.idle,...t.items];
 function checkDiscoveries(){const n=foundCount(),due=Math.floor(n/DISCOVER_EVERY);
+ // a character's whole tab discovered (secrets too): +1 artifact, once per tab
+ S.tabDone=S.tabDone||{};COMP_TABS.forEach(t=>{if(S.tabDone[t.id]||!compUnl(t.id))return;const all=tabKeys(t);if(all.length&&all.every(k=>S.seen[k])){S.tabDone[t.id]=1;addItem('artifact',1,null,null,true);toast('The '+t.name+' page of the Compendium is complete! +1 artifact')}});
+ // every BIG_EVERY discoveries: a random item (45% spell scroll, 45% potion, 10% ingot)
+ while((S.bigRewarded||0)<Math.floor(n/BIG_EVERY)){S.bigRewarded=(S.bigRewarded||0)+1;const o=ODDS.bigReward,k=pickW(Object.keys(o),q=>o[q]);addItem(k,1,null,null,true);toast(S.bigRewarded*BIG_EVERY+' discoveries! A reward: +1 '+NAMES[k])}
  while((S.rewarded||0)<due){S.rewarded=(S.rewarded||0)+1;addCoins(DISCOVER_REWARD,null,null,true);toast(n+' things discovered! +'+DISCOVER_REWARD+' coins')}
  // ROGUE_UNLOCK discoveries: the Rogue
  if(!S.un.rogue&&n>=ROGUE_UNLOCK){S.un.rogue=true;buildShelf();save();setTimeout(()=>toast(n+' discoveries! A shadowy Rogue box has appeared on the shelf.'),1500)}}
@@ -644,8 +651,8 @@ ITEM_KEY.scroll.druid='dscroll';ITEM_KEY.artifact.druid='archdruid';ITEM_KEY.scr
 function alcLuck(u){u.luckT=ALC_LUCK_TIME;poof(u.x,u.y-24,'#f2c84a');u.hop=.5;u.mood='happy';u.mt=1.5;say(u,'Luck for my neighbors! For one minute.')}
 function alcScroll(u){beginAct(u,'tear');u.dur=2.2;u.mood='shock';u.mt=.8;say(u,'What is this gibberish? *rip*')}
 function alcArtifact(u){if(Math.random()<ODDS.stone){ // philosopher's stone: a random open space turns golden (coins there are doubled)
-  const open=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c))open.push([r,c]);S.goldCell=pick(open);save();markSeen('stone');
-  flashes.push({x:S.goldCell[1]*CELL,y:S.goldCell[0]*CELL,t:0,col:'255,210,60'});u.hop=.5;u.mood='happy';u.mt=2;say(u,"The philosopher's stone!");toast("A philosopher's stone! One space on the board is now golden: coins earned there are doubled.");return}
+  const G=S.goldCells,isG=(r,c)=>G.some(q=>q[0]===r&&q[1]===c),open=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c)&&!isG(r,c))open.push([r,c]);if(!open.length){addCoins(50,u.x,u.y-50);say(u,'Every space is golden already! Have some gold instead.');return}const q=pick(open);G.push(q);save();markSeen('stone');
+  flashes.push({x:q[1]*CELL,y:q[0]*CELL,t:0,col:'255,210,60'});u.hop=.5;u.mood='happy';u.mt=2;say(u,"The philosopher's stone!");toast("A philosopher's stone! Another space on the board is golden for good: coins earned there are doubled.");return}
  beginAct(u,'retire');u.dur=3;say(u,'The elixir of life! I think... I shall retire.')} // 20%: elixir of life (secret)
 // ---- items on the Rogue ----
 function rogueMage(u){if(u.mageTag)return false;u.mageTag=true;setLabel(u);poof(u.x,u.y-24,'#c890ff');u.mood='happy';u.mt=1.5;say(u,'Ooh. Magic. I could get used to this.');save()}
@@ -653,7 +660,8 @@ function rogueSpook(u){const tg=Object.values(U).filter(v=>v!==u&&freeU(v));if(!
  const h=pick(tg);u.inv=true;u.tp=true;u.vk='spook';u.st='out';u.target=h.id;h.hosting=u.id;h.path=[];h.st='idle';h.act=null;
  u.path=[{k:'pause',w:.8},{k:'tele',x:standBy(h,30),y:h.r*CELL+FY,quiet:1}];poof(u.x,u.y-20,'#5a5a64')}
 // Items are a counted inventory (S.inv). Using one takes it away; they are earned in the game (e.g. crafting).
-function addItem(kind,n,x,y){if(mourning())return;S.inv[kind]=(S.inv[kind]||0)+n;showItems();save();if(x!=null)parts.push({k:'txt',s:'+'+n,x,y,t:0,life:1.6,icon:kind})}
+function addItem(kind,n,x,y,force){if(mourning()&&!force)return; // (force = given even during the grand funeral: Compendium rewards)
+S.inv[kind]=(S.inv[kind]||0)+n;showItems();save();if(x!=null)parts.push({k:'txt',s:'+'+n,x,y,t:0,life:1.6,icon:kind})}
 function useItem(kind,r,c){
  if(!(S.inv[kind]>0))return;
  const u=U[at(r,c)],busy=['prisoners','ascend','wcast','dance','storm','recruit','spirit','demon','fireball','flex','sip','horse','raise','banish','sniff','farmer','exorcise','sleepc','swapc'];
@@ -1552,7 +1560,7 @@ function render(){
   if(id==='merchant'&&u.goldT>0&&id!==dm&&!(u.rotT>0))drawGold(g,x,y,T); // golden apples
   if(id==='rogue'&&id!==dm&&graveyardOn(u))drawGraveyard(g,x,y,T); // secret: next to the Necromancer on the bottom row
   if(id!==dm)drawRoomLife(g,id,x,y,T)} // candle flames, clouds
- if(S.goldCell&&isOpen(S.goldCell[0],S.goldCell[1]))drawGoldCell(g,S.goldCell[1]*CELL,S.goldCell[0]*CELL,T); // philosopher's stone
+ (S.goldCells||[]).forEach(q=>{if(isOpen(q[0],q[1]))drawGoldCell(g,q[1]*CELL,q[0]*CELL,T)}); // philosopher's stones: golden spaces
  Object.values(U).forEach(u=>u.fxs.forEach(f=>drawFx(f)));
  live.forEach(u=>{if(u.act==='funeral')drawGrave(g,u.c*CELL,u.r*CELL)});
  live.forEach(u=>{const a=u.appr;if(u.helper&&a&&u.id!==dm)spr(g,'apprentice','ok',a.x,u.r*CELL+FY-3,a.face,a.walk?Math.sin(a.t*14):0,1,.8,'none',a.walk?stepOf(a.t):0)}); // the Blacksmith's apprentice // the Priest's funeral
@@ -1696,6 +1704,7 @@ function draggable(b,canStart,onDrop,onTap){
 // Character boxes on the shelf (the Necromancer only once unlocked)
 function buildShelf(){
  tray.querySelectorAll('.it').forEach(b=>b.remove());
+ ALL_CHARS.forEach(id=>{if(S.un[id])S.ever[id]=1}); // remember every character ever unlocked (its Compendium tab stays)
  const have=ALL_CHARS.filter(id=>SHELF_CHARS.includes(id)||S.un[id]);
  tray.querySelector('.lbl').textContent='Shelf: drag a box up to the board ('+have.length+'/'+ALL_CHARS.length+' unlocked)';
  // (the Traveling Merchant is not on the shelf while he is on the road)
@@ -2174,7 +2183,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  WEAPONS.forEach(w=>T['prac:'+w]=[I('prac',w),K.prac]);
  // Tabs, one per character type, with "found / total" (hidden easter eggs count in the total)
  // Only characters you have unlocked get a tab, and neighbor scenes only show once both characters are unlocked
- const unl=id=>id==='anyone'||!!TAG_NAMES[id]||SHELF_CHARS.includes(id)||!!S.un[id],pairsOf=t=>t.pairs.filter(k=>(PAIR_WITH[k]||[]).every(unl)),allOf=t=>[...pairsOf(t),...t.idle,...t.items];
+ const unl=compUnl,pairsOf=tabPairs,allOf=tabKeys;
  const tabs=COMP_TABS.filter(t=>unl(t.id)),tab=tabs.find(t=>t.id===compTab)||tabs[0],pairs=pairsOf(tab),bar=document.createElement('div');bar.className='ctabs';
  tabs.forEach(t=>{const all=allOf(t),btn=document.createElement('button');btn.className='ctab'+(t===tab?' on':'');
   btn.innerHTML=t.name+tagImg(t.id)+' <small>'+all.filter(k=>S.seen[k]).length+'/'+all.length+'</small>';btn.onclick=()=>buildRef(t.id);bar.append(btn)});
@@ -2214,18 +2223,18 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
 
 // ---------- state ----------
 function ui(){document.querySelectorAll('.it[data-id]').forEach(b=>b.classList.toggle('used',!!U[b.dataset.id]))}
-function save(){if(resetting)return;try{const b={};for(const i in U)if(!isFarm(i))b[i]=[U[i].r,U[i].c,U[i].weapon,TEMP_FORM[U[i].form]?null:U[i].form,U[i].color,U[i].backwards?1:0,U[i].skin||0,U[i].mageTag?1:0,U[i].dead?1:0,U[i].reinforced?1:0,U[i].paladin?1:0,U[i].armor?1:0,U[i].fam||0,U[i].arch?1:0,U[i].trait||0,extras(U[i])];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,spent:S.spent||0,inv:S.inv,seen:S.seen,rewarded:S.rewarded||0,cells:S.cells,bought:S.bought||0,revealed:S.revealed,goldCell:S.goldCell,monarchs:S.monarchs||0,travelRoam:!!S.travelRoam}))}catch(e){}}
+function save(){if(resetting)return;try{const b={};for(const i in U)if(!isFarm(i))b[i]=[U[i].r,U[i].c,U[i].weapon,TEMP_FORM[U[i].form]?null:U[i].form,U[i].color,U[i].backwards?1:0,U[i].skin||0,U[i].mageTag?1:0,U[i].dead?1:0,U[i].reinforced?1:0,U[i].paladin?1:0,U[i].armor?1:0,U[i].fam||0,U[i].arch?1:0,U[i].trait||0,extras(U[i])];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,spent:S.spent||0,inv:S.inv,seen:S.seen,rewarded:S.rewarded||0,cells:S.cells,bought:S.bought||0,revealed:S.revealed,goldCells:S.goldCells,ever:S.ever,tabDone:S.tabDone||{},bigRewarded:S.bigRewarded||0,monarchs:S.monarchs||0,travelRoam:!!S.travelRoam}))}catch(e){}}
 // [15] in a saved box: everything newer, by name (royal colors, requests made, grudges, the Monarch's gifts, the Traveling Merchant's time left)
 const EXTRA_KEYS=['pal','asked','grudge','sir','helper','staff','barrel','sacks','pine','minions','travelT'];
 const extras=u=>{const o={};EXTRA_KEYS.forEach(k=>{if(u[k])o[k]=k==='travelT'?Math.round(u[k]):u[k]});return o};
 function load(){let d=null;try{d=JSON.parse(localStorage.getItem(KEY))}catch(e){}
  if(d){S.un=d.un||{};S.coins=d.coins||0;S.inv=Object.assign({scroll:0,potion:0,artifact:0,ingot:0},d.inv);S.spent=d.spent||0;S.seen=d.seen||{};S.rewarded=d.rewarded!=null?d.rewarded:Math.floor(ALL_KEYS.filter(k=>S.seen[k]).length/DISCOVER_EVERY)}
  // Bought board spaces. An older save made before spaces were locked: any space that already holds a box stays open, free.
- S.cells=(d&&d.cells)||[];S.bought=(d&&d.bought)||0;S.revealed=(d&&d.revealed)||{};S.goldCell=(d&&d.goldCell)||null;S.travelRoam=!!(d&&d.travelRoam);
+ S.cells=(d&&d.cells)||[];S.bought=(d&&d.bought)||0;S.revealed=(d&&d.revealed)||{};S.goldCells=(d&&d.goldCells)||(d&&d.goldCell?[d.goldCell]:[]);S.ever=(d&&d.ever)||{};S.tabDone=(d&&d.tabDone)||{};S.bigRewarded=(d&&d.bigRewarded)||0;S.travelRoam=!!(d&&d.travelRoam);
  S.monarchs=d&&d.monarchs!=null?d.monarchs:d&&d.boxes&&d.boxes.monarch?1:0; // (an older save with a Monarch on the board: that one was the free one)
  if(d&&d.boxes&&!d.cells)for(const i in d.boxes){const q=d.boxes[i],k=q[0]+','+q[1];if(!isOpen(q[0],q[1]))S.cells.push(k)}
  showCoins();showItems();checkUnlocks();
- buildShelf();
+ buildShelf();checkDiscoveries(); // (pays any Compendium reward already earned, e.g. a tab completed before these rewards existed)
  if(d&&d.boxes){for(const i in d.boxes)if(CH[i]&&!(i==='monarch'&&d.boxes[i][8])){const q=d.boxes[i];addUnit(i,q[0],q[1],true,q[2],q[3],q[4],q[6]!=null?q[6]:0);const v=U[i];if(q[5])v.backwards=true;if(q[7])v.mageTag=true;if(q[9])v.reinforced=true;if(q[10])v.paladin=true;if(q[11])v.armor=true;if(i==='druid')v.fam=q[12]||'bear';if(q[13])v.arch=true;if(q[14])v.trait=q[14];if(q[15])Object.assign(v,q[15]);if(i==='monarch'&&!(q[15]&&q[15].pal))v.pal='red';if(q[8]){v.dead=true;v.st='dead'}setLabel(v)}} // [8] buried Druid, [9] ingot, [10] Paladin, [11] green mage armor, [12] Druid's animal, [13] Archdruid, [14] generous / greedy Monarch, [15] newer extras (a Monarch saved before royal colors stays red and gold)
  else{addUnit('knight',1,1,true);addUnit('wizard',1,3,true)}
  save();ui()}

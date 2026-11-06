@@ -445,7 +445,7 @@ Object.assign(DESC,{
  research:'The Alchemist researches new formulas in a very thick book.',
  smoke:'The Alchemist mixes the wrong things and the whole room fills with smoke. *cough*',
  alcscroll:'Spell scroll on the Alchemist: he has no idea what it is and tears it up.',
- stone:"Artifact on the Alchemist, 80%: a philosopher's stone turns one board space golden. Coins earned there are doubled.",
+ stone:"Artifact on the Alchemist, 80%: a philosopher's stone turns one more board space golden, for good. Coins earned on a golden space are doubled.",
  elixir:'Secret: 20% the artifact is the elixir of life. The Alchemist drinks it and retires. He must be unlocked again.',
  daggers:'The Rogue throws daggers at a target on his wall. Bullseye. Mostly.',
  smokebomb:'The Rogue vanishes in a smoke bomb and pops up somewhere else in his room.',
@@ -717,9 +717,9 @@ COMP_TABS.push({id:'monarch',name:'Monarch',pairs:[],idle:['court'],items:[]});
 // reqGenerous / reqGreedy = chance the request is granted; regicide = idle chance (rolled first) that someone who was denied
 // kills the Monarch, from anywhere on the board; drain = Necromancer on the bottom row visiting the Druid beside him kills him;
 // travelArrive = chance per second that the Traveling Merchant, while on the road, shows up on a free space
-Object.assign(ODDS,{reqGenerous:.8,reqGreedy:.1,regicide:.01,drain:.3,travelArrive:1/600});
+Object.assign(ODDS,{reqGenerous:.8,reqGreedy:.1,regicide:.003,drain:.3,travelArrive:1/600});
 ODDS.spirit=.1; // the Druid's nature spirit (all four spaces around him open and empty)
-const ROYAL_FUNERAL_TIME=60,MONARCH_COST=200,LEAVE_TIME=300,TRAVEL_TIME=300,TRAVEL_ARTIFACT=300,TRAVEL_BUY={scroll:15,potion:15,ingot:30},PRISONERS=3,DRUID_FARMS=3;
+const ROYAL_FUNERAL_TIME=60,MONARCH_COST=150,LEAVE_TIME=300,TRAVEL_TIME=300,TRAVEL_ARTIFACT=300,TRAVEL_BUY={scroll:15,potion:15,ingot:30},PRISONERS=3,DRUID_FARMS=3;
 // What each character asks the Monarch for (paladin = a Knight who is a Paladin; other Knights have nothing to ask)
 const REQ_ASK={paladin:'Your Majesty, would you knight me officially?',blacksmith:'Your Majesty, I could use an assistant at the forge.',wizard:'Your Majesty, I humbly request a new staff.',
  priest:'Your Majesty, the chapel needs holy water.',alchemist:'Your Majesty, I need rare ingredients for my research.',rogue:'Your Majesty, I... need money. For reasons.',
@@ -823,12 +823,12 @@ Object.assign(DESC,{
  'wx:sandstorm':'10% of the Druid\'s weather casts (he casts instead of visiting): a Sandstorm for 30 s. Every chance of dying for whoever lives there is tripled.',
  'wx:sunshine':'15% of the Druid\'s weather casts (he casts instead of visiting): Sunshine for 30 s. A Merchant living there earns 20% more coins, a Farmer 50% more.',
  'wx:rain':'15% of the Druid\'s weather casts (he casts instead of visiting): Rain for 30 s. Whoever lives there spends 80% of their idle activities reading short stories (10% reveal a secret).',
- 'wx:overgrowth':'15% of the Druid\'s weather casts (he casts instead of visiting): Overgrowth for 30 s. Leaves and flowers grow all around the border of the space. Lovely.',
+ 'wx:overgrowth':'15% of the Druid\'s weather casts (he casts instead of visiting): Overgrowth for 30 s. Pink and yellow flowers bloom all around the border of the space. Lovely.',
  'wx:moonlight':'15% of the Druid\'s weather casts (he casts instead of visiting): Moonlight for 30 s, dark with a soft pink glow. When it starts and when it ends, 30% a werewolf kills whoever is there.',
  'wx:decay':'15% of the Druid\'s weather casts (he casts instead of visiting): Decay for 30 s, worms and flies. Tags its character was not born with (an ingot\'s Fighter tag, the Rogue\'s or Alchemist\'s Mage tag) are gone while it lasts.',
  'wx:infest':'5% of the Druid\'s weather casts (he casts instead of visiting): Infest for 30 s, a locust swarm. Nobody visits that space.',
  // the Monarch
- court:'The Monarch\'s idle activity: holding court on the throne. A generous Monarch hands things out, a greedy one wants more gold, and a greedy Monarch never visits anyone. The first Monarch of a game is free; each one after that costs 200 coins to place.',
+ court:'The Monarch\'s idle activity: holding court on the throne. A generous Monarch hands things out, a greedy one wants more gold, and a greedy Monarch never visits anyone. The first Monarch of a game is free; each one after that costs 150 coins to place.',
  'rq:paladin':'A Paladin next to the Monarch, the first time he visits: he asks to be knighted. Granted: he kneels in the throne room, is dubbed, and becomes "Sir Paladin".'+REQ_ODDS,
  'rq:blacksmith':'The Blacksmith next to the Monarch, the first time he visits: he asks for an assistant. Granted: an apprentice moves into the forge for good and potters about.'+REQ_ODDS,
  'rq:wizard':'The Wizard next to the Monarch, the first time he visits: he asks for a new staff. Granted: a pointed dark steel staff with an orb floating above it, for good.'+REQ_ODDS,
@@ -841,7 +841,7 @@ Object.assign(DESC,{
  'rq:druid':'The Druid next to the Monarch, the first time his visit roll comes up (the only visit he ever makes): he asks for land for nature. Granted: up to 3 Farmers set up fields on the nearest free spaces.'+REQ_ODDS,
  rqdeny:'A generous Monarch turns down 20% of requests (with an apology), a greedy one 90% (rudely). The one refused leaves angry, and does not forget.',
  royalfuneral:'When the Monarch dies, EVERYONE on the board drops what they are doing and kneels at the coffin in the throne room for 1 minute (except anyone away). Meanwhile no coins are earned and no items can be bought or gained. Then the Monarch\'s box goes back to the shelf.',
- regicide:'Secret: anyone whose request was refused gets a new idle activity, 1% (checked first): from anywhere on the board they go to the throne room and kill the Monarch. They skip the funeral.',
+ regicide:'Secret: anyone whose request was refused gets a new idle activity, 0.3% (checked first): from anywhere on the board they go to the throne room and kill the Monarch. They skip the funeral.',
  royalpatron:'Secret: a generous Monarch next to the Blacksmith. When the last adventurer of one of his adventures is home, the crown rewards the company with an artifact.',
  drain:'Necromancer on the bottom row with the Druid right beside him: 30% of his visits to the Druid. Black lightning drains the Druid\'s life and he dies (buried in his grove).',
  // the Traveling Merchant
@@ -851,3 +851,6 @@ Object.assign(DESC,{
  tscroll:'Spell scroll on the Traveling Merchant: he buys it for 15 coins.',
  tpotion:'Potion on the Traveling Merchant: he buys it for 15 coins.',
  tingot:'Ingot on the Traveling Merchant: he buys it for 30 coins (he does not get the Fighter tag).'});
+// ---------- bigger Compendium rewards ----------
+// A character's tab fully discovered (secrets included): +1 artifact. Every BIG_EVERY discoveries: one random item (ODDS.bigReward).
+const BIG_EVERY=50;ODDS.bigReward={scroll:.45,potion:.45,ingot:.1};
