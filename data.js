@@ -254,9 +254,9 @@ const SKIN_CHARS=['knight','merchant','priest'];
  for(let i=1;i<SKINS.length;i++){const[s,d]=SKINS[i],m=k=>k===S1?s:k===S2?d:k;
   CH[b+'~'+i]=Object.assign({},c,{a:c.a&&Object.assign({},c.a,{skin:m(c.a.skin)}),p:c.p.map(r=>[r[0],r[1],r[2],r[3],m(r[4]),r[5]])})}});
 // Board: only the middle 3x3 is open at the start. The side columns and the bottom row are bought with coins:
-// the first extra space costs CELL_PRICE, each one after that CELL_PRICE more (10, 20, 30, ...).
+// the first extra space costs CELL_PRICE, each one after that CELL_STEP more (10, 15, 20, ...).
 const START_CELLS=[];for(let r=0;r<3;r++)for(let c=1;c<4;c++)START_CELLS.push(r+','+c);
-const CELL_PRICE=10;
+const CELL_PRICE=10,CELL_STEP=5;
 // braver = share of Priest + Fighter visits (any side) where the Priest admits "You're braver than I."
 // wave = share of idle activities where a character just waves to a neighbor
 Object.assign(ODDS,{braver:.05,wave:.1,farm:.015,bizSlow:.5});
@@ -395,7 +395,7 @@ PAIRS['wizard>apothecary']={right:'cobrew',left:'boom',below:'wdate',above:'wabo
 PAIRS['necromancer>apothecary']={above:'bats'};
 // dragon = share of rumors that are about a dragon (else goblins); kdate/wdate = chance the date goes well;
 // alchemist = brewing together unlocks the Alchemist (or, once unlocked, makes a potion); boomDeath = the explosion kills both; imp = share of wabove that is the imp
-Object.assign(ODDS,{dragon:.1,kdate:.8,wdate:.4,alchemist:.05,boomDeath:.02,imp:.4});
+Object.assign(ODDS,{dragon:.1,kdate:.8,wdate:.4,alchemist:.2,boomDeath:.02,imp:.4});
 const BEAR_TIME=30,KDATE_TIME=60,WDATE_TIME=30,BEES_TIME=7,REMOVE_COST=10;
 const LEMONS=[['knight','Two lemons, please. For polishing my armor.'],['merchant','Lemons? All out, I am afraid.'],['knight','A fruit shop... with no lemons?'],['merchant','Life gave me no lemons. Try next week!']];
 const RUMOR_GOBLIN=[['merchant','Psst. Goblins were spotted by the old mill.'],['knight','Goblins? Let them come.'],['merchant','They stole three cabbages already!'],['knight','I will slay any threat that dares come here!']];
@@ -411,7 +411,7 @@ const DATE_GOOD={knight:['What a wonderful evening!','She laughed at all my joke
 const DATE_BAD={knight:['She laughed at my helmet.','I talked about swords for an hour. Too long?'],wizard:['I turned the waiter into a toad. By accident!','She would not stop sniffing my robes.']};
 Object.assign(NAMES,{thief:'A thief!',lemons:'Out of lemons',greenapple:'Green apples (+2 coins)',rumors:'Rumors of goblins (or a dragon)',
  bear:'Grizzly bear potion (30 s)',kgossip:'Gossip about a Mage',kdate:'A date (1 min)',bees:'Bee swarm!',
- cobrew:'Brewing together (5%: the Alchemist)',boom:'Brewing gone wrong (2% both die)',wdate:'A date (30 s)',imp:'Imp blood for the Apothecary',purplepot:'A purple potion',
+ cobrew:'Brewing together (20%: the Alchemist)',boom:'Brewing gone wrong (2% both die)',wdate:'A date (30 s)',imp:'Imp blood for the Apothecary',purplepot:'A purple potion',
  bats:'Bats!'});
 COMP_TABS.forEach(t=>{const add={knight:['thief','lemons','greenapple','rumors','bear','kgossip','kdate','bees'],merchant:['thief','lemons','greenapple','rumors'],
  apothecary:['bear','kgossip','kdate','bees','cobrew','boom','wdate','imp','purplepot','bats'],wizard:['cobrew','boom','wdate','imp','purplepot'],necromancer:['bats']}[t.id];if(add)t.pairs.push(...add)});
@@ -427,7 +427,7 @@ Object.assign(DESC,{
  kgossip:'Knight below the Apothecary. They gossip about whichever Mage lives nearby.',
  kdate:'Knight right of the Apothecary. They leave for a 1 minute date. 80% it goes well, 20%... less so.',
  bees:'Knight left of the Apothecary. A bee swarm! Both flee to the other room until the bees buzz off.',
- cobrew:'Wizard right of the Apothecary. They brew together. 5% this attracts the Alchemist (after that: a free potion).',
+ cobrew:'Wizard right of the Apothecary. They brew together. 20% this attracts the Alchemist (after that: a free potion).',
  boom:'Wizard left of the Apothecary. Too much newt: the brew explodes. 2% it takes them both with it.',
  wdate:'Wizard below the Apothecary. A 30 second date. Only 40% go well. Wizards are hard to date.',
  imp:'Wizard above the Apothecary, 40%. He summons an imp, zaps it, and bottles its blood for her.',
@@ -623,7 +623,7 @@ ITEMS.push('ingot');
 const INGOT_COST=100,SMITH_UNLOCK=100,ADVENTURE_TIME=180;
 // druid = his idle activities; spirit = idle chance to commune with a nature spirit (all 4 spaces around him open and empty)
 // adventure = the Blacksmith recruits his Fighter neighbors (needs 2+); adventureDeath = each one's risk; smithtalk = share of Knight visits about smithing (else reforging)
-Object.assign(ODDS,{druid:{grove:.4,animals:.4,weather:.2},spirit:.2,adventure:.2,adventureDeath:.1,advScroll:.1,advArtifact:.02,smithtalk:.6,rogueOutfit:{ninja:.4,bandit:.4,con:.2}});
+Object.assign(ODDS,{druid:{grove:.4,animals:.4,weather:.2},spirit:.2,adventure:.2,adventureDeath:.1,advScroll:.2,advArtifact:.05,smithtalk:.6,rogueOutfit:{ninja:.4,bandit:.4,con:.2}});
 // Blacksmith relative to each character (any side = the same scene)
 const SIDES=k=>({left:k,right:k,above:k,below:k});
 PAIRS['blacksmith>necromancer']=SIDES('nscoff');PAIRS['blacksmith>knight']=SIDES('smithk');PAIRS['blacksmith>wizard']=SIDES('metal');PAIRS['blacksmith>merchant']=SIDES('awkjoke');
@@ -675,7 +675,7 @@ Object.assign(DESC,{
  spirit:'Secret: with all four spaces around him open and empty, 20% of his idle time the Druid communes with a nature spirit and learns a secret (shown in the Compendium).',
  ingotshop:'Tap the coin in the Blacksmith\'s room to buy a steel ingot for 100 coins.',
  reinforce:'Ingot on any character: reinforced! They gain the Fighter tag for good.',
- adventure:'The Blacksmith next to two or more Fighters, 20%: he sends them on a 3 minute adventure. Each has a 10% risk. Loot: 1-10 coins per Fighter, 10% a scroll per Mage, 2% an artifact per Merchant.',
+ adventure:'The Blacksmith next to two or more Fighters, 20%: he sends ALL his Fighter neighbors on a 3 minute adventure. Each has a 10% risk. Loot: 1-10 coins per Fighter, 20% a scroll per Mage, 5% an artifact per Merchant.',
  nscoff:'Blacksmith and Necromancer, any side. The Necromancer scoffs at armor. Death is only the beginning, apparently.',
  smithk:'Blacksmith and Knight, any side, 60%. They nerd out about the newest smithing tricks.',
  reforge:'Blacksmith and Knight, any side, 40%. The Blacksmith forges the Knight a different weapon.',
@@ -690,3 +690,72 @@ Object.assign(DESC,{
  rbuy:'Blacksmith and Rogue, any side. The Rogue needs more daggers and ninja stars. Again.'});
 DESC.dungeon='Rogue above the Knight. They go dungeon crawling for 3 minutes and come back with coins, an artifact, scrolls, potions or a secret.';
 NAMES.dungeon='Dungeon crawl (3 min)';
+
+// ---------- Druid: weather on the board, familiars, Archdruid; Blacksmith next to the Druid ----------
+// The Druid never visits neighbors. When he would, he casts a weather effect on a random open space (with or without a box)
+// that lasts WEATHER_TIME seconds; at most WEATHER_MAX of his effects are on the board at once. An Archdruid never casts ARCH_SKIP.
+const WEATHER_TIME=30,WEATHER_MAX=2,ARCH_SKIP=['moonlight','decay','infest'];
+// weather = how likely each effect is; blizzVisit = fewer visits in a blizzard; blizzRare = rarest idle +30%; sandDeath = death chances x3;
+// sunMerchant / sunFarmer = more coins in sunshine; rainStory = idle chance of reading a story in the rain, storySecret = it reveals a secret;
+// werewolf = chance a werewolf kills the one in the moonlight, when it starts and when it ends; familiar = the Druid's animal
+Object.assign(ODDS,{weather:{blizzard:.1,sandstorm:.1,sunshine:.15,rain:.15,overgrowth:.15,moonlight:.15,decay:.15,infest:.05},
+ blizzVisit:.3,blizzRare:.3,sandDeath:3,sunMerchant:.2,sunFarmer:.5,rainStory:.8,storySecret:.1,werewolf:.3,familiar:{bear:1/3,eagle:1/3,wolf:1/3}});
+const DRUID_DISCOUNT=5; // secret: coins off an Apothecary potion while the Druid is next to her
+const WX_NAMES={blizzard:'Blizzard',sandstorm:'Sandstorm',sunshine:'Sunshine',rain:'Rain',overgrowth:'Overgrowth',moonlight:'Moonlight',decay:'Decay',infest:'Infest'};
+const WX_SAY={blizzard:'Winds of the north, come!',sandstorm:'Sands of the far desert, rise!',sunshine:'Let the sun shine warm!',rain:'Clouds, gather and pour!',
+ overgrowth:'Grow, little seeds, grow!',moonlight:'Moon, show your face.',decay:'All things return to the earth...',infest:'Little hungry ones, swarm!'};
+// short stories read in the Druid's rain
+const STORIES=['Once a frog wished to be a king. Now he is a very damp king.','A lonely cloud cried so much it made a lake. The fish were grateful.',
+ 'The old oak remembered every squirrel that ever lived in it. Even Gerald.','A knight lost a duel to a puddle. He never spoke of it again.',
+ 'The moon once fell into a well. The miller fished it out with a bucket.','Two snails raced for a hundred years. It was a tie.'];
+// Archdruid: the Druid after an artifact. A living staff with a glowing orb, a golden leaf crown.
+CH.druid_arch=Object.assign({},CH.druid,{name:'Archdruid',p:[...CH.druid.p,[4,0,2,1,'#f2c84a'],[7,0,2,1,'#f2c84a'],[10,0,2,1,'#f2c84a'],[0,0,3,3,'#9affb0'],[1,1,1,1,'#ffffff'],[3,1,1,2,'#5aba4a'],[0,4,1,1,'#5aba4a'],[2,8,1,1,'#5aba4a']]});
+// Blacksmith and Druid (any side): metal is SO uncomfortable. The Blacksmith rolls his eyes.
+PAIRS['blacksmith>druid']=SIDES('metalitch');
+const METALITCH=[['druid','How do you wear metal all day?'],['druid','It is cold. It pinches. It clanks!'],['druid','Bark and leaves breathe, you know.'],['blacksmith','...Bark. Right.']];
+// Werewolf (moonlight)
+const WWC={body:'#5a5a66',bodyD:'#46464f',pants:'#3a3040',boot:'#2a2a30',belt:'#3a3040',skin:'#6a6a76',skinD:'#55555f'};
+CH.werewolf={name:'Werewolf',eye:'#ff3030',a:arms(WWC),p:[...B(WWC),[4,1,2,3,'#46464f'],[10,1,2,3,'#46464f'],[9,6,4,3,'#7a7a86'],[12,6,1,1,O],[6,9,1,1,'#f0ead0'],[10,9,1,1,'#f0ead0'],[5,10,6,2,'#7a7a86']]};
+Object.assign(NAMES,{metalitch:'Metal is uncomfortable',archdruid:'Artifact on Druid: the Archdruid',ddiscount:'Secret: herbal discount',story:'A story in the rain',wolfkill:'A werewolf in the moonlight'});
+for(const k in WX_NAMES)NAMES['wx:'+k]='Weather: '+WX_NAMES[k];
+EGGS.push('ddiscount');
+{const dt=COMP_TABS.find(t=>t.id==='druid');dt.pairs.push('metalitch');dt.idle.push(...Object.keys(WX_NAMES).map(k=>'wx:'+k),'story','wolfkill');dt.items.splice(3,0,'archdruid');dt.items.push('ddiscount');
+ COMP_TABS.find(t=>t.id==='blacksmith').pairs.push('metalitch')}
+PAIR_WITH.metalitch=['blacksmith','druid'];
+TAG_NOTES.druid='{mage} Mage. Even buried, he still counts as a Mage for his neighbors.';
+Object.assign(DESC,{metalitch:'Blacksmith and Druid, any side. The Druid explains how uncomfortable metal is to wear. The Blacksmith rolls his eyes.',
+ archdruid:'Artifact on the Druid: he becomes the Archdruid, with a glowing living staff. He never casts Moonlight, Decay or Infest again.',
+ ddiscount:'Secret: with the Druid next to the Apothecary, her potions cost 5 coins less (herbs from his grove).',
+ story:'A space in the Druid\'s Rain: whoever lives there reads a short story 80% of their idle time. 10% of the stories reveal a secret.',
+ wolfkill:'Moonlight: when it starts and when it ends, 30% a werewolf leaps out and kills whoever is in that space.',
+ 'wx:blizzard':'The Druid\'s weather instead of a visit, 10%. 30 s of snow on a random space: its character visits 30% less, but their rarest idle activity is 30% more likely.',
+ 'wx:sandstorm':'The Druid\'s weather instead of a visit, 10%. 30 s of sand on a random space: every chance of dying there is tripled.',
+ 'wx:sunshine':'The Druid\'s weather instead of a visit, 15%. 30 s of sun on a random space: a Merchant there earns 20% more coins, a Farmer 50% more.',
+ 'wx:rain':'The Druid\'s weather instead of a visit, 15%. 30 s of rain on a random space: whoever lives there reads short stories (10% reveal a secret).',
+ 'wx:overgrowth':'The Druid\'s weather instead of a visit, 15%. For 30 s, leaves and flowers grow all around the border of a random space. Lovely.',
+ 'wx:moonlight':'The Druid\'s weather instead of a visit, 15%. 30 s of darkness and soft pink moonlight. When it starts and ends, 30% a werewolf attacks.',
+ 'wx:decay':'The Druid\'s weather instead of a visit, 15%. 30 s of worms and flies on a random space: tags its character was not born with are gone while it lasts (an ingot\'s Fighter tag, the Rogue\'s Mage tag).',
+ 'wx:infest':'The Druid\'s weather instead of a visit, 5%. 30 s of locusts on a random space: nobody visits it.'});
+
+// ---------- the Monarch (no tags) ----------
+// A King (50%) or a Queen (50%), saved in the box's color ('m' / 'f'). Generous (50%) or greedy (50%), saved; later it will change how they treat others.
+// Unlocked by having MONARCH_UNLOCK boxes on the board. Room: a throne, a fancy back door and fancy side doors, a juggling jester.
+const MONARCH_UNLOCK=10;
+const MON={body:'#8a1a3a',bodyD:'#6a1028',pants:'#5a1020',boot:'#3a1a1a',belt:'#f2c84a'};
+const monarchCH=f=>({name:'Monarch',eye:O,a:arms(MON),p:[...B(MON),[4,10,8,9,MON.body],[10,10,2,9,MON.bodyD],[4,14,8,1,MON.belt],[4,9,8,2,'#f4f0e8'],[5,10,1,1,O],[8,9,1,1,O],[10,10,1,1,O],
+ ...(f?[[4,2,1,8,'#d8a040'],[11,2,1,8,'#d8a040'],[5,2,6,1,'#d8a040']]:[[5,7,6,2,'#8a5a2a'],[6,9,4,1,'#8a5a2a'],[5,2,6,1,'#8a5a2a']]),
+ [5,1,6,1,'#f2c84a'],[5,0,1,1,'#f2c84a'],[7,0,2,1,'#f2c84a'],[10,0,1,1,'#f2c84a'],[7,1,2,1,'#d03050']]}); // ermine collar, crown with a ruby; beard (King) or long hair (Queen)
+CH.monarch_m=monarchCH(0);CH.monarch_f=monarchCH(1);CH.monarch=CH.monarch_m;
+TR.monarch={up:'royaldoor',down:'royaldoor'};EXIT.royaldoor=EXIT.backdoor; // a fancy back door (same place as the plain one)
+// The jester juggling in the throne room (drawn as room life)
+const JK={body:'#c03030',bodyD:'#e8c030',pants:'#e8c030',boot:'#3a1a3a',belt:'#3a1a3a'};
+CH.joker={name:'Jester',eye:O,a:arms(JK),p:[...B(JK),[5,10,1,4,'#e8c030'],[10,10,1,4,'#c03030'],[3,2,4,2,'#c03030'],[9,2,4,2,'#e8c030'],[2,0,2,3,'#c03030'],[12,0,2,3,'#e8c030'],[1,2,1,1,'#f2c84a'],[14,2,1,1,'#f2c84a'],[5,4,6,1,'#c03030']]};
+['monarch_m','monarch_f','druid_arch'].forEach(b=>{const c=CH[b];for(let i=1;i<SKINS.length;i++){const[s,d]=SKINS[i],m=k=>k===S1?s:k===S2?d:k;CH[b+'~'+i]=Object.assign({},c,{a:Object.assign({},c.a,{skin:m(c.a.skin)}),p:c.p.map(r=>[r[0],r[1],r[2],r[3],m(r[4]),r[5]])})}});
+SKIN_CHARS.push('monarch');ALL_CHARS.push('monarch');NAMES.monarch='Monarch';
+// Monarch idle: holding court on the throne (what they say depends on generous / greedy)
+const COURT={generous:['Bread and honey for everyone!','Lower the taxes. Again!','Is anyone hungry? Feast tonight!','My treasury is your treasury.'],
+ greedy:['More gold for the vault!','Raise the taxes. Again!','Who touched my crown?','The jester costs too much.']};
+NAMES.court='Holding court';
+DESC.court='The Monarch sits on the throne and gives royal orders. A generous ruler gives things away; a greedy one wants more gold. (Each Monarch is one or the other, 50/50.)';
+TAG_NOTES.monarch='No tags. Each Monarch is a King or a Queen, and generous or greedy (50/50 each).';
+COMP_TABS.push({id:'monarch',name:'Monarch',pairs:[],idle:['court'],items:[]});

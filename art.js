@@ -1,10 +1,14 @@
 // ---------- art: room backgrounds and drawing ----------
-const WALL={druid:['#24402a','#3a2e1e'],blacksmith:['#3a3236','#2a2224'],rogue:['#3a3440','#26222a'],alchemist:['#44384c','#2c2232'],farmer:['#8ab8e0','#6a4a24'],apothecary:['#3e4a3a','#2a3226'],merchant:['#5a4430','#3a2a1c'],knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40'],priest:['#4a4458','#30293c'],necromancer:['#26262c','#18181c']};
+const WALL={monarch:['#3e2a40','#5a1828'],druid:['#24402a','#3a2e1e'],blacksmith:['#3a3236','#2a2224'],rogue:['#3a3440','#26222a'],alchemist:['#44384c','#2c2232'],farmer:['#8ab8e0','#6a4a24'],apothecary:['#3e4a3a','#2a3226'],merchant:['#5a4430','#3a2a1c'],knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40'],priest:['#4a4458','#30293c'],necromancer:['#26262c','#18181c']};
 // Priest's stained glass window (frame 16..44 x 12..52, center x 30, y 32). Tentacles can smash through it.
 const WINDOW=[[16,12,28,40,'#2a2434'],[18,16,7,10,'#c04040'],[26,16,8,10,'#3a6ad0'],[35,16,7,10,'#d0b030'],[18,27,7,10,'#40a060'],[26,27,8,10,'#c890ff'],[35,27,7,10,'#c04040'],[18,38,7,12,'#3a6ad0'],[26,38,8,12,'#d0b030'],[35,38,7,12,'#40a060'],[29,19,2,8,'#f2e8a0'],[27,21,6,2,'#f2e8a0'],[20,12,20,2,'#3a3448']].map(r=>[r[0],r[1]+12,r[2],r[3],r[4]]); // moved down, clear of the name label
 const WIN_C={x:30,y:44};
 // Knight's back-wall door (hides the stairs). Center x 72, bottom at the floor line (y 66).
 const BACKDOOR=[[61,31,22,35,'#1e2030'],[63,33,18,33,'#6a4420'],[69,33,1,33,'#5a3a1e'],[75,33,1,33,'#5a3a1e'],[63,38,18,2,'#3a2a1a'],[63,58,18,2,'#3a2a1a'],[65,49,2,2,'#f2c84a']];
+// The Monarch's fancy back door: dark red wood, gold trim and an arched gold top (same place as the plain one)
+const ROYALDOOR=[[60,28,24,38,'#1e1020'],[62,31,20,35,'#7a2a2a'],[61,29,22,3,'#f2c84a'],[64,27,16,2,'#f2c84a'],[62,31,2,35,'#c8a030'],[80,31,2,35,'#c8a030'],[71,33,2,33,'#5a1a1a'],[64,44,16,2,'#c8a030'],[64,56,16,2,'#c8a030'],[66,48,3,3,'#f2c84a'],[75,48,3,3,'#f2c84a']];
+// The Druid's forest by row (wall = sky behind the trees, floor = ground): 0 dark woods, 1 normal, 2 autumn with brownish-green grass, 3 fungal
+const DRUID_WALL=[['#0e2014','#1a2214'],null,['#4a3a22','#5a5a2a'],['#24182e','#302638']];
 const BACKDOOR_L=BACKDOOR.map(r=>[r[0]-48,r[1],r[2],r[3],r[4]]); // same door, on the left side of the room (Apothecary)
 // Wizard's second bookshelf (slides aside to reveal the spiral staircase). Center x 68, bottom y 66.
 const SHELF2=[[56,30,24,36,'#6a4a2a'],[58,32,20,32,'#3a2410'],[58,47,20,2,'#6a4a2a'],[59,35,4,12,'#c04040'],[64,37,3,10,'#40a0c0'],[68,35,4,12,'#d0b030'],[73,36,4,11,'#40c070'],[59,51,3,13,'#8a5ae0'],[63,52,5,12,'#c04040'],[69,50,3,14,'#40a0c0'],[73,53,4,11,'#d0b030']];
@@ -30,7 +34,22 @@ function bg(id,w){
   [72,35,3,1,'#aab4c8'],[73,34,1,3,'#aab4c8'],[82,43,3,1,'#aab4c8'],[83,42,1,3,'#aab4c8'],
   [50,54,16,12,'#6a4420'],[50,54,16,3,'#4a2e14'],[57,58,2,3,'#f2c84a'],
   [64,4,20,4,'#3a2414'],[65,5,18,2,'#5a3a1e'],[19,80,24,8,'#3a2414'],[20,81,22,6,'#6a4420'],[27,81,1,6,'#4a2e14'],[35,81,1,6,'#4a2e14'],[30,83,3,2,'#aab4c8']];
- // Druid: a forest. Trees, a grove of saplings, mushrooms; the shadow between the two right-hand trees is his way up and down.
+ // Druid: a forest that changes with his row (w = row): 0 dark deep woods, 1 green forest, 2 autumn, 3 giant mushrooms.
+ // The shadow between the two right-hand trees (or mushroom stalks) is his way up and down.
+ if(id==='druid'&&w===0)return [[0,60,96,6,'#0c160e'],[58,26,20,40,'#060c08'],[6,24,8,42,'#2e2214'],[46,22,8,44,'#2e2214'],[80,24,8,42,'#2e2214'],[11,30,2,36,'#221a10'],[51,28,2,38,'#221a10'],[85,30,2,36,'#221a10'],
+  [0,12,26,18,'#123a1a'],[34,8,32,20,'#123a1a'],[70,10,26,20,'#123a1a'],[4,10,16,4,'#1a4a22'],[40,6,22,4,'#1a4a22'],[76,8,16,4,'#1a4a22'],[0,30,30,8,'#0a1e0e'],[36,28,30,8,'#0a1e0e'],[72,30,24,8,'#0a1e0e'],
+  [22,58,4,8,'#2e2214'],[18,52,12,8,'#1a4a22'],[30,64,40,2,'#060c08']];
+ if(id==='druid'&&w===2)return [[58,26,20,40,'#2a1e10'],[6,24,8,42,'#5a3a20'],[46,22,8,44,'#5a3a20'],[80,24,8,42,'#5a3a20'],[11,30,2,36,'#40281a'],[51,28,2,38,'#40281a'],[85,30,2,36,'#40281a'],
+  [0,14,22,14,'#b0602a'],[36,10,28,16,'#c88a2a'],[72,12,24,16,'#a8402a'],[4,12,14,4,'#d88a3a'],[40,8,20,4,'#e0b040'],[76,10,16,4,'#c85a30'],[10,28,4,3,'#7a7a2a'],[50,26,6,3,'#7a7a2a'],
+  [22,56,4,10,'#5a4024'],[19,50,10,8,'#c8702a'],[32,58,3,8,'#5a4024'],[30,53,7,6,'#d8a030'],[14,70,3,2,'#c8702a'],[40,78,3,2,'#a8402a'],[70,74,3,2,'#e0b040'],[84,86,3,2,'#c8702a']];
+ if(id==='druid'&&w===3)return [[58,30,20,36,'#120c1a'],[8,34,8,32,'#e0d8c4'],[50,30,8,36,'#e0d8c4'],[80,36,8,30,'#e0d8c4'],[14,34,2,32,'#b8b09c'],[56,30,2,36,'#b8b09c'],[86,36,2,30,'#b8b09c'],
+  [0,22,26,12,'#a03050'],[2,20,22,2,'#c04a6a'],[36,16,34,14,'#7a40b0'],[38,14,30,2,'#9a60d0'],[70,24,26,12,'#c05a30'],[72,22,22,2,'#e07a40'],
+  [6,25,3,3,'#f4ece0'],[16,27,3,2,'#f4ece0'],[44,20,4,3,'#f4ece0'],[58,23,3,3,'#f4ece0'],[78,27,3,3,'#f4ece0'],[88,29,3,2,'#f4ece0'],
+  [24,60,2,6,'#e0d8c4'],[21,57,8,3,'#c04a6a'],[36,62,2,4,'#e0d8c4'],[34,60,6,2,'#9a60d0'],[66,62,2,4,'#e0d8c4'],[64,60,6,2,'#e07a40'],[16,76,2,4,'#e0d8c4'],[14,74,6,2,'#c04a6a'],[44,84,2,4,'#e0d8c4'],[42,82,6,2,'#7ae0c0'],[76,80,2,4,'#e0d8c4'],[74,78,6,2,'#9a60d0']];
+ // Monarch: a throne on a dais, red banners, a fancy back door with gold trim, a red carpet
+ if(id==='monarch')return [[6,24,10,26,'#a01a3a'],[6,24,10,2,'#f2c84a'],[8,44,6,6,'#a01a3a'],[10,30,2,6,'#f2c84a'],[49,24,8,26,'#a01a3a'],[49,24,8,2,'#f2c84a'],[50,44,6,6,'#a01a3a'],[52,30,2,6,'#f2c84a'],
+  [22,62,40,4,'#6a5a6a'],[24,30,20,32,'#c8a030'],[27,34,14,20,'#8a1030'],[29,36,10,16,'#a01a3a'],[22,28,4,6,'#f2c84a'],[42,28,4,6,'#f2c84a'],[32,26,4,4,'#f2c84a'],[33,24,2,2,'#d03050'],[22,54,24,4,'#c8a030'],[24,58,3,4,'#a08020'],[41,58,3,4,'#a08020'],
+  ...ROYALDOOR,[18,66,30,30,'#8a1030'],[20,66,2,30,'#f2c84a'],[44,66,2,30,'#f2c84a']];
  if(id==='druid')return [[58,26,20,40,'#1a2a1a'],[6,24,8,42,'#4a3420'],[46,22,8,44,'#4a3420'],[80,24,8,42,'#4a3420'],[11,30,2,36,'#3a2818'],[51,28,2,38,'#3a2818'],[85,30,2,36,'#3a2818'],
   [0,14,22,14,'#2a6a32'],[36,10,28,16,'#2a6a32'],[72,12,24,16,'#2a6a32'],[4,12,14,4,'#3a8a3a'],[40,8,20,4,'#3a8a3a'],[76,10,16,4,'#3a8a3a'],
   [22,56,4,10,'#5a4024'],[19,50,10,8,'#3a8a3a'],[32,58,3,8,'#5a4024'],[30,53,7,6,'#4a9a3a'],[66,62,4,4,'#c03030'],[67,61,2,1,'#f0e8d8'],[38,63,3,3,'#e8c860']];
@@ -80,6 +99,7 @@ function drawSprite(c,id,mood,pose,leg){
  if(mood==='hurt'){f(5,6,2,1,O);f(9,6,2,1,O);f(7,8,2,1,'#a22');return}
  if(mood==='sleep'){f(5,6,2,1,O);f(9,6,2,1,O);f(7,8,2,1,'#8a4a4a');return} // eyes closed, calm
  if(mood==='shock'){f(5,4,2,3,'#ffffff');f(9,4,2,3,'#ffffff');f(6,5,1,2,ch.eye);f(9,5,1,2,ch.eye);f(7,8,2,2,'#5a2a2a');return} // wide eyes, open mouth (surprise)
+ if(mood==='roll'){f(6,4,1,1,ch.eye);f(9,4,1,1,ch.eye);f(5,3,2,1,O);f(9,3,2,1,O);f(7,8,3,1,'#8a4a4a');return} // rolling the eyes: pupils up, flat mouth
  const e=mood==='mad'?'#e03030':ch.eye;f(6,5,1,2,e);f(9,5,1,2,e);
  if(mood==='happy'){f(7,8,2,1,'#7a2a2a');f(5,7,1,1,'#f08080');f(10,7,1,1,'#f08080')}
  else if(mood==='mad'){f(6,4,2,1,O);f(9,4,2,1,O);f(7,8,2,1,'#a22')}else f(7,8,2,1,'#8a4a4a');
@@ -97,10 +117,13 @@ const sid=u=>{if(u.dress)return u.dress; // trying on a disguise (Rogue and Wiza
  if(u.id==='alchemist'&&!u.form&&u.r===ROWS-1&&u.c===COLS-1)return 'alchemist_mad'; // secret: mad scientist on the bottom-right space
  let b=u.form||(u.paladin&&u.id==='knight'?'paladin':u.color?u.id+'_'+u.color:u.id); // a Knight forged into a Paladin
  if(u.armor&&!u.form&&CH[b+'_arm'])b+='_arm'; // the Wizard's green metal mage armor
+ if(u.arch&&!u.form&&u.id==='druid')b='druid_arch'; // the Archdruid's glowing staff and leaf crown
  return u.skin&&CH[b+'~'+u.skin]?b+'~'+u.skin:b};
 // Which arm pose to show for an activity (act) that has run for `at` seconds
 function poseOf(act,at){
- if(act==='read'||act==='tome'||act==='holy')return 'hold';
+ if(act==='read'||act==='tome'||act==='holy'||act==='story')return 'hold';
+ if(act==='wcast'||act==='ascend')return 'both';
+ if(act==='court')return at>1.6&&at<3.4?'up':'none';
  if(act==='magic')return Math.floor(at*3)%2?'up':'fwd';
  if(act==='sprinkle')return Math.floor(at*4)%2?'up':'fwd';     // shaking holy water
  if(act==='smite')return 'both';
@@ -163,7 +186,7 @@ function poseOf(act,at){
  return 'none';
 }
 function box(c,id,x,y,w){
- const k=WALL[id];c.fillStyle=k[0];c.fillRect(x,y,CELL,CELL);c.fillStyle=k[1];c.fillRect(x,y+66,CELL,30);c.fillStyle='rgba(0,0,0,.3)';c.fillRect(x,y+66,CELL,2);
+ const k=id==='druid'&&DRUID_WALL[w]||WALL[id];c.fillStyle=k[0];c.fillRect(x,y,CELL,CELL);c.fillStyle=k[1];c.fillRect(x,y+66,CELL,30);c.fillStyle='rgba(0,0,0,.3)';c.fillRect(x,y+66,CELL,2);
  bg(id,w).forEach(d=>{c.fillStyle=d[4];c.fillRect(x+d[0],y+d[1],d[2],d[3])});if(id==='alchemist')drawAlembic(c,x,y,0);
  c.strokeStyle='#000';c.lineWidth=2;c.strokeRect(x+1,y+1,CELL-2,CELL-2); // thin frame; boxFrame() thickens the outside edges
 }
@@ -174,7 +197,7 @@ function boxFrame(c,x,y,s){c.fillStyle='#000';if(s.t)c.fillRect(x,y+2,CELL,2);if
 // ---------- ways between rooms (drawn behind the characters) ----------
 // backdoor and shelf are always part of the room, so only their open state is drawn here.
 function drawFx(f){
- const x=f.x,y=f.y,o=f.open,t=f.type==='backdoorL'?'backdoor':f.type,fixed=t==='backdoor'||t==='shelf'||t==='rope'||t==='trapdoor';
+ const x=f.x,y=f.y,o=f.open,roy=f.type==='royaldoor',fan=f.fancy,t=f.type==='backdoorL'||roy?'backdoor':f.type,fixed=t==='backdoor'||t==='shelf'||t==='rope'||t==='trapdoor';
  if(t==='rope'&&o>.02){const by=Math.floor((y-1)/CELL)*CELL;g.fillStyle='#000';g.fillRect(x-9,by+4,18,4); // open ceiling hatch, rope dropping down
   const len=Math.round(o*(y-by-10));g.fillStyle=O;g.fillRect(x-2,by+7,4,len+1);g.fillStyle='#b8946a';g.fillRect(x-1,by+7,2,len);g.fillStyle='#8a6a44';for(let k=by+10;k<by+7+len;k+=4)g.fillRect(x-1,k,2,1);return}
  if(t==='shadow'&&o>.02){g.fillStyle='rgba(6,12,6,'+(.6*o)+')';g.fillRect(x-10,y-38,20,38);return} // the Druid slips into the shadow between the trees
@@ -186,9 +209,9 @@ function drawFx(f){
   // Closed = flat against the line (invisible). Opening, it swings out toward the viewer
   // into the next room (f.dir), so it shows as a narrow panel seen from the side.
   if(o>.03){const d=f.dir||1,sn=Math.sin(o*1.1),w=Math.max(3,Math.round(22*sn)),fx=x+d*w,top=y-58,grow=Math.round(3*sn);
-   g.beginPath();g.moveTo(x,top);g.lineTo(fx,top-grow);g.lineTo(fx,y+grow);g.lineTo(x,y);g.closePath();g.fillStyle='#9a6a34';g.fill();g.lineWidth=2;g.strokeStyle=O;g.stroke();
-   g.fillStyle='#7a5226';for(const k of [.33,.66]){const py=top+58*k;g.beginPath();g.moveTo(x,py);g.lineTo(fx,py-grow*(1-2*k));g.lineTo(fx,py-grow*(1-2*k)+2);g.lineTo(x,py+2);g.closePath();g.fill()}
-   g.fillStyle='#5a3a1e';g.fillRect(d>0?fx-2:fx,top-grow,2,58+grow*2); // the door's outer edge
+   g.beginPath();g.moveTo(x,top);g.lineTo(fx,top-grow);g.lineTo(fx,y+grow);g.lineTo(x,y);g.closePath();g.fillStyle=fan?'#7a2a2a':'#9a6a34';g.fill();g.lineWidth=2;g.strokeStyle=O;g.stroke();
+   g.fillStyle=fan?'#f2c84a':'#7a5226';for(const k of [.33,.66]){const py=top+58*k;g.beginPath();g.moveTo(x,py);g.lineTo(fx,py-grow*(1-2*k));g.lineTo(fx,py-grow*(1-2*k)+2);g.lineTo(x,py+2);g.closePath();g.fill()}
+   g.fillStyle=fan?'#c8a030':'#5a3a1e';g.fillRect(d>0?fx-2:fx,top-grow,2,58+grow*2); // the door's outer edge
    if(w>8){g.fillStyle='#f2c84a';g.fillRect(fx-d*5-1,y-30,3,3)}}}
  else if(t==='portal'){const h=58,w=36,c=Math.floor(T*8)%2?'#8fe0ff':'#c890ff';
   g.fillStyle='#6a4cc2';g.fillRect(x-w/2,y-h,w,h);g.fillStyle=c;g.fillRect(x-w/2+2,y-h+2,w-4,h-4);g.fillStyle='#fff';g.fillRect(x-w/2+5,y-h+6,w-10,h-12)}
@@ -196,8 +219,8 @@ function drawFx(f){
   // black doorway, door panel swinging toward the viewer on its left hinge
   g.fillStyle='#000000';g.fillRect(x-9,y-33,18,33);
   const pw=Math.max(2,Math.round(18*Math.cos(o*1.35))),gr=Math.round(3*Math.sin(o*1.35));
-  g.fillStyle=O;g.fillRect(x-10,y-34-gr,pw+2,35+gr*2);g.fillStyle='#6a4420';g.fillRect(x-9,y-33-gr,pw,33+gr*2);
-  g.fillStyle='#3a2a1a';g.fillRect(x-9,y-28-gr,pw,2);g.fillRect(x-9,y-8+gr,pw,2)}
+  g.fillStyle=O;g.fillRect(x-10,y-34-gr,pw+2,35+gr*2);g.fillStyle=roy?'#7a2a2a':'#6a4420';g.fillRect(x-9,y-33-gr,pw,33+gr*2);
+  g.fillStyle=roy?'#f2c84a':'#3a2a1a';g.fillRect(x-9,y-28-gr,pw,2);g.fillRect(x-9,y-8+gr,pw,2)}
  else if(t==='shelf'&&o>.02){
   // black opening; the bookshelf slides right into the wall
   const bl=Math.floor(x/CELL)*CELL,top=y-66;
@@ -245,7 +268,7 @@ function drawAct(c,u){
  if(a==='lightning')drawRedLightning(c,x,y,t);
  if(a==='smoke'&&t>1){const bx=Math.floor(x/CELL)*CELL,by=Math.floor((y-1)/CELL)*CELL,k=cl((t-1)/.8,0,1)*cl((5-t)/1.2,0,1);
   c.fillStyle='rgba(140,140,150,'+(.75*k)+')';c.fillRect(bx,by,CELL,CELL);for(let i=0;i<7;i++){c.fillStyle='rgba(200,200,210,'+(.6*k)+')';c.fillRect(Math.round(bx+10+((i*29+t*14)%76)),Math.round(by+20+((i*17)%50)+Math.sin(t*2+i)*4),10,7)}}
- if(a==='read'||a==='tome'||a==='holy'||a==='lightning'||a==='nread'||a==='research'){
+ if(a==='read'||a==='tome'||a==='holy'||a==='lightning'||a==='nread'||a==='research'||a==='story'){
   // Held up and open toward the reader: we see the covers and spine, page tops, and pages turning over the top.
   // tome = the Wizard's eldritch spellbook; holy = the Priest's white book with a gold cross; lightning = the Necromancer's black book with red runes
   const tm=a==='tome',hb=a==='holy',nb=a==='lightning'||a==='nread',bx=Math.round(x+f*2),by=Math.round(y-20),pf=(t*.9)%1;
@@ -400,7 +423,8 @@ function drawRoomLife(c,id,bx,by,t){const fl=(k)=>Math.floor(t*8+k)%3;
  if(id==='apothecary'){c.save();c.beginPath();c.rect(bx+39,by+26,20,6);c.clip();c.fillStyle='#8ac8f0';c.fillRect(bx+39,by+26,20,6);const cx=bx+39+((t*4)%34)-8;c.fillStyle='#ffffff';c.fillRect(Math.round(cx),by+28,7,3);c.fillRect(Math.round(cx)+2,by+27,4,1);c.restore()}
  if(id==='alchemist')drawAlembic(c,bx,by,t);
  if(id==='blacksmith'){const h=Math.floor(t*8)%3;c.fillStyle='#f08a20';c.fillRect(bx+14,by+50-h,12,6+h);c.fillStyle='#ffd040';c.fillRect(bx+17,by+52-h,6,4+h)} // furnace fire
- if(id==='druid'&&Math.floor(t*1.5)%4===0){c.fillStyle='#6aba4a';c.fillRect(bx+20+Math.floor(t*9)%50,by+30+Math.floor(t*6)%30,2,2)} // a falling leaf
+ if(id==='druid'&&Math.floor(t*1.5)%4===0){const row=Math.floor(by/CELL);c.fillStyle=['#2a6a32','#6aba4a','#d88a3a','#c8f0e0'][row]||'#6aba4a';c.fillRect(bx+20+Math.floor(t*9)%50,by+(row===3?60-Math.floor(t*6)%30:30+Math.floor(t*6)%30),2,2)} // a falling leaf (glowing spores rising in the mushroom forest)
+ if(id==='monarch')drawJester(c,bx,by,t);
  if(id==='wizard'&&Math.floor(t*2)%5===0){c.fillStyle='#e8d0ff';c.fillRect(bx+14+Math.floor(t*2)%30,by+26,1,1)}}
 // Horse head and neck poking in from the right edge of the knight's room. ex = room's right edge, fy = floor y, t = activity time
 function drawHorse(c,ex,fy,t){
@@ -637,10 +661,40 @@ function drawGraveyard(c,bx,by,t){c.save();c.beginPath();c.rect(bx+2,by+2,CELL-4
 const fairyPos=m=>({x:m.x+Math.sin(m.t*3+m.x)*6,y:m.y-34+Math.sin(m.t*5+m.x)*4});
 
 // ---------- Druid and Blacksmith ----------
-// The Druid's brown bear (four legs, side view). x,y = feet, face = 1 right / -1 left
+// The Druid's grizzly bear (four legs, side view, big). x,y = feet, face = 1 right / -1 left
 function drawBearPet(c,x,y,face,t,walk,a){const s=walk?Math.floor(t*7)%2:0;c.save();c.globalAlpha=a==null?1:a;c.translate(Math.round(x),Math.round(y));c.scale(face,1);
- const R=[[-11,-14,20,9,'#6a4428'],[-12,-12,3,6,'#6a4428'],[7,-17,8,8,'#6a4428'],[8,-19,3,3,'#52341e'],[13,-13,4,3,'#a07850'],[-9,-5,4,5-s,'#52341e'],[-3,-5,4,5-(1-s),'#52341e'],[2,-5,4,5-s,'#52341e'],[6,-5,3,5-(1-s),'#52341e']];
- c.fillStyle=O;R.forEach(r=>c.fillRect(r[0]-1,r[1]-1,r[2]+2,r[3]+2));R.forEach(r=>{c.fillStyle=r[4];c.fillRect(r[0],r[1],r[2],r[3])});c.fillStyle=O;c.fillRect(12,-15,1,1);c.fillRect(16,-13,1,1);c.restore()}
+ const R=[[-16,-20,28,13,'#6a4428'],[-11,-23,14,3,'#6a4428'],[-18,-17,3,8,'#6a4428'],[10,-25,11,11,'#6a4428'],[11,-28,3,3,'#52341e'],[17,-28,3,3,'#52341e'],[18,-19,6,4,'#a07850'],[-10,-9,16,2,'#7a5434'],
+  [-15,-8,5,8-s,'#52341e'],[-7,-8,5,8-(1-s),'#52341e'],[2,-8,5,8-s,'#52341e'],[9,-8,5,8-(1-s),'#52341e']];
+ c.fillStyle=O;R.forEach(r=>c.fillRect(r[0]-1,r[1]-1,r[2]+2,r[3]+2));R.forEach(r=>{c.fillStyle=r[4];c.fillRect(r[0],r[1],r[2],r[3])});c.fillStyle=O;c.fillRect(17,-22,1,1);c.fillRect(23,-19,1,1);c.restore()}
+// The Druid's grey wolf (side view). x,y = feet
+function drawWolfPet(c,x,y,face,t,walk,a){const s=walk?Math.floor(t*8)%2:0;c.save();c.globalAlpha=a==null?1:a;c.translate(Math.round(x),Math.round(y));c.scale(face,1);
+ const R=[[-11,-15,20,7,'#8a8a96'],[-16,-16,5,2,'#7a7a86'],[-18,-18,3,2,'#7a7a86'],[8,-19,8,7,'#9a9aa6'],[15,-16,5,3,'#9a9aa6'],[9,-22,2,3,'#6a6a76'],[13,-22,2,3,'#6a6a76'],[-6,-9,12,1,'#b8b8c4'],
+  [-10,-8,3,8-s,'#6a6a76'],[-5,-8,3,8-(1-s),'#6a6a76'],[2,-8,3,8-s,'#6a6a76'],[6,-8,3,8-(1-s),'#6a6a76']];
+ c.fillStyle=O;R.forEach(r=>c.fillRect(r[0]-1,r[1]-1,r[2]+2,r[3]+2));R.forEach(r=>{c.fillStyle=r[4];c.fillRect(r[0],r[1],r[2],r[3])});c.fillStyle='#f2d040';c.fillRect(13,-18,1,1);c.fillStyle=O;c.fillRect(19,-16,1,1);c.restore()}
+// The Druid's eagle: flying (wings flapping) or perched (wings folded). x,y = its body
+function drawEagle(c,x,y,face,t,perch,a){const up=!perch&&Math.floor(t*6)%2;c.save();c.globalAlpha=a==null?1:a;c.translate(Math.round(x),Math.round(y));c.scale(face,1);
+ const R=perch?[[-3,-6,6,7,'#6a4428'],[-4,-4,2,5,'#52341e'],[1,-10,4,4,'#f4f0e8'],[5,-9,2,2,'#f2c84a'],[-1,1,1,2,'#f2c84a'],[2,1,1,2,'#f2c84a'],[-6,-2,3,2,'#52341e']]
+  :[[-4,-2,9,4,'#6a4428'],[4,-4,4,4,'#f4f0e8'],[8,-3,2,2,'#f2c84a'],[-7,-2,3,2,'#f4f0e8'],...(up?[[-5,-9,6,7,'#52341e'],[-3,-11,3,2,'#52341e']]:[[-5,2,6,5,'#52341e'],[-3,7,3,2,'#52341e']])];
+ c.fillStyle=O;R.forEach(r=>c.fillRect(r[0]-1,r[1]-1,r[2]+2,r[3]+2));R.forEach(r=>{c.fillStyle=r[4];c.fillRect(r[0],r[1],r[2],r[3])});c.fillStyle=O;c.fillRect(perch?3:6,perch?-9:-3,1,1);c.restore()}
+// The jester juggling three balls in the throne room
+function drawJester(c,bx,by,t){const x=bx+17,y=by+FY,hop=Math.round(Math.abs(Math.sin(t*3))*2);spr(c,'joker','happy',x,y-hop,1,0,1,.8,'both');
+ ['#d03030','#3a6ad0','#f2d040'].forEach((col,i)=>{const an=(t*1.7+i/3)*Math.PI*2,px=Math.round(x+1+Math.cos(an)*7),py=Math.round(y-hop-40+Math.sin(an)*6);c.fillStyle=O;c.fillRect(px-2,py-2,4,4);c.fillStyle=col;c.fillRect(px-1,py-1,2,2)})}
+// The Druid's weather on a board space (k = kind, t = time since it began, a = strength 0..1 for fading in and out)
+function drawWeather(c,bx,by,k,t,a){if(a<=0)return;c.save();c.beginPath();c.rect(bx+2,by+2,CELL-4,CELL-4);c.clip();const P=(n,f)=>{for(let i=0;i<n;i++)f(i)};
+ if(k==='blizzard'){c.fillStyle='rgba(210,230,255,'+(.3*a)+')';c.fillRect(bx,by,CELL,CELL);c.fillStyle='rgba(255,255,255,'+a+')';P(22,i=>c.fillRect(Math.round(bx+((i*37+t*30)%96)),Math.round(by+((t*40+i*29)%96)),2,2))}
+ if(k==='sandstorm'){c.fillStyle='rgba(210,165,90,'+(.55*a)+')';c.fillRect(bx,by,CELL,CELL);P(24,i=>{c.fillStyle=i%2?'rgba(250,225,170,'+a+')':'rgba(160,115,55,'+a+')';c.fillRect(Math.round(bx+((t*120+i*53)%140)-24),Math.round(by+6+((i*29)%88)),12+(i%3)*4,2)})}
+ if(k==='sunshine'){c.fillStyle='rgba(255,220,120,'+(.2*a)+')';c.fillRect(bx,by,CELL,CELL);c.fillStyle='rgba(255,240,170,'+(.35*a)+')';P(4,i=>{const s=Math.round(4+i*16+Math.sin(t*1.5+i)*3);c.fillRect(bx+s,by+2,6,90)});
+  c.fillStyle='rgba(255,250,210,'+a+')';P(6,i=>{if((Math.floor(t*4)+i)%3)return;c.fillRect(bx+8+((i*31)%80),by+10+((i*19+Math.floor(t))%70),2,2)})}
+ if(k==='rain')drawRain(c,bx,by,t,a);
+ if(k==='overgrowth'){c.globalAlpha=a;const g=cl(t/3,0,1);for(let i=0;i<24;i++){const side=i%4,q=Math.floor(i/4)*16+6,px=side===0?bx+3+q:side===1?bx+3+q:side===2?bx+3:bx+87,py=side===0?by+3:side===1?by+87:side===2?by+3+q:by+3+q;
+   if(i/24>g)continue;c.fillStyle=i%3?'#4aaa3a':'#2a8a2a';c.fillRect(px,py,6,4);c.fillRect(px+1,py-1,3,6);if(i%3===0){c.fillStyle=i%2?'#f080b0':'#f8e070';c.fillRect(px+2,py+1,2,2)}}}
+ if(k==='moonlight'){c.fillStyle='rgba(8,4,20,'+(.6*a)+')';c.fillRect(bx,by,CELL,CELL);const gr=c.createRadialGradient(bx+48,by+40,4,bx+48,by+40,52);gr.addColorStop(0,'rgba(255,180,220,'+(.35*a)+')');gr.addColorStop(1,'rgba(255,180,220,0)');c.fillStyle=gr;c.fillRect(bx,by,CELL,CELL);
+  c.fillStyle='rgba(255,220,240,'+a+')';c.fillRect(bx+70,by+28,8,8);c.fillRect(bx+69,by+30,10,4);c.fillRect(bx+72,by+27,4,10);P(5,i=>{if((Math.floor(t*2)+i)%4)return;c.fillRect(bx+10+((i*29)%76),by+30+((i*17)%40),1,1)})}
+ if(k==='decay'){c.fillStyle='rgba(90,90,30,'+(.3*a)+')';c.fillRect(bx,by,CELL,CELL);c.globalAlpha=a;c.fillStyle='#e8a0a8';[[14,86],[34,90],[58,84],[78,89]].forEach((q,i)=>{const w=Math.round(Math.sin(t*4+i)*2);c.fillRect(bx+q[0]+w,by+q[1],4,1);c.fillRect(bx+q[0]+w+3,by+q[1]-1,2,1)});
+  c.fillStyle='#1a1a1a';P(6,i=>c.fillRect(Math.round(bx+48+Math.sin(t*5+i*1.7)*30+Math.sin(t*13+i)*3),Math.round(by+50+Math.cos(t*4+i*2.3)*24),2,1))}
+ if(k==='infest'){c.fillStyle='rgba(120,140,40,'+(.25*a)+')';c.fillRect(bx,by,CELL,CELL);c.globalAlpha=a;P(26,i=>{const px=Math.round(bx+48+Math.sin(t*3.3+i*1.3)*40+Math.sin(t*11+i)*3),py=Math.round(by+48+Math.cos(t*2.7+i*2.1)*38),up=Math.floor(t*14+i)%2;
+  c.fillStyle='#4a5a1a';c.fillRect(px,py,3,2);c.fillStyle='#c8d080';c.fillRect(px+(up?0:1),py-(up?1:0),2,1)})}
+ c.restore()}
 // The buried Druid: a mound of earth with a sapling growing out of it (bx,by = room's top-left)
 function drawMound(c,bx,by,t){const x=bx+48,y=by+84;c.fillStyle=O;c.fillRect(x-17,y-7,34,8);c.fillStyle='#5a4024';c.fillRect(x-16,y-6,32,6);c.fillRect(x-12,y-8,24,3);c.fillStyle='#6a5030';c.fillRect(x-10,y-7,6,1);
  const sw=Math.round(Math.sin(t*1.5));c.fillStyle='#6a4420';c.fillRect(x,y-22,2,15);c.fillStyle='#4aaa3a';c.fillRect(x-5+sw,y-26,6,4);c.fillRect(x+2+sw,y-24,5,4);c.fillRect(x-2+sw,y-30,5,4)}
