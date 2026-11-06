@@ -280,71 +280,42 @@ const DESC={
  learn:'Wizard right of the Knight. The Knight reads a spellbook he really should not have, and turns Eldritch. Forever.',
  bolt:'Wizard above the Knight. A lightning bolt "by accident". The Knight does not survive the accident.',
  chat:'Wizard below the Knight. Tales of old adventures, each one more exaggerated than the last.',
- spar:'Knight and Wizard, any side, 2%. Sword versus magic shield. Nobody wins, everybody sweats.',
  study:'Priest right of the Wizard. A holy book and a spellbook, read side by side in respectful silence.',
  gossip:'Priest left of the Wizard. They whisper about the neighbors. Mostly the Knight.',
  undead:'Priest below the Wizard. A skeleton pops up by accident. Teamwork puts it back down.',
  light:'Priest above the Wizard. Holy light so bright the Wizard snuffs it out with pure darkness.',
- zeal:'Priest above the Knight. No scene, just a fired-up Knight who visits 60% more often.',
- crusade:'Priest above the Knight, 2%. They march off for 2 minutes and come back with coins or an artifact.',
  pray:'Priest right of the Knight. Both kneel and pray. Very quietly. Very holy.',
  bless:'Priest below the Knight. A splash of holy water. The Knight glows, mostly from the attention.',
  sermon:'Priest left of the Knight. A short prayer for the Knight, who listens with hands folded.',
- tentacle:'Priest left of the Knight, 10%. Eldritch tentacles smash the Priest\'s window. The Knight sorts it out.',
- braver:'Priest and Knight, any side, 5%. The Priest admits the Knight is braver. The Knight pretends not to blush.',
  sleep:'Necromancer left of the Knight. A sleep spell rolls right along the row. Everyone naps for a minute.',
  dknight:'Necromancer above the Knight. The Knight becomes a Death Knight and follows him everywhere. Awkward.',
- horde:'Necromancer right of the Knight. Three skeletons for target practice. 5% the targets win.',
  nchat:'Necromancer below the Knight. Old war stories. Some of the soldiers in them were already dead.',
  purge:'Necromancer below the Priest. Ghosts or zombies appear; the Priest cleans house with holy light.',
  debate:'Necromancer above the Priest. Holy versus unholy. Nobody changes their mind. Everybody gets cross.',
- cleanse:'Priest and Necromancer, any side, while a Death Knight exists. The Priest turns him back into a Knight.',
- duel:'Necromancer above the Wizard, 50%. Black lightning versus blue lightning. It is all in good fun. Probably.',
- craft:'Necromancer above the Wizard, 50%. Together they craft a spell scroll for 20 coins (or show off if broke).',
  golem:'Necromancer left of the Wizard. A clay golem wakes up, panics and bursts through the back wall.',
  tomes:'Necromancer right of the Wizard. Two dusty tomes, two happy nerds.',
  swap:'Necromancer below the Wizard. A spell swaps their whole rooms. Nobody asked the furniture.',
- forge:'Wizard and Necromancer, any side, 1%. They conjure a free scroll or potion out of thin air.',
- apple:'Priest left of the Fruit Merchant. A dropped apple, sold for 1 coin. 95% of the time, anyway.',
- slip:'Priest left of the Fruit Merchant, rare. The Priest steps on the apple. It does not end well.',
- feast:'Priest left of the Fruit Merchant, 50%. A table of food appears and two nobles invite themselves.',
- fruitfall:'Fruit Merchant above the Priest, 50%. Fruit rains down on the Priest. The Merchant thinks it is hilarious.',
- starfruit:'Fruit Merchant above the Priest, 50%. A starfruit fit for a saint. +5 coins.',
  curse:'Fruit Merchant below the Priest. The Priest curses his fruit; it rots for a minute and earns nothing.',
  banana:'Fruit Merchant above the Wizard. "Can you make it bigger?" The Wizard can. Much bigger.',
  durian:'Fruit Merchant below the Wizard. A durian sale, +10 coins. The Wizard regrets having a nose.',
  jokes:'Fruit Merchant right of the Wizard. Fruit puns. The Wizard laughs to be polite.',
- murder:'Fruit Merchant right of the Wizard, 0.5%. The joke goes very, very wrong. The Wizard dies.',
- advertW:'Fruit Merchant left of the Wizard. Magic-blessed fruit! Coins come faster, up to 4 every 30 seconds.',
- apgift:'Apothecary left of the Fruit Merchant. A free potion for him. He talks backwards until the next one.',
  mtrade:'Fruit Merchant left of the Apothecary. Apples for potions. Everybody thinks they got the better deal.',
- farm:'Fruit Merchant left of the Apothecary, 1.5%. They hire a Farmer who grows a field for 3 minutes, then pays 30 coins.',
  goldapple:'Apothecary above the Fruit Merchant. A bubbling reaction turns all his apples to gold for a minute. Shiny!',
  business:'Apothecary below the Fruit Merchant. Shop talk. Business is either slow or booming (50/50).',
- wave:'10% of idle time, anyone waves to a neighbor. Neighbors who are free wave back.',
  read:'The Wizard reads. Pages turn by themselves, because of course they do.',
  magic:'The Wizard practices spells. Sparkles everywhere, nothing on fire. Usually.',
- demon:'The Wizard summons a demon, 2%. The demon drags him through the floor. He dies.',
- brew:'Next to a Merchant, 1%: the Wizard spends 5 coins to brew a potion.',
  'prac:shield':'Knight with a shield. A squire comes to spar with a wooden sword while the Knight blocks.',
  'prac:spear':'Knight with a spear. Poke, poke, poke. Very serious poking.',
  'prac:glaive':'Knight with a glaive. Big sweeping swings. Stand back.',
  'prac:longsword':'Knight with a longsword. Classic swordplay against an invisible foe.',
- orc:'The Knight spots an orc in a neighbor\'s room and charges over to deal with it.',
- horse:'The Knight feeds hay to his horse (needs an empty space to his right).',
- cat:'Eldritch Knight only, 1%. A black cat strolls through the Wizard\'s room. Spooky.',
  pray1:'The Priest kneels and prays under a warm ceiling light.',
  farmer:'A farmer visits and the Priest blesses him with holy water.',
- tithe:'The Priest prays for fortune. Fortune answers: +5 coins.',
  exorcise:'A possessed farmer shows up. The Priest drives the demon out. The farmer feels much better.',
- massprayer:'A Priest with all four neighbors free, 5%. Everyone squeezes into his room to pray for 20 seconds.',
  spirits:'The Necromancer chats with spirits. They are good listeners.',
  candles:'The Necromancer lights candles and draws a chalk circle. Very atmospheric.',
  lightning:'The Necromancer reads a black book and crackles with red lightning.',
- raise:'The Necromancer, 1%, raises a skeleton in someone\'s room. Fighters and Mages win; Merchants do not.',
  advert:'The Fruit Merchant shouts about his fruit to anyone who will listen.',
  sell:'The Fruit Merchant walks next door and sells apples. +2 coins.',
- mob:'The Fruit Merchant, 1%. An angry farmer mob pelts him with his own fruit.',
  mcust:'A customer walks in and buys some fruit. +2 coins (nothing while the fruit is rotten).',
  trip:'The Apothecary trips over her own robe. She is fine.',
  tripbreak:'The Apothecary trips and smashes a potion. She is fine. The potion is not.',
@@ -355,7 +326,6 @@ const DESC={
  flex:'Potion on the Knight: he drinks it and flexes. Nothing else happens. He feels great.',
  fireball:'Spell scroll on the Wizard: a fireball destroys a random neighboring room, and everyone in it.',
  teleport:'Potion on the Wizard: he teleports to a random character, does a scene with them, then portals home.',
- desk:'With a Merchant and another Mage next to him, the Wizard has a desk. Tap the coin to buy a scroll.',
  banish:'Spell scroll on the Priest: he banishes a ghost. Boo.',
  wings:'Potion on the Priest: angel wings for 30 seconds.',
  relic:'Artifact on the Priest with the Necromancer next door: the Necromancer is destroyed for good.',
@@ -427,11 +397,7 @@ Object.assign(DESC,{
  kgossip:'Knight below the Apothecary. They gossip about whichever Mage lives nearby.',
  kdate:'Knight right of the Apothecary. They leave for a 1 minute date. 80% it goes well, 20%... less so.',
  bees:'Knight left of the Apothecary. A bee swarm! Both flee to the other room until the bees buzz off.',
- cobrew:'Wizard right of the Apothecary. They brew together. 20% this attracts the Alchemist (after that: a free potion).',
- boom:'Wizard left of the Apothecary. Too much newt: the brew explodes. 2% it takes them both with it.',
  wdate:'Wizard below the Apothecary. A 30 second date. Only 40% go well. Wizards are hard to date.',
- imp:'Wizard above the Apothecary, 40%. He summons an imp, zaps it, and bottles its blood for her.',
- purplepot:'Wizard above the Apothecary, 60%. She mixes a purple potion; he drinks it and tastes colors.',
  bats:'Necromancer above the Apothecary. His bats flap around, and a few swoop down into her shop. She is not pleased.'});
 
 // ---------- Rogue, Alchemist idles and items, Priest / Necromancer with the Merchants ----------
@@ -469,26 +435,18 @@ Object.assign(PAIR_WITH,{plant:['priest','apothecary'],pstudy:['priest','apothec
  sacrifice:['necromancer','merchant'],chant:['necromancer','merchant'],bloodorange:['necromancer','merchant'],nrot:['necromancer','merchant'],
  ntrade:['necromancer','apothecary'],ritual:['necromancer','apothecary'],assassin:['rogue','anyone']});
 Object.assign(DESC,{
- advertW:'Fruit Merchant left of the Wizard. The only way coins trickle in by themselves: 1 coin every 30 seconds, stacking to 2, for a minute.',
  plant:'Priest left of the Apothecary. Her carnivorous plant gets out of hand. The Priest smites it. Repeatedly.',
- pstudy:'Priest right of the Apothecary. They study alchemy texts together. 5% they find a clue that reveals a hidden secret here.',
  psleep:'Priest above the Apothecary. He tries her new tonic and falls asleep for 30 seconds. Snore.',
- heal:'Priest below the Apothecary. A sick farmer comes in; prayer plus medicine fixes him. 2% he sets up a farm next door.',
- funeral:'When a Fighter next to the Priest dies, he holds a funeral and every free neighbor comes to pay respects.',
  sacrifice:'Necromancer above the Fruit Merchant. A sacrifice upstairs drips blood onto the fruit. The Merchant storms up to complain.',
  chant:'Necromancer below the Fruit Merchant. He practices his chants. Loudly. The customer upstairs flees.',
- bloodorange:'Necromancer right of the Fruit Merchant. He wants a blood orange. 30% there is one left (+3 coins).',
  nrot:'Necromancer left of the Fruit Merchant. He rots the fruit for a minute and worms crawl out. Nothing sells meanwhile.',
- ntrade:'Necromancer left or right of the Apothecary. Rare undead ingredients for a black potion. With the Alchemist next to her, 20% you get a potion too.',
  ritual:'Necromancer below the Apothecary. A 15 second dark ritual by candlelight. Spooky, but she had a nice time.',
  alcbrew:'The Alchemist brews at his table. Things bubble. Things change color. Nothing explodes. This time.',
  research:'The Alchemist researches new formulas in a very thick book.',
  smoke:'The Alchemist mixes the wrong things and the whole room fills with smoke. *cough*',
- alcpotion:'Potion on the Alchemist: for 1 minute, his neighbors\' rarest scenes are 30% more likely.',
  alcscroll:'Spell scroll on the Alchemist: he has no idea what it is and tears it up.',
  stone:"Artifact on the Alchemist, 80%: a philosopher's stone turns one board space golden. Coins earned there are doubled.",
  elixir:'Secret: 20% the artifact is the elixir of life. The Alchemist drinks it and retires. He must be unlocked again.',
- assassin:'The Rogue and any neighbor, 0.5%. The Rogue was an assassin all along. The neighbor does not survive.',
  daggers:'The Rogue throws daggers at a target on his wall. Bullseye. Mostly.',
  smokebomb:'The Rogue vanishes in a smoke bomb and pops up somewhere else in his room.',
  disguise:'The Rogue disguises himself as another character for 2 minutes and lives their life: their scenes, their idles, everything.',
@@ -550,16 +508,12 @@ COMP_TABS.forEach(t=>{const add={knight:['dungeon','rspar','drinks','wgossip','h
 Object.assign(PAIR_WITH,{magictalk:['alchemist','tag:mage'],promo:['alchemist','tag:merchant'],haste:['alchemist','tag:fighter']});
 ROGUE_SCENES.forEach(k=>{for(const p in PAIRS)if(p.startsWith('rogue>')&&Object.values(PAIRS[p]).includes(k))PAIR_WITH[k]=['rogue',p.slice(6)]});
 Object.assign(DESC,{
- duel:'Necromancer above the Wizard, 50%. Black lightning versus blue lightning. They really do not like each other.',
  kdate:'Knight right of the Apothecary. They leave for a 1 minute date. 80% it goes well, 20%... less so. He tells you how it went.',
  nscroll:'Spell scroll on the Necromancer: he raises a skeleton in a room next door. Fighters and Mages beat it; Merchants do not.',
  magictalk:'The Alchemist and any Mage next to him debate whether magic is actually useful. Passive: Mages next to him visit their neighbors 20% more often.',
- promo:'A Merchant next to the Alchemist, 10% of idle time: a promotional sale of his potions instead of the usual wares. +5 coins.',
  haste:'A Fighter next to the Alchemist drinks his haste potions: he picks Mage neighbors to visit 50% more often than other neighbors.',
  twopot:'Secret: with the Alchemist next to the Apothecary, 20% of the potions you buy from her come as two.',
  madsci:'Secret: put the Alchemist on the bottom-right space and his hair goes wild and white. Mad scientist!',
- beast:'Secret: the mad scientist, 15% of idle time, turns into a beast-man and attacks a neighbor. Merchants lose. Fighters and Mages fight it out: one of them dies.',
- fourmage:'Secret: with four Mages around him, 10% of the time the Alchemist gives one of them a potion (its usual effect).',
  nefarious:'Rogue right of the Apothecary. He buys some "nefarious" potions from under the counter. +5 coins.',
  poisons:'Rogue left of the Apothecary. Poison, for "very large rats". +5 coins.',
  wine:'Rogue below the Apothecary. Poison plus wine, gifted to another neighbor: sick for a minute (no neighbor scenes), 5% fatal.',
@@ -568,7 +522,6 @@ Object.assign(DESC,{
  lecture:'Rogue below the Priest. A long lecture about morals. The Rogue sulks.',
  vandal:'Rogue above the Priest. He splatters paint on the chapel walls, gets caught, and has to scrub it all off.',
  confess:'Rogue right of the Priest. He confesses his crimes, hoping for redemption. Some of them, anyway.',
- tempt:'Rogue left of the Priest. A demon whispers: kill the Priest. 95% he says no. 5%... he does not.',
  dungeon:'Rogue above the Knight. They go dungeon crawling for 5 minutes and come back with coins, an artifact, scrolls, potions or a secret.',
  rspar:'Rogue below the Knight. Sparring: sword against ninja stars.',
  drinks:'Rogue right of the Knight. A few drinks and a lot of laughing.',
@@ -653,7 +606,6 @@ EGGS.push('leadgold');
 Object.assign(DESC,{forgework:'The Blacksmith hammers at the anvil. Sparks fly everywhere. So does soot.',
  smelt:'The Blacksmith smelts a piece of armor or a sword (50/50) in the roaring furnace.',
  coal:'The Blacksmith shovels coal into the furnace. The fire roars.',
- pour:'1% of the time the Blacksmith pours molten metal into a mold: a free ingot!',
  bpotion:'Potion on the Blacksmith: "I do not drink that stuff." You get it back.',
  bscroll:'Spell scroll on the Blacksmith: the spell goes wrong and he dances uncontrollably for 15 seconds.',
  leadgold:'Secret: with the Alchemist next to the Blacksmith, 15% of his idle time they turn lead into gold. +5 coins.'});
@@ -672,15 +624,10 @@ Object.assign(DESC,{
  dpotion:'Potion on the Druid: he tucks it away for a rainy day. (It is used up.)',
  dscroll:'Spell scroll on the Druid: a rain storm. Everyone away (dates, crusades, dungeons, adventures) comes home at once, as if the whole time had passed.',
  drevive:'Spell scroll on the buried Druid\'s space: the sapling glows and the Druid climbs back out.',
- spirit:'Secret: with all four spaces around him open and empty, 20% of his idle time the Druid communes with a nature spirit and learns a secret (shown in the Compendium).',
  ingotshop:'Tap the coin in the Blacksmith\'s room to buy a steel ingot for 100 coins.',
  reinforce:'Ingot on any character: reinforced! They gain the Fighter tag for good.',
- adventure:'The Blacksmith next to two or more Fighters, 20%: he sends ALL his Fighter neighbors on a 3 minute adventure. Each has a 10% risk. Loot: 1-10 coins per Fighter, 20% a scroll per Mage, 5% an artifact per Merchant.',
  nscoff:'Blacksmith and Necromancer, any side. The Necromancer scoffs at armor. Death is only the beginning, apparently.',
- smithk:'Blacksmith and Knight, any side, 60%. They nerd out about the newest smithing tricks.',
- reforge:'Blacksmith and Knight, any side, 40%. The Blacksmith forges the Knight a different weapon.',
  metal:'Blacksmith and Wizard, any side. The Wizard brings a magical metal. "Can you work this?" Usually: no.',
- greenarmor:'With Mages on all four sides of the Blacksmith, he CAN work the Wizard\'s magical metal: green metal mage armor!',
  metaltalk:'Blacksmith and a Wizard in green armor: they talk about how powerful its magic is.',
  awkjoke:'Blacksmith and Fruit Merchant, any side. A joke the Blacksmith does not get. Awkward silence.',
  flirt:'Blacksmith and Apothecary, any side. He flirts. She is not interested. At all.',
@@ -726,7 +673,6 @@ TAG_NOTES.druid='{mage} Mage. Even buried, he still counts as a Mage for his nei
 Object.assign(DESC,{metalitch:'Blacksmith and Druid, any side. The Druid explains how uncomfortable metal is to wear. The Blacksmith rolls his eyes.',
  archdruid:'Artifact on the Druid: he becomes the Archdruid, with a glowing living staff. He never casts Moonlight, Decay or Infest again.',
  ddiscount:'Secret: with the Druid next to the Apothecary, her potions cost 5 coins less (herbs from his grove).',
- story:'A space in the Druid\'s Rain: whoever lives there reads a short story 80% of their idle time. 10% of the stories reveal a secret.',
  wolfkill:'Moonlight: when it starts and when it ends, 30% a werewolf leaps out and kills whoever is in that space.',
  'wx:blizzard':'The Druid\'s weather instead of a visit, 10%. 30 s of snow on a random space: its character visits 30% less, but their rarest idle activity is 30% more likely.',
  'wx:sandstorm':'The Druid\'s weather instead of a visit, 10%. 30 s of sand on a random space: every chance of dying there is tripled.',
@@ -741,16 +687,22 @@ Object.assign(DESC,{metalitch:'Blacksmith and Druid, any side. The Druid explain
 // A King (50%) or a Queen (50%), saved in the box's color ('m' / 'f'). Generous (50%) or greedy (50%), saved; later it will change how they treat others.
 // Unlocked by having MONARCH_UNLOCK boxes on the board. Room: a throne, a fancy back door and fancy side doors, a juggling jester.
 const MONARCH_UNLOCK=10;
-const MON={body:'#8a1a3a',bodyD:'#6a1028',pants:'#5a1020',boot:'#3a1a1a',belt:'#f2c84a'};
-const monarchCH=f=>({name:'Monarch',eye:O,a:arms(MON),p:[...B(MON),[4,10,8,9,MON.body],[10,10,2,9,MON.bodyD],[4,14,8,1,MON.belt],[4,9,8,2,'#f4f0e8'],[5,10,1,1,O],[8,9,1,1,O],[10,10,1,1,O],
+// Royal colors, one picked when a Monarch is placed (saved): robe, trim (belt, banners' edges), crown; main / dark = the throne room's banners and carpet
+const MPAL={red:{body:'#8a1a3a',bodyD:'#6a1028',pants:'#5a1020',trim:'#f2c84a',crown:'#f2c84a',main:'#a01a3a',dark:'#8a1030'},
+ emerald:{body:'#1e7a4a',bodyD:'#145a36',pants:'#104a2c',trim:'#f4ecd0',crown:'#f2c84a',main:'#1e8a52',dark:'#146a3e'},
+ blue:{body:'#2a4a9a',bodyD:'#1e3672',pants:'#1a2c5a',trim:'#d0d8e4',crown:'#d8dee8',main:'#2a52a8',dark:'#1e3c80'},
+ black:{body:'#24202a',bodyD:'#16141a',pants:'#121014',trim:'#8a1a2a',crown:'#f2c84a',main:'#2a2430',dark:'#7a1424'}};
+const monarchCH=(f,P)=>{P=P||MPAL.red;const M={body:P.body,bodyD:P.bodyD,pants:P.pants,boot:'#3a1a1a',belt:P.trim};return{name:'Monarch',eye:O,a:arms(M),p:[...B(M),[4,10,8,9,M.body],[10,10,2,9,M.bodyD],[4,14,8,1,M.belt],[4,9,8,2,'#f4f0e8'],[5,10,1,1,O],[8,9,1,1,O],[10,10,1,1,O],
  ...(f?[[4,2,1,8,'#d8a040'],[11,2,1,8,'#d8a040'],[5,2,6,1,'#d8a040']]:[[5,7,6,2,'#8a5a2a'],[6,9,4,1,'#8a5a2a'],[5,2,6,1,'#8a5a2a']]),
- [5,1,6,1,'#f2c84a'],[5,0,1,1,'#f2c84a'],[7,0,2,1,'#f2c84a'],[10,0,1,1,'#f2c84a'],[7,1,2,1,'#d03050']]}); // ermine collar, crown with a ruby; beard (King) or long hair (Queen)
-CH.monarch_m=monarchCH(0);CH.monarch_f=monarchCH(1);CH.monarch=CH.monarch_m;
+ [5,1,6,1,P.crown],[5,0,1,1,P.crown],[7,0,2,1,P.crown],[10,0,1,1,P.crown],[7,1,2,1,'#d03050']]}}; // ermine collar, crown with a ruby; beard (King) or long hair (Queen)
+// Sprites: monarch_m / monarch_f in red, monarch_m_emerald, monarch_f_blue, ...
+for(const k in MPAL){const s=k==='red'?'':'_'+k;CH['monarch_m'+s]=monarchCH(0,MPAL[k]);CH['monarch_f'+s]=monarchCH(1,MPAL[k])}
+CH.monarch=CH.monarch_m;
 TR.monarch={up:'royaldoor',down:'royaldoor'};EXIT.royaldoor=EXIT.backdoor; // a fancy back door (same place as the plain one)
 // The jester juggling in the throne room (drawn as room life)
 const JK={body:'#c03030',bodyD:'#e8c030',pants:'#e8c030',boot:'#3a1a3a',belt:'#3a1a3a'};
 CH.joker={name:'Jester',eye:O,a:arms(JK),p:[...B(JK),[5,10,1,4,'#e8c030'],[10,10,1,4,'#c03030'],[3,2,4,2,'#c03030'],[9,2,4,2,'#e8c030'],[2,0,2,3,'#c03030'],[12,0,2,3,'#e8c030'],[1,2,1,1,'#f2c84a'],[14,2,1,1,'#f2c84a'],[5,4,6,1,'#c03030']]};
-['monarch_m','monarch_f','druid_arch'].forEach(b=>{const c=CH[b];for(let i=1;i<SKINS.length;i++){const[s,d]=SKINS[i],m=k=>k===S1?s:k===S2?d:k;CH[b+'~'+i]=Object.assign({},c,{a:Object.assign({},c.a,{skin:m(c.a.skin)}),p:c.p.map(r=>[r[0],r[1],r[2],r[3],m(r[4]),r[5]])})}});
+[...Object.keys(CH).filter(b=>b.startsWith('monarch_')),'druid_arch'].forEach(b=>{const c=CH[b];for(let i=1;i<SKINS.length;i++){const[s,d]=SKINS[i],m=k=>k===S1?s:k===S2?d:k;CH[b+'~'+i]=Object.assign({},c,{a:Object.assign({},c.a,{skin:m(c.a.skin)}),p:c.p.map(r=>[r[0],r[1],r[2],r[3],m(r[4]),r[5]])})}});
 SKIN_CHARS.push('monarch');ALL_CHARS.push('monarch');NAMES.monarch='Monarch';
 // Monarch idle: holding court on the throne (what they say depends on generous / greedy)
 const COURT={generous:['Bread and honey for everyone!','Lower the taxes. Again!','Is anyone hungry? Feast tonight!','My treasury is your treasury.'],
@@ -759,3 +711,143 @@ NAMES.court='Holding court';
 DESC.court='The Monarch sits on the throne and gives royal orders. A generous ruler gives things away; a greedy one wants more gold. (Each Monarch is one or the other, 50/50.)';
 TAG_NOTES.monarch='No tags. Each Monarch is a King or a Queen, and generous or greedy (50/50 each).';
 COMP_TABS.push({id:'monarch',name:'Monarch',pairs:[],idle:['court'],items:[]});
+
+// ---------- Monarch requests, the grand funeral; the Traveling Merchant; more Farmers ----------
+// Requests: a neighbor visits the Monarch once to ask for something (again only after dying or going back to the shelf).
+// reqGenerous / reqGreedy = chance the request is granted; regicide = idle chance (rolled first) that someone who was denied
+// kills the Monarch, from anywhere on the board; drain = Necromancer on the bottom row visiting the Druid beside him kills him;
+// travelArrive = chance per second that the Traveling Merchant, while on the road, shows up on a free space
+Object.assign(ODDS,{reqGenerous:.8,reqGreedy:.1,regicide:.01,drain:.3,travelArrive:1/600});
+ODDS.spirit=.1; // the Druid's nature spirit (all four spaces around him open and empty)
+const ROYAL_FUNERAL_TIME=60,MONARCH_COST=200,LEAVE_TIME=300,TRAVEL_TIME=300,TRAVEL_ARTIFACT=300,TRAVEL_BUY={scroll:15,potion:15,ingot:30},PRISONERS=3,DRUID_FARMS=3;
+// What each character asks the Monarch for (paladin = a Knight who is a Paladin; other Knights have nothing to ask)
+const REQ_ASK={paladin:'Your Majesty, would you knight me officially?',blacksmith:'Your Majesty, I could use an assistant at the forge.',wizard:'Your Majesty, I humbly request a new staff.',
+ priest:'Your Majesty, the chapel needs holy water.',alchemist:'Your Majesty, I need rare ingredients for my research.',rogue:'Your Majesty, I... need money. For reasons.',
+ merchant:'Your Majesty, may I sell exotic fruit from the south?',apothecary:'Your Majesty, may I have some time off? I have a date.',necromancer:'Your Majesty, might I have a few prisoners? For... research.',
+ druid:'Your Majesty, please give some land back to nature.'};
+const REQ_YES={generous:['Granted, with pleasure!','Of course! Anything for my people.'],greedy:['*scoff* Fine. Take it and go.','Ugh. Granted. Now stop asking.']};
+const REQ_NO={generous:['I am truly sorry. I cannot grant that.','Forgive me, my friend. Not this time.'],greedy:['Denied! Now leave.','Absolutely not. Guards!']};
+const REQ_ICON={paladin:'star',blacksmith:'ingot',wizard:'staff',priest:'barrel',alchemist:'potion',rogue:'sack',merchant:'pineapple',apothecary:'wine',necromancer:'skull',druid:'wheat'};
+// Prisoners (the Necromancer's request) and the Blacksmith's apprentice
+const PRC={body:'#8a8478',bodyD:'#6e695f',pants:'#6e695f',boot:'#4a4440',belt:'#4a4440'};
+CH.prisoner={name:'Prisoner',eye:O,a:arms(PRC),p:[...B(PRC),[5,1,6,2,'#5a4a3a'],[3,14,2,1,'#5a5a64'],[11,14,2,1,'#5a5a64'],[5,12,2,1,'#5a5a64']]};
+const APC={body:'#7a6a5a',bodyD:'#5e5044',pants:'#4a3a30',boot:'#2a1a10',belt:'#3a2a1a'};
+CH.apprentice={name:'Apprentice',eye:O,a:arms(APC),p:[...B(APC),[5,11,6,7,'#24222a'],[5,1,6,2,'#8a5a2a'],[4,2,1,3,'#8a5a2a'],[7,6,1,1,'#6a5a50']]};
+// The Wizard's new staff from the Monarch: pointed dark steel with an orb floating above it (sprite copies like wizard_blue_st, wizard_blue_arm_st)
+Object.keys(CH).filter(b=>b.startsWith('wizard_')).forEach(b=>{const c=CH[b];CH[b+'_st']=Object.assign({},c,{p:[...c.p.filter(r=>!(r[0]===1&&r[1]===5&&r[3]===15)&&!(r[0]===0&&r[1]===3&&r[2]===3)),[1,4,1,16,'#4a4e5e'],[1,3,1,1,'#aab0c0'],[0,0,3,2,c.p.find(r=>r[0]===0&&r[1]===3)[4]]]})});
+// More Farmers at once (the Druid's request): extra Farmer boxes 'farmer2' and 'farmer3' work like the first
+const isFarm=id=>id==='farmer'||id==='farmer2'||id==='farmer3';
+['farmer2','farmer3'].forEach(k=>{CH[k]=CH.farmer;CLASS[k]='merchant';TR[k]=TR.farmer});
+// Traveling Merchant (Merchant): a man or a woman with a mule-drawn covered wagon. Unlocked by 4 Merchants in a 2x2 square on the board.
+// Stays TRAVEL_TIME seconds, then hits the road (not back to the shelf) and now and then turns up on a free space for another TRAVEL_TIME.
+const TVC={body:'#6a5a3a',bodyD:'#52462c',pants:'#4a3a2a',boot:'#3a2a1a',belt:'#a0782a'};
+const travelerCH=f=>({name:'Traveling Merchant',eye:O,a:arms(TVC),p:[...B(TVC),[3,10,1,9,'#4a5a3a'],[12,10,1,9,'#3a4a2c'],[5,9,6,1,'#c04040'],
+ ...(f?[[4,3,1,7,'#b8742a'],[11,3,1,7,'#b8742a']]:[[5,7,6,2,'#6a4a2a'],[6,9,4,1,'#6a4a2a']]),[2,2,12,1,'#5a3a22'],[5,0,6,2,'#5a3a22'],[5,1,6,1,'#c04040']]}); // wide hat with a red band, scarf, cloak
+CH.traveler_m=travelerCH(0);CH.traveler_f=travelerCH(1);CH.traveler=CH.traveler_m;
+['traveler_m','traveler_f'].forEach(b=>{const c=CH[b];for(let i=1;i<SKINS.length;i++){const[s,d]=SKINS[i],m=k=>k===S1?s:k===S2?d:k;CH[b+'~'+i]=Object.assign({},c,{a:Object.assign({},c.a,{skin:m(c.a.skin)}),p:c.p.map(r=>[r[0],r[1],r[2],r[3],m(r[4]),r[5]])})}});
+CLASS.traveler='merchant';TR.traveler={up:'fade',down:'fade'};SKIN_CHARS.push('traveler');ALL_CHARS.push('traveler');NAMES.traveler='Traveling Merchant';
+// ---- Compendium ----
+const REQS=Object.keys(REQ_ASK);
+Object.assign(NAMES,{'rq:paladin':'Request: knighted','rq:blacksmith':'Request: an apprentice','rq:wizard':'Request: a new staff','rq:priest':'Request: holy water','rq:alchemist':'Request: rare ingredients',
+ 'rq:rogue':'Request: money','rq:merchant':'Request: exotic fruit','rq:apothecary':'Request: time off for a date','rq:necromancer':'Request: prisoners','rq:druid':'Request: land for nature',
+ rqdeny:'A request denied',royalfuneral:'The grand funeral',regicide:'Secret: revenge',royalpatron:'Secret: royal patron',drain:'Life drain (30%)',
+ wares:'Arranging the wares',troad:'On the road',tshop:'Coin in the Traveling Merchant\'s room: artifact for 300 coins',tscroll:'Scroll on Traveling Merchant: sold (+15 coins)',tpotion:'Potion on Traveling Merchant: sold (+15 coins)',tingot:'Ingot on Traveling Merchant: sold (+30 coins)'});
+EGGS.push('regicide','royalpatron');
+{const mt=COMP_TABS.find(t=>t.id==='monarch');mt.pairs.push(...REQS.map(k=>'rq:'+k),'rqdeny');mt.idle.push('royalfuneral');mt.items.push('regicide','royalpatron');
+ REQS.forEach(k=>{const id=k==='paladin'?'knight':k;COMP_TABS.find(t=>t.id===id).pairs.push('rq:'+k);PAIR_WITH['rq:'+k]=['monarch',id]});PAIR_WITH.rqdeny=['monarch','anyone'];
+ COMP_TABS.find(t=>t.id==='blacksmith').items.push('royalpatron');
+ COMP_TABS.find(t=>t.id==='necromancer').pairs.push('drain');COMP_TABS.find(t=>t.id==='druid').pairs.push('drain');PAIR_WITH.drain=['necromancer','druid']}
+COMP_TABS.push({id:'traveler',name:'Traveling Merchant',pairs:[],idle:['wares','troad'],items:['tshop','tscroll','tpotion','tingot']});
+TAG_NOTES.monarch='None, and a Monarch can never gain one (an ingot does nothing). Each Monarch is a King or a Queen, generous or greedy (50/50 each), in red and gold, emerald and cream, blue and silver, or black and dark red.';
+TAG_NOTES.traveler='{merchant} Merchant.';
+// ---------- Compendium descriptions: every chance says what it is a chance OF ----------
+// "of their visits" = when one of the two visits the other; "of his idle activities" = when he picks something to do at home;
+// "checked first" = rolled before his normal idle choices; "each time he decides" = every few seconds, before anything else.
+const REQ_ODDS=' A generous Monarch grants 80% of requests, a greedy one 10%. Each character asks only once (again only after dying or going back to the shelf).';
+Object.assign(DESC,{
+ spar:'Knight and Wizard, any side: 2% of their visits to each other. Sword versus magic shield. Nobody wins, everybody sweats.',
+ zeal:'Priest above the Knight. No scene of its own: the fired-up Knight visits his neighbors 60% more often.',
+ crusade:'Priest above the Knight: 2% of their visits to each other. They march off for 2 minutes and come back with 10 coins (70%) or an artifact (30%).',
+ tentacle:'Priest left of the Knight: 10% of their visits (instead of the short prayer). Eldritch tentacles smash the Priest\'s window. The Knight sorts it out.',
+ braver:'Priest and any Fighter, any side: 5% of their visits to each other. The Priest admits the Fighter is braver. The Fighter pretends not to blush.',
+ horde:'Necromancer right of the Knight. Three skeletons for target practice. In 5% of these visits the skeletons win and the Knight dies.',
+ cleanse:'Priest and Necromancer, any side, while a Death Knight is on the board: whenever either of them would visit, the Priest turns the Death Knight back into a Knight instead.',
+ duel:'Necromancer above the Wizard: half of their visits. Black lightning versus blue lightning. They really do not like each other.',
+ craft:'Necromancer above the Wizard: the other half of their visits. Together they craft a spell scroll for 20 coins (with fewer coins, one of them just shows off a spell).',
+ forge:'Wizard and Necromancer, any side: 1% of their visits to each other. They conjure a free scroll or potion out of thin air.',
+ apple:'Priest left of the Fruit Merchant: half of their visits. The Priest buys a dropped apple for 1 coin (unless he slips on it).',
+ slip:'Priest left of the Fruit Merchant: 5% of the apple visits. The Priest steps on the apple, falls and dies. It does not end well.',
+ feast:'Priest left of the Fruit Merchant: the other half of their visits. A table of food appears and two nobles invite themselves.',
+ fruitfall:'Fruit Merchant above the Priest: half of their visits. From his own room he drops fruit on the Priest\'s head. He thinks it is hilarious.',
+ starfruit:'Fruit Merchant above the Priest: the other half of their visits. A starfruit fit for a saint. +5 coins.',
+ murder:'Fruit Merchant right of the Wizard: 0.5% of their visits (instead of jokes). The joke goes very, very wrong. The Wizard dies.',
+ advertW:'Fruit Merchant left of the Wizard. The Wizard advertises the fruit: 1 coin every 30 seconds for a minute (a second advert makes it 2 and restarts the minute). The only coins that trickle in by themselves.',
+ farm:'Fruit Merchant left of the Apothecary: 1.5% of their visits. They hire a Farmer, whose field grows for 3 minutes and then pays 30 coins.',
+ apgift:'Apothecary left of the Fruit Merchant. A free potion for him: he speaks backwards until he gets another one.',
+ cobrew:'Wizard right of the Apothecary. They brew together. 20% of these visits: before the Alchemist is unlocked, he shows up (unlocked!); after that, they brew you a free potion.',
+ boom:'Wizard left of the Apothecary. Too much newt: the brew explodes. In 2% of these visits it kills them both.',
+ imp:'Wizard above the Apothecary: 40% of their visits. He summons an imp, zaps it, and bottles its blood for her.',
+ purplepot:'Wizard above the Apothecary: 60% of their visits. She mixes a purple potion; he drinks it and tastes colors.',
+ pstudy:'Priest right of the Apothecary. They study alchemy texts together. In 5% of these visits they find a clue: a hidden secret is shown in the Compendium.',
+ heal:'Priest below the Apothecary. A sick farmer comes in; prayer plus medicine fixes him. In 2% of these visits he stays and sets up a farm nearby.',
+ bloodorange:'Necromancer right of the Fruit Merchant: he goes shopping for a blood orange. 30% of the time there is one left (+3 coins).',
+ ntrade:'Necromancer left or right of the Apothecary. Rare undead ingredients for a black potion. With the Alchemist next to her, 20% of these trades also give you a potion.',
+ wave:'Anyone: 10% of their idle activities (checked first). They wave to a neighbor, and a neighbor who is free waves back.',
+ demon:'The Wizard: 2% of his idle activities. He summons a demon, which drags him through the floor. He dies.',
+ brew:'The Wizard next to a Merchant, while you have 5 coins: 1% of his idle activities (checked first). He spends 5 coins to brew a potion.',
+ cat:'The Eldritch Knight, while a Wizard is on the board: 1% of his idle activities. A black cat strolls through the Wizard\'s room. Spooky.',
+ orc:'The Knight: 20% of his idle activities. He spots an orc in a neighbor\'s room and charges over to deal with it.',
+ horse:'The Knight: 5% of his idle activities, if the space to his right has no box. He feeds hay to his horse.',
+ tithe:'The Priest: 10% of his idle activities. He prays for fortune. Fortune answers: +5 coins.',
+ massprayer:'A Priest whose four neighbors are all free: 5% each time he decides what to do. Everyone squeezes into his room to pray for 20 seconds.',
+ funeral:'A Fighter next to the Priest dies: 1.5 seconds later the Priest holds a 12 second funeral, and every free neighbor comes to pay respects.',
+ raise:'The Necromancer: 1% of his idle activities. He raises a skeleton in a random free character\'s room. Fighters and Mages beat it; anyone else dies.',
+ mob:'The Fruit Merchant: 1% of his idle activities. An angry farmer mob pelts him with his own fruit.',
+ alcpotion:'Potion on the Alchemist: for 1 minute, the rarest scene chances of him and his neighbors are 30% higher (their spaces glitter).',
+ assassin:'The Rogue and any neighbor (whoever visits whom): 0.5% of their visits. The Rogue was an assassin all along. The neighbor does not survive. (Not while he is disguised.)',
+ promo:'A Fruit Merchant or Apothecary next to the Alchemist: 10% of their idle activities (checked first). A customer buys one of the Alchemist\'s potions. +5 coins.',
+ beast:'Secret: the mad scientist, 15% of his idle activities (checked first): he turns into a beast-man and attacks a free neighbor. A neighbor who is only a Merchant dies; a Fighter or Mage fights back and one of the two dies (50/50).',
+ fourmage:'Secret: with Mages on all four sides of the Alchemist, 10% each time he decides what to do: he visits one of them and hands over a potion, which works just as if you had used it on them.',
+ tempt:'Rogue left of the Priest. A demon whispers: kill the Priest. In 95% of these visits he says no. In 5%... he does not.',
+ roguemage:'Spell scroll on the Rogue: he gains the Mage tag. While he has it, 0.2% of his idle activities (checked first) he conjures an artifact, which uses the tag up.',
+ spirit:'Secret: with all four spaces around the Druid open and empty, 10% of his idle activities (checked first): he communes with a nature spirit, and a hidden secret is shown in the Compendium.',
+ pour:'The Blacksmith: 1% of his idle activities. He pours molten metal into a mold: a free ingot!',
+ leadgold:'Secret: with the Alchemist next to the Blacksmith, 15% of the Blacksmith\'s idle activities (checked first): they turn lead into gold. +5 coins.',
+ adventure:'The Blacksmith with 2 or more Fighter neighbors at home: 20% of his visits become an adventure. ALL his Fighter neighbors leave for 3 minutes (he stays). Each one has a 10% risk of not coming back. Loot per adventurer: 1-10 coins if a Fighter, 20% a scroll if a Mage, 5% an artifact if a Merchant.',
+ smithk:'Blacksmith and Knight, any side: 60% of their visits. They nerd out about the newest smithing tricks.',
+ reforge:'Blacksmith and Knight, any side: 40% of their visits. The Blacksmith forges the Knight a different weapon (it stays).',
+ greenarmor:'Blacksmith and Wizard, while Mages are on all four sides of the Blacksmith: instead of refusing, he CAN work the magical metal. Green metal mage armor!',
+ desk:'With a Merchant and another Mage next to him, the Wizard gets a writing desk: tap the coin in his room to buy a spell scroll (50 coins, 30 for the black Wizard).',
+ story:'Anyone living on a space with the Druid\'s Rain: 80% of their idle activities are a short story. 10% of the stories reveal a hidden secret.',
+ 'wx:blizzard':'The Druid never visits: each time he would, he casts weather on a random open space instead (30 s, at most 2 at once). 10% of his casts: a Blizzard. Whoever lives there visits 30% less, but their rarest idle activity is 30% more likely.',
+ 'wx:sandstorm':'10% of the Druid\'s weather casts (he casts instead of visiting): a Sandstorm for 30 s. Every chance of dying for whoever lives there is tripled.',
+ 'wx:sunshine':'15% of the Druid\'s weather casts (he casts instead of visiting): Sunshine for 30 s. A Merchant living there earns 20% more coins, a Farmer 50% more.',
+ 'wx:rain':'15% of the Druid\'s weather casts (he casts instead of visiting): Rain for 30 s. Whoever lives there spends 80% of their idle activities reading short stories (10% reveal a secret).',
+ 'wx:overgrowth':'15% of the Druid\'s weather casts (he casts instead of visiting): Overgrowth for 30 s. Leaves and flowers grow all around the border of the space. Lovely.',
+ 'wx:moonlight':'15% of the Druid\'s weather casts (he casts instead of visiting): Moonlight for 30 s, dark with a soft pink glow. When it starts and when it ends, 30% a werewolf kills whoever is there.',
+ 'wx:decay':'15% of the Druid\'s weather casts (he casts instead of visiting): Decay for 30 s, worms and flies. Tags its character was not born with (an ingot\'s Fighter tag, the Rogue\'s or Alchemist\'s Mage tag) are gone while it lasts.',
+ 'wx:infest':'5% of the Druid\'s weather casts (he casts instead of visiting): Infest for 30 s, a locust swarm. Nobody visits that space.',
+ // the Monarch
+ court:'The Monarch\'s idle activity: holding court on the throne. A generous Monarch hands things out, a greedy one wants more gold, and a greedy Monarch never visits anyone. The first Monarch of a game is free; each one after that costs 200 coins to place.',
+ 'rq:paladin':'A Paladin next to the Monarch, the first time he visits: he asks to be knighted. Granted: he kneels in the throne room, is dubbed, and becomes "Sir Paladin".'+REQ_ODDS,
+ 'rq:blacksmith':'The Blacksmith next to the Monarch, the first time he visits: he asks for an assistant. Granted: an apprentice moves into the forge for good and potters about.'+REQ_ODDS,
+ 'rq:wizard':'The Wizard next to the Monarch, the first time he visits: he asks for a new staff. Granted: a pointed dark steel staff with an orb floating above it, for good.'+REQ_ODDS,
+ 'rq:priest':'The Priest next to the Monarch, the first time he visits: he asks for holy water. Granted: a barrel of holy water stands in his chapel for good.'+REQ_ODDS,
+ 'rq:alchemist':'The Alchemist next to the Monarch, the first time he visits: he asks for rare ingredients. Granted: you get 2 potions.'+REQ_ODDS,
+ 'rq:rogue':'The Rogue next to the Monarch, the first time he visits: he asks for money. Granted: a pile of coin sacks appears in his room (they are his, not yours).'+REQ_ODDS,
+ 'rq:merchant':'The Fruit Merchant next to the Monarch, the first time he visits: he asks for exotic fruit. Granted: a crate of pineapples appears in his shop for good.'+REQ_ODDS,
+ 'rq:apothecary':'The Apothecary next to the Monarch, the first time she visits: she asks for time off. Granted: a noble picks her up and she is away on a date for 5 minutes.'+REQ_ODDS,
+ 'rq:necromancer':'The Necromancer next to the Monarch, the first time he visits: he asks for prisoners. Granted: three prisoners come to his room, and a ritual turns them into skeletons that follow him everywhere.'+REQ_ODDS,
+ 'rq:druid':'The Druid next to the Monarch, the first time his visit roll comes up (the only visit he ever makes): he asks for land for nature. Granted: up to 3 Farmers set up fields on the nearest free spaces.'+REQ_ODDS,
+ rqdeny:'A generous Monarch turns down 20% of requests (with an apology), a greedy one 90% (rudely). The one refused leaves angry, and does not forget.',
+ royalfuneral:'When the Monarch dies, EVERYONE on the board drops what they are doing and kneels at the coffin in the throne room for 1 minute (except anyone away). Meanwhile no coins are earned and no items can be bought or gained. Then the Monarch\'s box goes back to the shelf.',
+ regicide:'Secret: anyone whose request was refused gets a new idle activity, 1% (checked first): from anywhere on the board they go to the throne room and kill the Monarch. They skip the funeral.',
+ royalpatron:'Secret: a generous Monarch next to the Blacksmith. When the last adventurer of one of his adventures is home, the crown rewards the company with an artifact.',
+ drain:'Necromancer on the bottom row with the Druid right beside him: 30% of his visits to the Druid. Black lightning drains the Druid\'s life and he dies (buried in his grove).',
+ // the Traveling Merchant
+ wares:'The Traveling Merchant\'s only idle activity: he tidies the wares on his stand and calls out to passers-by. He has no neighbor scenes, and nobody visits him.',
+ troad:'The Traveling Merchant stays 5 minutes, then packs up the wagon and leaves (not to the shelf). Now and then (about every 10 minutes) he turns up again on a free space for another 5 minutes. If he dies, his box goes back to the shelf.',
+ tshop:'Tap the coin in the Traveling Merchant\'s room to buy an artifact for 300 coins.',
+ tscroll:'Spell scroll on the Traveling Merchant: he buys it for 15 coins.',
+ tpotion:'Potion on the Traveling Merchant: he buys it for 15 coins.',
+ tingot:'Ingot on the Traveling Merchant: he buys it for 30 coins (he does not get the Fighter tag).'});

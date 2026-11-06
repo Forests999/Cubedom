@@ -1,5 +1,5 @@
 // ---------- art: room backgrounds and drawing ----------
-const WALL={monarch:['#3e2a40','#5a1828'],druid:['#24402a','#3a2e1e'],blacksmith:['#3a3236','#2a2224'],rogue:['#3a3440','#26222a'],alchemist:['#44384c','#2c2232'],farmer:['#8ab8e0','#6a4a24'],apothecary:['#3e4a3a','#2a3226'],merchant:['#5a4430','#3a2a1c'],knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40'],priest:['#4a4458','#30293c'],necromancer:['#26262c','#18181c']};
+const WALL={traveler:['#9ccbe8','#6a9a44'],monarch:['#3e2a40','#5a1828'],druid:['#24402a','#3a2e1e'],blacksmith:['#3a3236','#2a2224'],rogue:['#3a3440','#26222a'],alchemist:['#44384c','#2c2232'],farmer:['#8ab8e0','#6a4a24'],apothecary:['#3e4a3a','#2a3226'],merchant:['#5a4430','#3a2a1c'],knight:['#3c4058','#2a2c40'],wizard:['#33295c','#211a40'],priest:['#4a4458','#30293c'],necromancer:['#26262c','#18181c']};
 // Priest's stained glass window (frame 16..44 x 12..52, center x 30, y 32). Tentacles can smash through it.
 const WINDOW=[[16,12,28,40,'#2a2434'],[18,16,7,10,'#c04040'],[26,16,8,10,'#3a6ad0'],[35,16,7,10,'#d0b030'],[18,27,7,10,'#40a060'],[26,27,8,10,'#c890ff'],[35,27,7,10,'#c04040'],[18,38,7,12,'#3a6ad0'],[26,38,8,12,'#d0b030'],[35,38,7,12,'#40a060'],[29,19,2,8,'#f2e8a0'],[27,21,6,2,'#f2e8a0'],[20,12,20,2,'#3a3448']].map(r=>[r[0],r[1]+12,r[2],r[3],r[4]]); // moved down, clear of the name label
 const WIN_C={x:30,y:44};
@@ -16,7 +16,7 @@ const SHELF2=[[56,30,24,36,'#6a4a2a'],[58,32,20,32,'#3a2410'],[58,47,20,2,'#6a4a
 const down=(list,dy)=>list.map(r=>[r[0],r[1]+dy,r[2],r[3],r[4]]);
 function bg(id,w){
  // Farmer: open sky, sun (top right, clear of the label) and a fence; no doors at all (crops drawn by drawField)
- if(id==='farmer')return [[74,10,10,10,'#f8e070'],[72,12,14,6,'#f8e070'],[6,52,84,2,'#a07840'],[10,48,2,18,'#a07840'],[30,48,2,18,'#a07840'],[50,48,2,18,'#a07840'],[70,48,2,18,'#a07840'],[88,48,2,18,'#a07840']];
+ if(isFarm(id))return [[74,10,10,10,'#f8e070'],[72,12,14,6,'#f8e070'],[6,52,84,2,'#a07840'],[10,48,2,18,'#a07840'],[30,48,2,18,'#a07840'],[50,48,2,18,'#a07840'],[70,48,2,18,'#a07840'],[88,48,2,18,'#a07840']];
  // Apothecary: a window to the blue sky, herbs growing in planters, potions on display shelves, back door on the LEFT
  if(id==='apothecary')return [...BACKDOOR_L,
   [37,24,24,18,'#5a4024'],[39,26,20,14,'#8ac8f0'],[39,34,20,6,'#a8d8f8'],[44,29,7,3,'#ffffff'],[42,30,4,2,'#ffffff'],[48,33,2,7,'#5a4024'],[39,32,20,2,'#5a4024'],
@@ -46,10 +46,12 @@ function bg(id,w){
   [0,22,26,12,'#a03050'],[2,20,22,2,'#c04a6a'],[36,16,34,14,'#7a40b0'],[38,14,30,2,'#9a60d0'],[70,24,26,12,'#c05a30'],[72,22,22,2,'#e07a40'],
   [6,25,3,3,'#f4ece0'],[16,27,3,2,'#f4ece0'],[44,20,4,3,'#f4ece0'],[58,23,3,3,'#f4ece0'],[78,27,3,3,'#f4ece0'],[88,29,3,2,'#f4ece0'],
   [24,60,2,6,'#e0d8c4'],[21,57,8,3,'#c04a6a'],[36,62,2,4,'#e0d8c4'],[34,60,6,2,'#9a60d0'],[66,62,2,4,'#e0d8c4'],[64,60,6,2,'#e07a40'],[16,76,2,4,'#e0d8c4'],[14,74,6,2,'#c04a6a'],[44,84,2,4,'#e0d8c4'],[42,82,6,2,'#7ae0c0'],[76,80,2,4,'#e0d8c4'],[74,78,6,2,'#9a60d0']];
+ // Traveling Merchant: a dirt road through the meadow, a tree, flowers, a covered wagon with a mule, and a stand covered in striped cloth for the wares
+ if(id==='traveler')return [[0,50,96,16,'#7ab05a'],[60,56,36,10,'#6aa04a'],[80,28,4,38,'#6a4424'],[70,14,24,16,'#3a8a3a'],[74,10,16,6,'#4aa04a'],[68,26,26,6,'#2e7a30'],  [34,30,30,4,'#e8dcc0'],[32,34,34,16,'#ece2c8'],[38,34,1,16,'#c8b898'],[48,34,1,16,'#c8b898'],[58,34,1,16,'#c8b898'],[30,50,38,6,'#7a5030'],[30,50,38,1,'#5a3a20'],[34,55,8,8,'#4a3020'],[56,55,8,8,'#4a3020'],[37,58,2,2,'#a07850'],[59,58,2,2,'#a07850'],  [66,52,8,1,'#5a3a20'],[72,46,14,8,'#8a7a6a'],[72,54,2,10,'#6a5a4a'],[83,54,2,10,'#6a5a4a'],[84,42,4,7,'#8a7a6a'],[86,38,6,6,'#8a7a6a'],[88,35,1,3,'#6a5a4a'],[90,35,1,3,'#6a5a4a'],[90,41,2,3,'#5a4a3a'],[88,40,1,1,O],  [4,30,2,30,'#6a4424'],[26,30,2,30,'#6a4424'],[2,26,28,5,'#c04040'],[2,26,5,5,'#f0e8d8'],[12,26,5,5,'#f0e8d8'],[22,26,5,5,'#f0e8d8'],[2,31,28,2,'#a02a2a'],[2,48,28,10,'#c04040'],[2,48,28,2,'#f0e8d8'],[7,48,2,10,'#f0e8d8'],[17,48,2,10,'#f0e8d8'],  [5,43,4,5,'#7ae0ff'],[11,44,4,4,'#c890ff'],[17,42,3,6,'#d03050'],[22,44,5,4,'#f2c84a'],[24,42,1,2,'#f2c84a'],  [30,66,36,30,'#b89a68'],[34,72,2,1,'#a08458'],[52,84,3,1,'#a08458'],[44,92,2,1,'#a08458'],[10,74,2,2,'#f080a0'],[18,86,2,2,'#f2e060'],[78,72,2,2,'#c890ff'],[86,88,2,2,'#f080a0'],[72,82,2,2,'#f2e060'],[6,92,2,2,'#c890ff'],[9,76,1,2,'#3a7a2a'],[87,90,1,2,'#3a7a2a']];
  // Monarch: a throne on a dais, red banners, a fancy back door with gold trim, a red carpet
- if(id==='monarch')return [[6,24,10,26,'#a01a3a'],[6,24,10,2,'#f2c84a'],[8,44,6,6,'#a01a3a'],[10,30,2,6,'#f2c84a'],[49,24,8,26,'#a01a3a'],[49,24,8,2,'#f2c84a'],[50,44,6,6,'#a01a3a'],[52,30,2,6,'#f2c84a'],
+ if(id==='monarch'){const P=MPAL[w]||MPAL.red,mc={'#a01a3a':P.main,'#8a1030':P.dark,'#f2c84a':P.trim};return [[6,24,10,26,'#a01a3a'],[6,24,10,2,'#f2c84a'],[8,44,6,6,'#a01a3a'],[10,30,2,6,'#f2c84a'],[49,24,8,26,'#a01a3a'],[49,24,8,2,'#f2c84a'],[50,44,6,6,'#a01a3a'],[52,30,2,6,'#f2c84a'],
   [22,62,40,4,'#6a5a6a'],[24,30,20,32,'#c8a030'],[27,34,14,20,'#8a1030'],[29,36,10,16,'#a01a3a'],[22,28,4,6,'#f2c84a'],[42,28,4,6,'#f2c84a'],[32,26,4,4,'#f2c84a'],[33,24,2,2,'#d03050'],[22,54,24,4,'#c8a030'],[24,58,3,4,'#a08020'],[41,58,3,4,'#a08020'],
-  ...ROYALDOOR,[18,66,30,30,'#8a1030'],[20,66,2,30,'#f2c84a'],[44,66,2,30,'#f2c84a']];
+  ...ROYALDOOR,[18,66,30,30,'#8a1030'],[20,66,2,30,'#f2c84a'],[44,66,2,30,'#f2c84a']].map(r=>[r[0],r[1],r[2],r[3],mc[r[4]]||r[4]])} // banners, cushion and carpet in the Monarch's colors (w = palette)
  if(id==='druid')return [[58,26,20,40,'#1a2a1a'],[6,24,8,42,'#4a3420'],[46,22,8,44,'#4a3420'],[80,24,8,42,'#4a3420'],[11,30,2,36,'#3a2818'],[51,28,2,38,'#3a2818'],[85,30,2,36,'#3a2818'],
   [0,14,22,14,'#2a6a32'],[36,10,28,16,'#2a6a32'],[72,12,24,16,'#2a6a32'],[4,12,14,4,'#3a8a3a'],[40,8,20,4,'#3a8a3a'],[76,10,16,4,'#3a8a3a'],
   [22,56,4,10,'#5a4024'],[19,50,10,8,'#3a8a3a'],[32,58,3,8,'#5a4024'],[30,53,7,6,'#4a9a3a'],[66,62,4,4,'#c03030'],[67,61,2,1,'#f0e8d8'],[38,63,3,3,'#e8c860']];
@@ -118,10 +120,14 @@ const sid=u=>{if(u.dress)return u.dress; // trying on a disguise (Rogue and Wiza
  let b=u.form||(u.paladin&&u.id==='knight'?'paladin':u.color?u.id+'_'+u.color:u.id); // a Knight forged into a Paladin
  if(u.armor&&!u.form&&CH[b+'_arm'])b+='_arm'; // the Wizard's green metal mage armor
  if(u.arch&&!u.form&&u.id==='druid')b='druid_arch'; // the Archdruid's glowing staff and leaf crown
+ if(u.id==='monarch'&&!u.form&&u.pal&&u.pal!=='red'&&CH[b+'_'+u.pal])b+='_'+u.pal; // royal colors (red and gold has no suffix)
+ if(u.staff&&!u.form&&CH[b+'_st'])b+='_st'; // the Wizard's dark steel staff from the Monarch
  return u.skin&&CH[b+'~'+u.skin]?b+'~'+u.skin:b};
 // Which arm pose to show for an activity (act) that has run for `at` seconds
 function poseOf(act,at){
  if(act==='read'||act==='tome'||act==='holy'||act==='story')return 'hold';
+ if(act==='prisoners')return at>2.4&&at<4.6?'both':'none';
+ if(act==='wares')return at>1.2&&at<3.2?'fwd':'none';
  if(act==='wcast'||act==='ascend')return 'both';
  if(act==='court')return at>1.6&&at<3.4?'up':'none';
  if(act==='magic')return Math.floor(at*3)%2?'up':'fwd';
@@ -185,7 +191,7 @@ function poseOf(act,at){
  if(act==='horse')return at>=1&&at<4.6?'fwd':'none';
  return 'none';
 }
-function box(c,id,x,y,w){
+function box(c,id,x,y,w){if(isFarm(id))id='farmer'; // every Farmer box (farmer2, farmer3) looks the same
  const k=id==='druid'&&DRUID_WALL[w]||WALL[id];c.fillStyle=k[0];c.fillRect(x,y,CELL,CELL);c.fillStyle=k[1];c.fillRect(x,y+66,CELL,30);c.fillStyle='rgba(0,0,0,.3)';c.fillRect(x,y+66,CELL,2);
  bg(id,w).forEach(d=>{c.fillStyle=d[4];c.fillRect(x+d[0],y+d[1],d[2],d[3])});if(id==='alchemist')drawAlembic(c,x,y,0);
  c.strokeStyle='#000';c.lineWidth=2;c.strokeRect(x+1,y+1,CELL-2,CELL-2); // thin frame; boxFrame() thickens the outside edges
@@ -418,6 +424,7 @@ function drawGold(c,bx,by,t){c.fillStyle='#f2c84a';[[11,42,4,4],[16,41,4,4],[21,
  if(Math.floor(t*3)%2){c.fillStyle='#fffbe0';c.fillRect(bx+10+Math.floor(t*3)%14,by+36,2,2)}}
 // Little bits of life in the rooms: flickering candle flames, a cloud drifting past the Apothecary's window
 function drawRoomLife(c,id,bx,by,t){const fl=(k)=>Math.floor(t*8+k)%3;
+ if(id==='traveler'){const s=Math.floor(t*2.2)%5===0?1:0;c.fillStyle='#5a4a3a';c.fillRect(bx+70-s,by+47,2,1);c.fillRect(bx+69-s,by+48,1,7)} // the mule swishes its tail
  if(id==='priest'){const h=2+fl(0);c.fillStyle='#4a4458';c.fillRect(bx+48,by+44,4,6);c.fillStyle='#ffd060';c.fillRect(bx+49,by+50-h,2,h);c.fillStyle='#fff6c0';c.fillRect(bx+49,by+49,1,1)}
  if(id==='necromancer'){[[40,23],[16,41]].forEach((q,i)=>{const h=2+fl(i*2);c.fillStyle='#26262c';c.fillRect(bx+q[0],by+q[1]-2,3,3);c.fillStyle='#7aff7a';c.fillRect(bx+q[0],by+q[1]+3-h,3,h)})}
  if(id==='apothecary'){c.save();c.beginPath();c.rect(bx+39,by+26,20,6);c.clip();c.fillStyle='#8ac8f0';c.fillRect(bx+39,by+26,20,6);const cx=bx+39+((t*4)%34)-8;c.fillStyle='#ffffff';c.fillRect(Math.round(cx),by+28,7,3);c.fillRect(Math.round(cx)+2,by+27,4,1);c.restore()}
@@ -484,6 +491,10 @@ function drawItem(c,kind,x,y,s){
   :kind==='poison'?[[-1,-6,2,1,'#8a5a2a'],[-1,-5,2,2,'#cfe8f0'],[-3,-3,6,6,'#cfe8f0'],[-2,-1,4,3,'#5ad040'],[-1,-2,2,1,'#e8e4d0']]
   :kind==='candle'?[[-1,-6,2,2,'#ffd060'],[-2,-4,4,9,'#24222a']]
   :kind==='skull'?[[-3,-3,6,5,'#e8e4d0'],[-2,2,4,2,'#d8d4c0'],[-2,-1,1,2,O],[1,-1,1,2,O]]
+  :kind==='pineapple'?[[-2,-2,5,7,'#e0a830'],[-1,-1,1,1,'#a07018'],[1,1,1,1,'#a07018'],[-1,3,1,1,'#a07018'],[-2,-5,1,3,'#4a9a3a'],[0,-6,1,4,'#5aba4a'],[2,-5,1,3,'#4a9a3a']]
+  :kind==='sack'?[[-4,-2,8,7,'#b8945a'],[-2,-4,4,2,'#9a7a44'],[-1,-5,2,1,'#6a4a24'],[-1,0,2,3,'#f2c84a']]
+  :kind==='barrel'?[[-4,-4,8,9,'#8a5a2a'],[-4,-3,8,1,'#4a4a52'],[-4,3,8,1,'#4a4a52'],[-3,-5,6,1,'#cfe8f0'],[0,-2,1,3,'#f2c84a'],[-1,-1,3,1,'#f2c84a']]
+  :kind==='staff'?[[0,-6,1,12,'#4a4e5e'],[0,-7,1,1,'#aab0c0'],[-1,-10,3,2,'#7ff0ff']]
   :kind==='coin'?[[-2,-4,5,1,'#f2c84a'],[-3,-3,7,7,'#f2c84a'],[-2,4,5,1,'#f2c84a'],[-4,-2,1,5,'#f2c84a'],[4,-2,1,5,'#f2c84a'],[0,-2,1,5,'#b8862a'],[-2,-2,1,1,'#fff6c0']]
   :[[-1,-6,2,1,'#8a5a2a'],[-1,-5,2,2,'#cfe8f0'],[-3,-3,6,6,'#cfe8f0'],[-2,-1,4,3,'#d03050'],[-2,-2,1,1,'#ffffff']];
  c.fillStyle=O;R.forEach(r=>c.fillRect(Math.round(x+(r[0]-1)*s),Math.round(y+(r[1]-1)*s),(r[2]+2)*s,(r[3]+2)*s));
@@ -709,3 +720,14 @@ function drawDeer(c,x,y,face,a){c.save();c.globalAlpha=a;c.translate(Math.round(
 function drawBird(c,x,y,t,a){const up=Math.floor(t*8)%2;c.save();c.globalAlpha=a;x=Math.round(x);y=Math.round(y);c.fillStyle=O;c.fillRect(x-3,y-2,6,4);c.fillStyle='#4a7ad0';c.fillRect(x-2,y-1,4,2);c.fillStyle='#4a7ad0';if(up){c.fillRect(x-5,y-4,3,2);c.fillRect(x+2,y-4,3,2)}else{c.fillRect(x-5,y,3,1);c.fillRect(x+2,y,3,1)}c.fillStyle='#f2c84a';c.fillRect(x+3,y-1,2,1);c.restore()}
 // Sparks from the anvil
 function drawSparks(c,x,y,t){for(let i=0;i<6;i++){const k=((t*2.5+i*.17)%1);c.fillStyle=i%2?'#ffd040':'#ff8020';c.fillRect(Math.round(x+(i-3)*4*k*2),Math.round(y-k*14+k*k*10),1,1)}}
+// ---------- gifts from the Monarch, the grand funeral ----------
+// Priest: a barrel of holy water against the wall (left of the window)
+function drawBarrel(c,bx,by){drawItem(c,'barrel',bx+10,by+57,2)}
+// Rogue: a pile of coin sacks in front of his chest
+function drawSacks(c,bx,by){[[44,56],[56,57],[50,51]].forEach(q=>drawItem(c,'sack',bx+q[0],by+q[1],1));drawItem(c,'coin',bx+62,by+62,1)}
+// Fruit Merchant: a small crate of pineapples right of his back door
+function drawPines(c,bx,by){c.fillStyle=O;c.fillRect(bx+83,by+57,12,10);c.fillStyle='#8a5a2a';c.fillRect(bx+84,by+58,10,8);c.fillStyle='#6a4420';c.fillRect(bx+84,by+58,10,2);drawItem(c,'pineapple',bx+86,by+52,1);drawItem(c,'pineapple',bx+91,by+53,1)}
+// The Monarch lying in state: a coffin with gold trim between two tall candles
+function drawCoffin(c,bx,by,t){const x=bx+48,y=by+FY;c.fillStyle=O;c.fillRect(x-18,y-12,36,13);c.fillStyle='#4a2a1a';c.fillRect(x-17,y-11,34,11);c.fillStyle='#6a3e24';c.fillRect(x-17,y-11,34,3);
+ c.fillStyle='#f2c84a';c.fillRect(x-17,y-8,34,1);c.fillRect(x-2,y-7,4,1);c.fillRect(x-1,y-8,2,5);
+ [-24,24].forEach((d,i)=>{c.fillStyle=O;c.fillRect(x+d-2,y-22,5,23);c.fillStyle='#e8e4d0';c.fillRect(x+d-1,y-21,3,21);const h=2+Math.floor(t*8+i*2)%3;c.fillStyle='#ffd060';c.fillRect(x+d,y-21-h,1,h)})}

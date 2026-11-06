@@ -3,6 +3,8 @@ let swarms=[]; // bee swarms: {r,c,t} (Knight left of the Apothecary)
 let rains=[]; // rain storms in a room: {r,c,t} (spell scroll on the Druid)
 let weathers=[]; // the Druid's weather on board spaces: {r,c,k,t,by,wolf} (k = blizzard, sandstorm, ...; lasts WEATHER_TIME)
 const TEMP_FORM={monkey:1,bear:1,beast:1}; // forms that take no part in anything for a while (not saved)
+let rf=null; // the grand funeral after the Monarch dies: {id, t}. While it lasts no coins are earned and no items are bought or gained.
+const mourning=()=>!!rf;
 let boostT=0,boostAmt=0; // Wizard advertising fruit: +boostAmt extra coins per tick (stacks up to BOOST_MAX total) while boostT counts down
 const U={};let S={un:{},coins:0,inv:{scroll:0,potion:0,artifact:0,ingot:0},seen:{},rewarded:0,cells:[],bought:0,revealed:{},goldCell:null},drag=null,td=null,hover=null,parts=[],bolts=[],demons=[],cats=[],fbs=[],flashes=[],thrown=[],splats=[],zaps=[],waves=[],holes=[],coinT=0,bubU=null,T=0;
 
@@ -31,10 +33,11 @@ const idOf=u=>u.as||u.id;
 // A unit's classes: its own (CLASS), plus Mage for an Alchemist next to a Mage, or a Rogue who read a spell scroll (mageTag)
 // (also: a second built-in tag, EXTRA_CLASS, e.g. the Blacksmith's Fighter tag; and Fighter for anyone reinforced with an ingot)
 // (the Druid's Decay weather hides every tag a character was not born with, while it lasts)
-function hasClass(u,c){if(!u)return false;const id=idOf(u);if(CLASS[id]===c)return true;if(EXTRA_CLASS[id]&&EXTRA_CLASS[id].includes(c))return true;const dec=wxOf(u)==='decay';if(c==='fighter'&&u.reinforced&&!dec)return true;if(c!=='mage'||dec)return false;if(u.mageTag)return true;
+function hasClass(u,c){if(!u)return false;const id=idOf(u);if(id==='monarch')return false; // the Monarch never has a tag
+ if(CLASS[id]===c)return true;if(EXTRA_CLASS[id]&&EXTRA_CLASS[id].includes(c))return true;const dec=wxOf(u)==='decay';if(c==='fighter'&&u.reinforced&&!dec)return true;if(c!=='mage'||dec)return false;if(u.mageTag)return true;
  return id==='alchemist'&&Object.values(U).some(v=>v!==u&&idOf(v)!=='alchemist'&&hasClass(v,'mage')&&rel(v,u))} // any Mage by tag (a Rogue with the Mage tag counts too)
 const classesOf=u=>{const b=CLASS[idOf(u)];return[b,...['fighter','mage','merchant'].filter(c=>c!==b&&hasClass(u,c))].filter(Boolean)};
-function setLabel(u){u.lb.innerHTML='';u.lb.append(u.paladin&&!u.form&&idOf(u)==='knight'?'Paladin':u.arch&&!u.form&&idOf(u)==='druid'?'Archdruid':CH[u.form||idOf(u)].name);const cs=classesOf(u);u.tagKey=cs.join();u.lb.insertAdjacentHTML('beforeend',cs.map(tagOf).join(''));fitLabel(u)}
+function setLabel(u){u.lb.innerHTML='';u.lb.append(u.paladin&&!u.form&&idOf(u)==='knight'?(u.sir?'Sir Paladin':'Paladin'):u.arch&&!u.form&&idOf(u)==='druid'?'Archdruid':CH[u.form||idOf(u)].name);const cs=classesOf(u);u.tagKey=cs.join();u.lb.insertAdjacentHTML('beforeend',cs.map(tagOf).join(''));fitLabel(u)}
 // Re-draw a label when its class tags change (e.g. the Alchemist moves next to a Mage)
 const refreshTags=()=>Object.values(U).forEach(u=>{if(classesOf(u).join()!==u.tagKey)setLabel(u)});
 // Shrink a name label until it fits inside its square (squares are small on phones)
@@ -52,11 +55,12 @@ function spend(n){S.coins-=n;S.spent=(S.spent||0)+n;checkUnlocks()}
 function addUnit(id,r,c,quiet,weapon,form,color,skin){
  const lb=document.createElement('div');lb.className='lb';$('#labels').appendChild(lb);
  U[id]={id,r,c,lb,skin:skin!=null?skin:SKIN_CHARS.includes(id)?Math.floor(Math.random()*SKINS.length):0, // skin tone (new Knights, Merchants, Priests: random)
-weapon:id==='knight'?(weapon||pick(WEAPONS)):null,form:form||null,color:color||(id==='wizard'?(r===0&&c===0?'black':pick(WIZ_RANDOM)):id==='knight'?(Math.random()<ODDS.bronze?'bronze':'steel'):id==='priest'||id==='alchemist'||id==='monarch'?pick(['m','f']):id==='blacksmith'?(Math.random()<.7?'m':'f'):id==='rogue'?rogueOutfit():null), // rogue: ninja / bandit / con man, blacksmith 70% man, // knight 1% bronze armor, priest 50/50 female/male, // dragged to the top-left on first placement = hidden black outfit (tapping the shelf picks a normal color)
+weapon:id==='knight'?(weapon||pick(WEAPONS)):null,form:form||null,color:color||(id==='wizard'?(r===0&&c===0?'black':pick(WIZ_RANDOM)):id==='knight'?(Math.random()<ODDS.bronze?'bronze':'steel'):id==='priest'||id==='alchemist'||id==='monarch'||id==='traveler'?pick(['m','f']):id==='blacksmith'?(Math.random()<.7?'m':'f'):id==='rogue'?rogueOutfit():null), // rogue: ninja / bandit / con man, blacksmith 70% man, // knight 1% bronze armor, priest 50/50 female/male, // dragged to the top-left on first placement = hidden black outfit (tapping the shelf picks a normal color)
   act:null,at:0,orc:null,dur:0,x:c*CELL+48,y:r*CELL+FY,face:1,st:'idle',wait:1.5+Math.random()*2,path:[],fxs:[],al:1,sk:1,hop:0,blink:0,mood:'ok',mt:0,gp:null,gt:0,mv:false,glow:0,drink:0,kneel:false,tp:false,after:null,hosting:null,target:null,t:0,tt:0,ev:{}};
  if(id==='druid')U[id].fam=pickW(Object.keys(ODDS.familiar),k=>ODDS.familiar[k]); // his animal: a grizzly bear, an eagle or a wolf
- if(id==='monarch')U[id].trait=Math.random()<.5?'generous':'greedy'; // will change how the Monarch treats others
- setLabel(U[id]);label(U[id]);if(!quiet){poof(c*CELL+48,r*CELL+FY-16);save();checkUnlocks();if(id==='monarch')toast('A '+U[id].trait+' '+(U[id].color==='f'?'Queen':'King')+' takes the throne.')}ui();
+ if(id==='monarch'){U[id].trait=Math.random()<.5?'generous':'greedy';U[id].pal=pick(Object.keys(MPAL))} // generous or greedy (how requests go); royal colors
+ if(id==='traveler')U[id].travelT=TRAVEL_TIME; // he moves on after TRAVEL_TIME seconds
+ setLabel(U[id]);label(U[id]);if(!quiet){poof(c*CELL+48,r*CELL+FY-16);if(id==='monarch')S.monarchs=(S.monarchs||0)+1;save();checkUnlocks();if(id==='monarch')toast('A '+U[id].trait+' '+(U[id].color==='f'?'Queen':'King')+' takes the throne.')}ui();
 }
 // Clear everything an interaction leaves on a character (but not the teleport flag)
 function clearFx(u){u.dress=null;u.paint=null;u.show2=null;u.big=null;u.gather=null;u.gatherOf=null;u.crowd=null;u.table=null;u.show=null;u.feastHost=null;u.fall=false;u.act=null;u.orc=null;u.tent=null;u.und=null;u.lite=null;u.dark=null;u.ward=null;u.kneel=false;u.after=null;u.mv=false;u.npc=null;u.def=null;u.ghost=null;u.spirit=null;u.mobs=null;u.made=null;u.swapWith=null}
@@ -100,15 +104,45 @@ function kill(v){
  const P=U.priest;if(P&&P!==v&&!P.dead&&hasClass(v,'fighter')&&rel(v,P))P.funeral=1.5;
  // the Druid does not go back to the shelf: he is buried in his space (a mound with a sapling) until a spell scroll revives him
  if(v.id==='druid'){bury(v);ui();save();return}
+ // the Monarch lies in state for the grand funeral, then the box goes back to the shelf
+ if(v.id==='monarch'){royalFuneral(v);return}
+ // the Traveling Merchant goes back to the shelf when he dies (not on the road)
+ if(v.id==='traveler'){S.travelRoam=false;setTimeout(buildShelf,0)}
  dropBub(v);v.lb.remove();delete U[v.id];
  // a fallen Priest may unlock the Necromancer (once)
  if(v.id==='priest'&&!S.un.necromancer&&Math.random()<ODDS.necro){S.un.necromancer=true;buildShelf();toast('Something dark stirs... a Necromancer box has appeared on the shelf.')}
  ui();save();
 }
 // The Druid dies: buried in his own space. He keeps his box, tags and place, but does nothing and nobody visits him.
-function bury(v){clearFx(v);v.target=null;v.hosting=null;v.fxs=[];v.npcDoor=null;v.sickT=0;v.tinyT=0;v.dead=true;toHome(v);v.al=1;dropBub(v);v.lb.style.opacity=.6;
+function bury(v){clearFx(v);v.target=null;v.hosting=null;v.fxs=[];v.npcDoor=null;v.sickT=0;v.tinyT=0;v.dead=true;v.asked=false;v.grudge=false; // dying lets him ask the Monarch againtoHome(v);v.al=1;dropBub(v);v.lb.style.opacity=.6;
  poof(v.c*CELL+48,v.r*CELL+70,'#6a5030');toast('The Druid has died and is buried in his grove. A spell scroll on his space could bring him back.')}
 function revive(v){v.dead=false;v.st='idle';v.wait=2;v.lb.style.opacity=1;v.mood='happy';v.mt=2;v.hop=.5;poof(v.x,v.y-20,'#6aba4a');poof(v.x,v.y-6,'#f2d870');say(v,'The grove gives me back my life!');save()}
+// ---- the grand funeral: the Monarch lies in state for ROYAL_FUNERAL_TIME seconds and EVERYONE on the board comes, whatever they were doing ----
+// (except anyone away, and the Monarch's killer). Afterwards the Monarch's box goes back to the shelf.
+function royalFuneral(M){clearFx(M);M.target=null;M.hosting=null;M.fxs=[];M.npcDoor=null;M.crowd=null;M.npc=null;M.dead=true;M.st='dead';M.x=M.c*CELL+48;M.y=M.r*CELL+FY;M.al=1;dropBub(M);M.lb.style.opacity=.6;M.gather={royal:1};
+ rf={id:M.id,t:0};markSeen('royalfuneral');
+ const list=Object.values(U).filter(v=>v!==M&&!v.dead&&v.st!=='away'&&!v.regicide);Object.values(U).forEach(v=>{v.regicide=false});
+ list.forEach(v=>{detach(v);v.npc=null;v.crowd=null;v.npcDoor=null});
+ list.forEach((v,i)=>{clearFx(v);v.fxs=[];v.def=null;v.tp=false;v.inv=false;v.sneak=false;v.thenVisit=null;v.thenPrison=false;v.al=1;v.sk=1;v.sleepT=0;v.mood='hurt';v.mt=3;
+  const side=i%2?1:-1,col=Math.floor(i/2)%3,row=Math.floor(i/6),spot={x:M.c*CELL+48+side*(22+col*10),y:M.r*CELL+FY-3-row*4}; // around the coffin, a little behind it
+  v.gatherOf=M.id;v.st='gather';const r=cellY(v),c=cellX(v);v.path=r===M.r&&c===M.c?[{k:'walk',x:spot.x,y:spot.y}]:route(v,r,c,M.r,M.c,spot)});
+ toast('The '+(M.color==='f'?'Queen':'King')+' is dead! The whole kingdom gathers for a grand funeral. No coins or items for one minute.');save()}
+function stepRoyal(dt){if(!rf)return;const M=U[rf.id];if(!M){rf=null;return}rf.t+=dt;
+ Object.values(U).forEach(v=>{if(v.gatherOf===M.id&&v.st==='gathered'){v.kneel=true;v.mood='hurt';v.mt=1}});
+ if(rf.t>=20&&!rf.s1){rf.s1=1;const P=U.priest,sp=P&&P.gatherOf===M.id&&P.st==='gathered'?P:Object.values(U).find(v=>v.gatherOf===M.id&&v.st==='gathered');if(sp)say(sp,sp===P?'We mourn our ruler. Rest in peace, Your Majesty.':'Long live the... oh. Right.')}
+ if(rf.t>=ROYAL_FUNERAL_TIME){Object.values(U).forEach(v=>{if(v.gatherOf===M.id){v.kneel=false;v.gatherOf=null;v.mood='ok';goHome(v)}});rf=null;removeUnit(M.id,true);buildShelf();save();toast('The funeral is over. Life goes on in the kingdom.')}}
+// ---- the Traveling Merchant: after TRAVEL_TIME he hits the road (not back to the shelf); now and then he turns up on a free space ----
+function travelerLeave(u){poof(u.x,u.y-24,'#c8a060');markSeen('troad');removeUnit(u.id);S.travelRoam=true;buildShelf();save();toast('The Traveling Merchant packs up the wagon and hits the road.')}
+function stepTraveler(dt){if(!S.un.traveler||!S.travelRoam||U.traveler||rf||Math.random()>=dt*ODDS.travelArrive)return;
+ const free=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c)&&!at(r,c))free.push([r,c]);if(!free.length)return;
+ const q=pick(free);addUnit('traveler',q[0],q[1],false);markSeen('troad');toast('A Traveling Merchant rolls in with a wagon full of wares! Here for '+Math.round(TRAVEL_TIME/60)+' minutes.')}
+// The Traveling Merchant's shop: an artifact for TRAVEL_ARTIFACT coins
+function buyArtifact(t){if(mourning()){toast('The kingdom is in mourning. No shopping during the funeral.');return}
+ if((S.coins||0)<TRAVEL_ARTIFACT){toast('An artifact is '+TRAVEL_ARTIFACT+' coins. You have '+(S.coins||0)+'.');return}
+ ask('Buy an artifact from the Traveling Merchant for '+TRAVEL_ARTIFACT+' coins?','Buy',()=>{if(!U[t.id]||S.coins<TRAVEL_ARTIFACT)return;spend(TRAVEL_ARTIFACT);showCoins();save();
+  parts.push({k:'txt',s:'-'+TRAVEL_ARTIFACT,x:t.x-14,y:t.y-56,t:0,life:1.4,icon:'coin'});addItem('artifact',1,t.x+14,t.y-40);t.hop=.5;t.mood='happy';t.mt=1.2;gest(t,'fwd',.8);say(t,'A fine choice. Genuine! Mostly.');markSeen('tshop')})}
+// Items on the Traveling Merchant: he buys scrolls and potions (TRAVEL_BUY coins) and ingots (no Fighter tag for him)
+function tSell(u,kind){if(mourning())return false;addCoins(TRAVEL_BUY[kind],u.x,u.y-50);u.hop=.4;u.mood='happy';u.mt=1.2;gest(u,'fwd',.8);say(u,kind==='ingot'?'Good steel! It will sell well up north.':'I will take that off your hands.')}
 function mkBolt(s,t){const sx=s.x,sy=s.y-40,ex=t.x,ey=t.y-26,n=Math.max(3,Math.round((ey-sy)/10)),p=[[sx,sy]];
  for(let i=1;i<n;i++)p.push([sx+(ex-sx)*i/n+Math.random()*14-7,sy+(ey-sy)*i/n]);p.push([ex,ey]);
  return{p,t:0,cells:[[s.c*CELL,s.r*CELL],[t.c*CELL,t.r*CELL]]}}
@@ -125,7 +159,7 @@ const graveyardOn=u=>!!u&&u.id==='rogue'&&u.r===ROWS-1&&!!U.necromancer&&U.necro
 // Potion on the Alchemist: for ALC_LUCK_TIME his neighbors' rarest scene chances are 30% higher (ALC_LUCK)
 const lucky=u=>!!u&&Object.values(U).some(a=>idOf(a)==='alchemist'&&a.luckT>0&&(a===u||rel(a,u)));
 const luck=(p,u,h)=>Math.random()<p*(lucky(u)||lucky(h)?1+ALC_LUCK:1);
-const nbrs=u=>[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filter(h=>freeU(h)&&!(weatherAt(h.r,h.c)==='infest'));
+const nbrs=u=>[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filter(h=>freeU(h)&&h.id!=='traveler'&&!(weatherAt(h.r,h.c)==='infest')); // nobody visits the Traveling Merchant
 // ---------- the Druid's weather on board spaces ----------
 // Which weather is on a space right now (or null); wxOf(u) = the weather on u's own space
 const weatherAt=(r,c)=>{const w=weathers.find(q=>q.r===r&&q.c===c&&q.t<WEATHER_TIME);return w?w.k:null};
@@ -166,19 +200,23 @@ function beginAct(u,a,quiet){if(!quiet)markSeen(a==='prac'?'prac:'+u.weapon:a);u
 function startAct(u){
  let r=Math.random();const id=idOf(u),wx=wxOf(u),home=cellX(u)===u.c&&cellY(u)===u.r;u.path=[];
  // the Druid's Rain on this space: 80% of idle time, a short story (10% of them reveal a secret)
- if(wx==='rain'&&home&&id!=='farmer'&&Math.random()<ODDS.rainStory){beginAct(u,'story');u.dur=5;return true}
+ // Secret: someone the Monarch turned down, 1% of their idle activities (rolled first): they go to the throne room, wherever they are, and kill the Monarch
+ const M=U.monarch;if(u.grudge&&!u.as&&!u.form&&M&&!M.dead&&freeU(M)&&!rf&&Math.random()<ODDS.regicide){visit(u,M,'regicide');return true}
+ if(wx==='rain'&&home&&!isFarm(id)&&Math.random()<ODDS.rainStory){beginAct(u,'story');u.dur=5;return true}
  // the Druid's Blizzard on this space: the rarest idle activity is 30% more likely
  if(wx==='blizzard'&&RARE_IDLE[id]){const q=RARE_IDLE[id]();if(Math.random()<ODDS.blizzRare*(q[1]-q[0]))r=q[0]+Math.random()*(q[1]-q[0])}
  // Monarch: holding court on the throne
  if(id==='monarch'){beginAct(u,'court');u.dur=5;u.hx=u.c*CELL+34;return true}
+ // Traveling Merchant: he only arranges the wares on his stand (no waving, no scenes)
+ if(id==='traveler'){beginAct(u,'wares');u.dur=4.4;u.hx=u.c*CELL+24;return true}
  // 10% of idle time: just wave to a neighbor (any side)
  if(Math.random()<ODDS.wave){const o=[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filter(v=>v&&!v.dead);
   if(o.length&&cellX(u)===u.c&&cellY(u)===u.r){const h=pick(o);if(h.c!==u.c)u.face=h.c>u.c?1:-1;beginAct(u,'wave');u.dur=2.2;u.waveTo=h.id;return true}}
- if(id==='farmer'){const a=Math.random()<.5?'hoe':'fork';beginAct(u,a);u.dur=a==='hoe'?4.5:5;
+ if(isFarm(id)){const a=Math.random()<.5?'hoe':'fork';beginAct(u,a);u.dur=a==='hoe'?4.5:5;
   if(a==='fork'){const bx=u.c*CELL;u.hx=u.x-bx<48?bx+76:bx+20}return true} // fork: carries it across the field
  // Alchemist: brew at the table 60%, research formulas 10%, a solution goes wrong and fills the room with smoke 30%
  // Secret: the mad scientist (bottom-right space), 15%: turns into a beast-man and attacks a free neighbor
- if(madSci(u)&&!u.as&&Math.random()<ODDS.beast&&cellX(u)===u.c&&cellY(u)===u.r){const o=nbrs(u).filter(v=>v.id!=='farmer');if(o.length){beastOut(u,pick(o));return true}}
+ if(madSci(u)&&!u.as&&Math.random()<ODDS.beast&&cellX(u)===u.c&&cellY(u)===u.r){const o=nbrs(u).filter(v=>!isFarm(v.id));if(o.length){beastOut(u,pick(o));return true}}
  // A Merchant next to the Alchemist, 10%: a promotional sale of the Alchemist's potions (a customer comes in)
  if((id==='merchant'||id==='apothecary')&&alcNext(u)&&Math.random()<ODDS.promo){beginAct(u,'promo');u.dur=7;customerEnter(u);return true}
  // Druid: tend the grove 40%, talk to deer and birds 40%, predict the weather 20%.
@@ -198,7 +236,7 @@ function startAct(u){
  if(u.id==='rogue'&&!u.as){
   if(u.mageTag&&Math.random()<ODDS.rogueArtifact){beginAct(u,'conjure');u.dur=3;return true}
   const R=ODDS.rogue,a=r<R.daggers?'daggers':r<R.daggers+R.smokebomb?'smokebomb':r<R.daggers+R.smokebomb+R.disguise?'disguise':'count';
-  if(a==='disguise'){const o=Object.values(U).filter(v=>v!==u&&!v.dead&&v.id!=='farmer'&&v.id!=='rogue'&&!v.form);if(!o.length)return false;disguise(u,pick(o));return true}
+  if(a==='disguise'){const o=Object.values(U).filter(v=>v!==u&&!v.dead&&!isFarm(v.id)&&v.id!=='rogue'&&!v.form);if(!o.length)return false;disguise(u,pick(o));return true}
   beginAct(u,a);u.dur={daggers:5,smokebomb:4,count:4}[a];if(a==='daggers'){u.hx=u.c*CELL+30;}return true}
  if(id==='wizard'){
   // next to a Merchant, 1% chance he spends BREW_COST coins brewing a potion
@@ -313,6 +351,15 @@ function acting(u,dt){
  if(u.act==='ascend'){once('a',.2,()=>{say(u,'This artifact... the forest is calling me.');u.glow=2.6});once('b',1.6,()=>{u.arch=true;setLabel(u);poof(u.x,u.y-30,'#9affb0');poof(u.x,u.y-10,'#f2d870');u.mood='happy';u.mt=2;save()});once('c',2.2,()=>say(u,'I am the Archdruid now.'))}
  // the Monarch holds court on the throne (generous or greedy orders)
  if(u.act==='court'){if(walkTo(u.hx)&&u.at>=1)u.face=1;once('s',1.8,()=>{say(u,pick(COURT[u.trait]||COURT.generous));gest(u,'up',1.2)})}
+ // the Traveling Merchant tidies the wares on his stand
+ if(u.act==='wares'){if(walkTo(u.hx)&&u.at>=1)u.face=-1;once('s',2,()=>say(u,pick(['Rare goods from far away!','Artifacts! Genuine-ish!','Buying scrolls, potions and ingots!','Only here until the road calls.'])))}
+ // the Necromancer's prisoners (granted by the Monarch): they shuffle in, and a ritual turns them into skeletons that follow him
+ if(u.act==='prisoners'){const bx=u.c*CELL,by=u.r*CELL;
+  once('d',.2,()=>{const ex=EXIT[doorOf(u)],door=bx+ex.x;npcDoor(u,1);u.crowd=[18,34,80].map((sx,i)=>{const p=crowdPerson('prisoner',door,by+ex.ay,[{x:door,y:by+FY},{x:bx+sx,y:by+FY}],'shock');p.t=-i*.4;return p})});
+  once('s',2.4,()=>{say(u,'Your freedom is over. Your service begins!');u.face=1});
+  once('g',3,()=>(u.crowd||[]).forEach(p=>{poof(p.x,p.y-20,'#7aff7a');p.mood='hurt'}));
+  once('k',4.6,()=>{(u.crowd||[]).forEach(p=>{poof(p.x,p.y-20,'#e8e4d0');poof(p.x,p.y-6,'#7aff7a')});u.crowd=null;u.minions=PRISONERS;u.mood='happy';u.mt=2;save()});
+  once('h',5.4,()=>say(u,'Rise, my bony friends. Follow me!'))}
  if(u.act==='storm'){once('r',.6,()=>{rains.push({r:u.r,c:u.c,t:0});say(u,'Let the rain call everyone home!')});
   // everyone who is away (dates, crusades, dungeons, adventures) comes home now, as if the whole time had passed; dates go well
   once('h',2,()=>Object.values(U).forEach(v=>{if(v.st==='away'){v.awayT=0;if(v.awayKind==='date')v.dateOk=true}}))}
@@ -325,7 +372,7 @@ function acting(u,dt){
  if(u.act==='dance'){if(Math.floor(u.at*2.5)!==Math.floor((u.at-dt)*2.5)){u.face=-u.face;u.hop=.3}once('s',.4,()=>say(u,'My feet! They will not stop!'));once('t',7,()=>say(u,'Somebody make it stop!'));once('e',14.6,()=>{u.mood='hurt';u.mt=1.5;say(u,'Phew. Never again.')})}
  if(u.act==='recruit'){once('a',.3,()=>{say(u,'Adventure awaits! Who is brave enough?');gest(u,'both',1)});
   once('b',1.4,()=>(u.recruits||[]).forEach(i=>{const v=U[i];if(v){v.hop=.4;v.mood='happy';v.mt=1.5;say(v,pick(['Me!','Count me in!','For glory!']))}}));
-  once('c',2.6,()=>{const ok=recruitable(u).map(v=>v.id),g=(u.recruits||[]).filter(i=>ok.includes(i)).map(i=>U[i]);g.forEach(stopIdle);if(g.length){goAway(g,'adventure',ADVENTURE_TIME);markSeen('adventure')}u.recruits=null})}
+  once('c',2.6,()=>{const ok=recruitable(u).map(v=>v.id),g=(u.recruits||[]).filter(i=>ok.includes(i)).map(i=>U[i]);g.forEach(stopIdle);if(g.length){goAway(g,'adventure',ADVENTURE_TIME);g.forEach(v=>v.advBy=u.id);u.advLeft=g.length;markSeen('adventure')}u.recruits=null})}
  // ---- Rogue idles ----
  if(u.act==='daggers'){if(walkTo(u.hx)&&u.at>=.8)u.face=1;once('h',4.4,()=>{u.mood='happy';u.mt=1;say(u,'Bullseye.')})}
  if(u.act==='smokebomb'){once('a',.4,()=>{poof(u.x,u.y-20,'#8a8a96');poof(u.x,u.y-8,'#5a5a64');u.al=.08});
@@ -389,7 +436,7 @@ function acting(u,dt){
 }
 // ---- farmer visiting the Priest: comes out of the back door, stands beside him, leaves the same way ----
 // Which back door a room has (the Apothecary's is on the left)
-const doorOf=u=>TR[u.id]&&TR[u.id].up==='backdoorL'?'backdoorL':'backdoor';
+const doorOf=u=>TR[u.id]&&TR[u.id].up==='backdoorL'?'backdoorL':TR[u.id]&&TR[u.id].up==='royaldoor'?'royaldoor':'backdoor';
 function npcDoor(u,open){let f=u.npcDoor;
  if(open){if(!f||!u.fxs.includes(f)){const ex=doorOf(u);f={type:ex,x:u.c*CELL+EXIT[ex].x,y:u.r*CELL+EXIT[ex].y,open:0,want:1,a:1,vis:true,keep:true};u.fxs.push(f);u.npcDoor=f}f.want=1;f.closing=false;f.keep=true}
  else if(f){f.want=0;f.closing=true}}
@@ -428,7 +475,7 @@ const nextTo=(u,cls,not)=>Object.values(U).some(v=>v!==u&&v!==not&&hasClass(v,cl
 const deskOn=w=>w&&w.id==='wizard'&&nextTo(w,'merchant')&&nextTo(w,'mage');
 // secret: with the Druid (alive) next to her, potions cost DRUID_DISCOUNT coins less
 const druidNext=a=>!!U.druid&&!U.druid.dead&&!!rel(U.druid,a);
-function buyPotion(a){const cost=APOTH_COST-(druidNext(a)?DRUID_DISCOUNT:0);if((S.coins||0)<cost){toast('A potion is '+cost+' coins. You have '+(S.coins||0)+'.');return}
+function buyPotion(a){if(mourning()){toast('The kingdom is in mourning. No shopping during the funeral.');return}const cost=APOTH_COST-(druidNext(a)?DRUID_DISCOUNT:0);if((S.coins||0)<cost){toast('A potion is '+cost+' coins. You have '+(S.coins||0)+'.');return}
  ask('Buy a potion from the Apothecary for '+cost+' coins?','Buy',()=>{if(!U[a.id]||S.coins<cost)return;
  // secret: with the Alchemist next to her, 20% of potions come as two
  const two=U.alchemist&&!U.alchemist.form&&rel(U.alchemist,a)&&Math.random()<ODDS.twopot;
@@ -436,7 +483,7 @@ function buyPotion(a){const cost=APOTH_COST-(druidNext(a)?DRUID_DISCOUNT:0);if((
  if(cost<APOTH_COST){markSeen('ddiscount');if(!two)say(a,'Herbs from the Druid\'s grove. A little cheaper today!')}
  if(two){markSeen('twopot');say(a,'The Alchemist brewed a spare. Two for one!')}})}
 // The coin works any time: if the Wizard is home and free he writes it at his desk, otherwise the scroll is ready straight away
-function writeScroll(w){const cost=w.color==='black'?DESK_COST_BLACK:DESK_COST;
+function writeScroll(w){if(mourning()){toast('The kingdom is in mourning. No shopping during the funeral.');return}const cost=w.color==='black'?DESK_COST_BLACK:DESK_COST;
  if((S.coins||0)<cost){toast('A spell scroll costs '+cost+' coins. You have '+(S.coins||0)+'.');return}
  ask('Have the Wizard write a spell scroll for '+cost+' coins?','Write',()=>{if(!U[w.id]||S.coins<cost)return;
   if(freeU(w)&&cellX(w)===w.c&&cellY(w)===w.r){beginAct(w,'write');w.dur=2.6;w.cost=cost;return}
@@ -445,11 +492,13 @@ function writeScroll(w){const cost=w.color==='black'?DESK_COST_BLACK:DESK_COST;
 function apScroll(u){addItem('potion',1,u.x,u.y-50);poof(u.x,u.y-24,'#c890ff');u.hop=.4;u.mood='happy';u.mt=1.2;say(u,'A scroll? I can brew with this!')}
 function apPotion(u){addCoins(AP_POTION_COINS,u.x,u.y-50);u.hop=.4;u.mood='happy';u.mt=1.2;say(u,'Fine work! I will buy it.')}
 // ---- temporary Farmer box: appears on the nearest empty cell, grows a field for FARM_TIME seconds, then harvests ----
-function spawnFarm(near){if(U.farmer)return false;const seen={},q=[[near.r,near.c]];seen[near.r+','+near.c]=1;
- while(q.length){const[r,c]=q.shift();if(isOpen(r,c)&&!at(r,c)){addUnit('farmer',r,c,false);const fm=U.farmer;fm.farmT=FARM_TIME;fm.crop=Math.random()<.8?'wheat':'apple';fm.wait=2;
-   toast('A Farmer has set up a field next door! Harvest in '+Math.round(FARM_TIME/60)+' minutes.');return true}
+// (n = how many farms at most: the Druid's request makes up to DRUID_FARMS; each Farmer box is 'farmer', 'farmer2' or 'farmer3')
+function spawnFarm(near,n){n=n||1;let made=0;const seen={},q=[[near.r,near.c]];seen[near.r+','+near.c]=1;
+ while(q.length&&made<n){const[r,c]=q.shift();const fid=['farmer','farmer2','farmer3'].find(k=>!U[k]);if(!fid)break;
+  if(isOpen(r,c)&&!at(r,c)){addUnit(fid,r,c,false);const fm=U[fid];fm.farmT=FARM_TIME;fm.crop=Math.random()<.8?'wheat':'apple';fm.wait=2;made++}
   [[0,1],[0,-1],[1,0],[-1,0]].forEach(d=>{const k=(r+d[0])+','+(c+d[1]);if(r+d[0]>=0&&r+d[0]<ROWS&&c+d[1]>=0&&c+d[1]<COLS&&!seen[k]){seen[k]=1;q.push([r+d[0],c+d[1]])}})}
- return false}
+ if(made)toast((made>1?made+' Farmers have':'A Farmer has')+' set up '+(made>1?'fields':'a field')+' nearby! Harvest in '+Math.round(FARM_TIME/60)+' minutes.');
+ return made>0}
 // ---- purchase popup (in the page; browser pop-ups can be blocked) ----
 function ask(text,yes,onYes){const m=$('#modal');m.querySelector('p').textContent=text;const y=$('#mYes'),n=$('#mNo');y.textContent=yes||'Yes';
  m.hidden=false;const close=()=>{m.hidden=true;y.onclick=n.onclick=null};y.onclick=()=>{close();onYes()};n.onclick=close;y.focus()}
@@ -471,13 +520,16 @@ function startGather(P,list,kind){beginAct(P,kind||'massprayer');P.dur=999;P.gat
 const inGold=(x,y)=>S.goldCell&&x!=null&&Math.floor(x/CELL)===S.goldCell[1]&&cl(Math.floor((y+44)/CELL),0,ROWS-1)===S.goldCell[0];
 // The Druid's Sunshine on the space where the coins pop up: a Merchant there earns 20% more, a Farmer 50% more
 function sunBonus(n,x,y){if(x==null)return n;const c=Math.floor(x/CELL),r=cl(Math.floor((y+44)/CELL),0,ROWS-1);if(weatherAt(r,c)!=='sunshine')return n;const v=U[at(r,c)];
- return v&&v.id==='farmer'?Math.ceil(n*(1+ODDS.sunFarmer)):v&&hasClass(v,'merchant')?Math.ceil(n*(1+ODDS.sunMerchant)):n}
-function addCoins(n,x,y){n=sunBonus(n,x,y);if(inGold(x,y))n*=2;S.coins=(S.coins||0)+n;showCoins();checkUnlocks();save();if(x!=null)parts.push({k:'txt',s:'+'+n,x,y,t:0,life:1.4})}
+ return v&&isFarm(v.id)?Math.ceil(n*(1+ODDS.sunFarmer)):v&&hasClass(v,'merchant')?Math.ceil(n*(1+ODDS.sunMerchant)):n}
+// (force = paid even during the grand funeral: the Compendium's discovery rewards)
+function addCoins(n,x,y,force){if(mourning()&&!force){if(x!=null)parts.push({k:'txt',s:'mourning',x,y,t:0,life:1.4});return}n=sunBonus(n,x,y);if(inGold(x,y))n*=2;S.coins=(S.coins||0)+n;showCoins();checkUnlocks();save();if(x!=null)parts.push({k:'txt',s:'+'+n,x,y,t:0,life:1.4})}
 // ---- unlocks that depend on what you hold ----
 function checkUnlocks(){checkEggs();
  // the Druid: every board space bought; the Blacksmith: SMITH_UNLOCK coins spent in total
  if(!S.un.druid&&S.cells&&Array.from({length:ROWS*COLS},(_,i)=>isOpen(Math.floor(i/COLS),i%COLS)).every(Boolean)){S.un.druid=true;buildShelf();save();toast('Every space is open... a Druid steps out of the woods. A Druid box has appeared on the shelf!')}
- if(!S.un.monarch&&Object.values(U).filter(v=>v.id!=='farmer').length>=MONARCH_UNLOCK){S.un.monarch=true;buildShelf();save();toast('Ten boxes on the board... a kingdom! A Monarch box has appeared on the shelf.')} // the Monarch: MONARCH_UNLOCK boxes on the board
+ if(!S.un.monarch&&Object.values(U).filter(v=>!isFarm(v.id)).length>=MONARCH_UNLOCK){S.un.monarch=true;buildShelf();save();toast('Ten boxes on the board... a kingdom! A Monarch box has appeared on the shelf.')} // the Monarch: MONARCH_UNLOCK boxes on the board
+ // the Traveling Merchant: four Merchants (by tag) in a 2x2 square
+ if(!S.un.traveler){const mr=(r,c)=>hasClass(U[at(r,c)],'merchant');for(let r=0;r<ROWS-1;r++)for(let c=0;c<COLS-1;c++)if(!S.un.traveler&&mr(r,c)&&mr(r,c+1)&&mr(r+1,c)&&mr(r+1,c+1)){S.un.traveler=true;buildShelf();save();toast('Four Merchants side by side... word spreads along the roads. A Traveling Merchant box has appeared on the shelf!')}}
  if(!S.un.blacksmith&&(S.spent||0)>=SMITH_UNLOCK){S.un.blacksmith=true;buildShelf();save();toast('All that spending caught the eye of a Blacksmith. A Blacksmith box has appeared on the shelf!')}if(!S.un.merchant&&(S.coins||0)>=MERCHANT_COINS){S.un.merchant=true;buildShelf();toast('Business is booming! A Fruit Merchant box has appeared on the shelf.')}
  if(!S.un.apothecary&&Object.values(U).some(m=>CLASS[m.id]==='merchant'&&Object.values(U).some(v=>v!==m&&CLASS[v.id]==='mage'&&rel(v,m)))){S.un.apothecary=true;buildShelf();save();toast('Word of trade reaches the mages... an Apothecary box has appeared on the shelf.')}}
 // ---- Compendium: remember every interaction/idle/item effect that has happened (gold border) ----
@@ -489,7 +541,7 @@ function markSeen(k){k=SEEN_ALIAS[k]||k;if(!k||S.seen[k])return;S.seen[k]=1;save
 const ALL_KEYS=[...new Set(COMP_TABS.flatMap(t=>[...t.pairs,...t.idle,...t.items]))];
 const foundCount=()=>ALL_KEYS.filter(k=>S.seen[k]).length;
 function checkDiscoveries(){const n=foundCount(),due=Math.floor(n/DISCOVER_EVERY);
- while((S.rewarded||0)<due){S.rewarded=(S.rewarded||0)+1;addCoins(DISCOVER_REWARD);toast(n+' things discovered! +'+DISCOVER_REWARD+' coins')}
+ while((S.rewarded||0)<due){S.rewarded=(S.rewarded||0)+1;addCoins(DISCOVER_REWARD,null,null,true);toast(n+' things discovered! +'+DISCOVER_REWARD+' coins')}
  // ROGUE_UNLOCK discoveries: the Rogue
  if(!S.un.rogue&&n>=ROGUE_UNLOCK){S.un.rogue=true;buildShelf();save();setTimeout(()=>toast(n+' discoveries! A shadowy Rogue box has appeared on the shelf.'),1500)}}
 // Easter eggs that are noticed just by being on the board
@@ -500,13 +552,18 @@ function goHome(v){const r=cellY(v),c=cellX(v);v.st='back';v.path=r===v.r&&c===v
 // Also used for dates (kind 'date'): both leave the board for `time` seconds; ok = whether the date went well
 function goCrusade(a,b,kind,time,ok){goAway([a,b],kind,time,ok)}
 // Several characters leave the board together for `time` seconds (also the Blacksmith's adventure)
-function goAway(list,kind,time,ok){list.forEach((v,i)=>{clearFx(v);v.target=null;v.hosting=null;v.path=[];v.st='away';v.awayT=time||CRUSADE_TIME;v.awayKind=kind||'crusade';v.dateOk=ok;v.dateLead=v.id!=='apothecary';v.al=0;poof(v.x,v.y-24,kind==='date'?'#f080a0':kind==='dungeon'?'#8a8a96':'#f2d870')})}
+function goAway(list,kind,time,ok){list.forEach((v,i)=>{clearFx(v);v.target=null;v.hosting=null;v.path=[];v.st='away';v.awayT=time||CRUSADE_TIME;v.awayKind=kind||'crusade';v.dateOk=ok;v.dateLead=v.id!=='apothecary';v.al=0;poof(v.x,v.y-24,kind==='date'||kind==='leave'?'#f080a0':kind==='dungeon'?'#8a8a96':'#f2d870')})}
+// Secret: the last adventurer is home and a generous Monarch lives next to the Blacksmith: the crown rewards the company with an artifact
+function advDone(v){const B=U[v.advBy];v.advBy=null;if(!B||!(B.advLeft>0)||--B.advLeft>0)return;const M=U.monarch;
+ if(M&&!M.dead&&M.trait==='generous'&&rel(M,B)&&!mourning()){addItem('artifact',1,B.x,B.y-50);markSeen('royalpatron');say(M,'Brave adventurers! Take this artifact, with my thanks.');gest(M,'up',1.2);toast('The generous '+(M.color==='f'?'Queen':'King')+' rewards the adventure with an artifact!')}}
 function stepAway(v,dt){v.awayT-=dt;if(v.awayT>0)return;toHome(v);v.al=1;
+ // back from time off granted by the Monarch (the Apothecary and her noble date)
+ if(v.awayKind==='leave'){v.awayKind=null;poof(v.x,v.y-24,'#f080a0');hearts(v);v.hop=.5;v.mood='happy';v.mt=3;say(v,pick(['What a lovely holiday!','He took me boating. On a real lake!','Back to work... sigh. Worth it.']));return}
  if(v.awayKind==='date'){v.awayKind=null;poof(v.x,v.y-24,v.dateOk?'#f080a0':'#8a8a9a');v.mood=v.dateOk?'happy':'hurt';v.mt=3;
   if(v.dateOk){hearts(v);v.hop=.5}
   if(v.dateLead){const who=v.id==='wizard'?'wizard':'knight',lines=(v.dateOk?DATE_GOOD:DATE_BAD)[who]||DATE_GOOD.knight;say(v,pick(lines));markSeen(v.id==='wizard'?'wdate':'kdate')}return} // only his own words say how it went
  // back from the Blacksmith's adventure: 10% did not make it; the others bring loot by their tags
- if(v.awayKind==='adventure'){v.awayKind=null;if(Math.random()<doom(ODDS.adventureDeath,v)){const nm=CH[idOf(v)].name;kill(v);toast('The '+nm+' did not come back from the adventure.');return}
+ if(v.awayKind==='adventure'){v.awayKind=null;advDone(v);if(Math.random()<doom(ODDS.adventureDeath,v)){const nm=CH[idOf(v)].name;kill(v);toast('The '+nm+' did not come back from the adventure.');return}
   poof(v.x,v.y-24,'#f2d870');v.mood='happy';v.mt=2;v.hop=.5;const got=[];
   if(hasClass(v,'fighter')){const n=1+Math.floor(Math.random()*10);addCoins(n,v.x,v.y-50);got.push(n+' coins')}
   if(hasClass(v,'mage')&&Math.random()<ODDS.advScroll){addItem('scroll',1,v.x+14,v.y-60);got.push('a scroll')}
@@ -579,6 +636,9 @@ Object.assign(ITEM_FX.scroll,{druid:(u)=>dScroll(u),blacksmith:(u)=>bScroll(u)})
 // Which Compendium tile each item effect lights up (the artifact on the Alchemist marks its own: stone or elixir)
 const ITEM_KEY={scroll:{wizard:'fireball',knight:'glow',priest:'banish',necromancer:'nscroll',merchant:'monkey',apothecary:'appotion',alchemist:'alcscroll',rogue:'roguemage'},
  potion:{wizard:'teleport',knight:'flex',priest:'wings',necromancer:'sniff',merchant:'backwards',apothecary:'apcoins',alchemist:'alcpotion',rogue:'spook',druid:'dpotion'},artifact:{priest:'relic',alchemist:null},ingot:{'*':'reinforce'}};
+// the Traveling Merchant buys items; an ingot does nothing on the Monarch (no tags, ever)
+Object.assign(ITEM_FX.scroll,{traveler:(u)=>tSell(u,'scroll')});Object.assign(ITEM_FX.potion,{traveler:(u)=>tSell(u,'potion')});Object.assign(ITEM_FX.ingot,{traveler:(u)=>tSell(u,'ingot'),monarch:()=>false});
+ITEM_KEY.scroll.traveler='tscroll';ITEM_KEY.potion.traveler='tpotion';ITEM_KEY.ingot={'*':'reinforce',traveler:'tingot'};
 ITEM_KEY.scroll.druid='dscroll';ITEM_KEY.artifact.druid='archdruid';ITEM_KEY.scroll.blacksmith='bscroll';ITEM_KEY.potion.blacksmith='bpotion';
 // ---- items on the Alchemist ----
 function alcLuck(u){u.luckT=ALC_LUCK_TIME;poof(u.x,u.y-24,'#f2c84a');u.hop=.5;u.mood='happy';u.mt=1.5;say(u,'Luck for my neighbors! For one minute.')}
@@ -593,10 +653,10 @@ function rogueSpook(u){const tg=Object.values(U).filter(v=>v!==u&&freeU(v));if(!
  const h=pick(tg);u.inv=true;u.tp=true;u.vk='spook';u.st='out';u.target=h.id;h.hosting=u.id;h.path=[];h.st='idle';h.act=null;
  u.path=[{k:'pause',w:.8},{k:'tele',x:standBy(h,30),y:h.r*CELL+FY,quiet:1}];poof(u.x,u.y-20,'#5a5a64')}
 // Items are a counted inventory (S.inv). Using one takes it away; they are earned in the game (e.g. crafting).
-function addItem(kind,n,x,y){S.inv[kind]=(S.inv[kind]||0)+n;showItems();save();if(x!=null)parts.push({k:'txt',s:'+'+n,x,y,t:0,life:1.6,icon:kind})}
+function addItem(kind,n,x,y){if(mourning())return;S.inv[kind]=(S.inv[kind]||0)+n;showItems();save();if(x!=null)parts.push({k:'txt',s:'+'+n,x,y,t:0,life:1.6,icon:kind})}
 function useItem(kind,r,c){
  if(!(S.inv[kind]>0))return;
- const u=U[at(r,c)],busy=['ascend','wcast','dance','storm','recruit','spirit','demon','fireball','flex','sip','horse','raise','banish','sniff','farmer','exorcise','sleepc','swapc'];
+ const u=U[at(r,c)],busy=['prisoners','ascend','wcast','dance','storm','recruit','spirit','demon','fireball','flex','sip','horse','raise','banish','sniff','farmer','exorcise','sleepc','swapc'];
  const no=()=>poof(c*CELL+48,r*CELL+48,'#8a8a9a'); // nothing happens (and the item is kept)
  // A potion wakes anyone asleep from the Necromancer's spell, wherever they are (without its normal effect)
  if(kind==='potion'){const z=Object.values(U).find(v=>v.st==='sleep'&&cellX(v)===c&&cellY(v)===r);if(z){S.inv.potion--;showItems();save();poof(z.x,z.y-24,'#c890ff');wakeUnit(z);return}}
@@ -619,7 +679,7 @@ function bPotion(u){u.mood='mad';u.mt=1.2;gest(u,'fwd',1);say(u,'I do not drink 
 function bScroll(u){beginAct(u,'dance',1);u.dur=DANCE_TIME;u.mood='shock';u.mt=DANCE_TIME;poof(u.x,u.y-24,'#c890ff')}
 function reinforce(u){if(hasClass(u,'fighter'))return false;u.reinforced=true;setLabel(u);poof(u.x,u.y-24,'#cfd6e0');poof(u.x,u.y-10,'#a8b0c0');u.mood='happy';u.mt=1.5;u.hop=.4;say(u,'Reinforced! I feel ready for a fight.');save()}
 // The Blacksmith's shop: a steel ingot for INGOT_COST coins
-function buyIngot(b){if((S.coins||0)<INGOT_COST){toast('An ingot is '+INGOT_COST+' coins. You have '+(S.coins||0)+'.');return}
+function buyIngot(b){if(mourning()){toast('The kingdom is in mourning. No shopping during the funeral.');return}if((S.coins||0)<INGOT_COST){toast('An ingot is '+INGOT_COST+' coins. You have '+(S.coins||0)+'.');return}
  ask('Buy a steel ingot from the Blacksmith for '+INGOT_COST+' coins?','Buy',()=>{if(!U[b.id]||S.coins<INGOT_COST)return;spend(INGOT_COST);showCoins();save();
   parts.push({k:'txt',s:'-'+INGOT_COST,x:b.x-14,y:b.y-56,t:0,life:1.4,icon:'coin'});addItem('ingot',1,b.x+14,b.y-40);b.hop=.5;b.mood='happy';b.mt=1.2;gest(b,'fwd',.8);markSeen('ingotshop')})}
 // Jagged lightning from caster a to target b (blk = the Necromancer's black lightning)
@@ -657,7 +717,7 @@ function potionTeleport(u){ // (uses up the potion even if nobody is free: he ju
 // Up/down: the ROOMS decide (TR in data.js): leave by this room's stairs, arrive by the other room's.
 // Not next door (potion teleport): a pair of portals.
 // Rooms without side doors, and a room's up/down exits (the Rogue's graveyard just fades)
-const noSideDoor=id=>id==='farmer'||id==='druid'||(id==='rogue'&&graveyardOn(U.rogue));
+const noSideDoor=id=>isFarm(id)||id==='druid'||id==='traveler'||(id==='rogue'&&graveyardOn(U.rogue));
 const exitsOf=id=>id==='rogue'&&graveyardOn(U.rogue)?{up:'fade',down:'fade'}:TR[id];
 function route(u,r1,c1,r2,c2,fin){
  const ra=at(r1,c1)||u.id,rb=at(r2,c2)||u.id,dc=c2-c1,dr=r2-r1;
@@ -699,7 +759,10 @@ function decide(u){
  if(wxOf(u)==='blizzard')P*=1-ODDS.blizzVisit; // the Druid's Blizzard: 30% fewer visits
  const rr=Math.random();
  if(rr>=P&&rr<P+ODDS.idle&&startAct(u))return;
- // The Druid never visits: he casts weather on a random space instead (when he can)
+ // The Druid never visits (he casts weather instead), except once to make his request of a Monarch next to him
+ if(rr<P&&idOf(u)==='druid'&&!u.as&&!u.asked&&U.monarch&&rel(U.monarch,u)&&freeU(U.monarch)&&!(u.sickT>0)){visit(u,U.monarch,'request');return}
+ // A greedy Monarch never visits anyone; the Traveling Merchant has no scenes at all: they just wander
+ if(rr<P&&((idOf(u)==='monarch'&&u.trait==='greedy')||u.id==='traveler')){u.st='walk';u.path=[{k:'walk',x:u.c*CELL+16+Math.random()*64,y:u.r*CELL+FY}];return}
  if(rr<P&&idOf(u)==='druid'){if(!u.as&&startWeather(u))return;u.st='walk';u.path=[{k:'walk',x:u.c*CELL+16+Math.random()*64,y:u.r*CELL+FY}];return}
  if(rr<P&&!(u.sickT>0)){ // sick (poisoned wine): no neighbor scenes
   // Blacksmith with two or more free Fighter neighbors: 20% of his visits become an adventure (they leave for ADVENTURE_TIME)
@@ -712,6 +775,10 @@ function decide(u){
    // Haste potions: a Fighter next to the Alchemist picks Mage neighbors 50% more often
    const hasted=hasClass(u,'fighter')&&alcNext(u),h=hasted?pickW(opts,v=>hasClass(v,'mage')?1+ODDS.haste:1):pick(opts);let kd=pairKind(u,h);
    if(hasted&&hasClass(h,'mage')){markSeen('haste');poof(u.x,u.y-34,'#7ae0ff')}
+   // Visiting the Monarch: the first visit is a request (once per character)
+   if(h.id==='monarch'&&reqOf(u)&&!u.asked){visit(u,h,'request');return}
+   // Necromancer on the bottom row visiting the Druid beside him: 30% he drains the Druid's life
+   if(idOf(u)==='necromancer'&&idOf(h)==='druid'&&u.r===ROWS-1&&h.r===u.r&&luck(doom(ODDS.drain,u,h),u,h)){visit(u,h,'drain');return}
    // The Alchemist and any Mage (by tag): they talk about whether magic is useful
    if(!kd){const al=idOf(u)==='alchemist'?u:idOf(h)==='alchemist'?h:null,o=al===u?h:u;if(al&&!al.form&&hasClass(o,'mage'))kd='magictalk'}
    // Rogue + anyone, any side: 0.5% the Rogue turns assassin and kills them (not while disguised)
@@ -773,6 +840,19 @@ function decide(u){
  }
  u.st='walk';u.path=[{k:'walk',x:u.c*CELL+16+Math.random()*64,y:u.r*CELL+FY}];
 }
+// What a character can ask the Monarch for (REQ_ASK), or null. Only a Knight who is a Paladin has a request.
+function reqOf(u){if(!u||u.as||u.form)return null;if(u.id==='knight')return u.paladin?'paladin':null;return REQ_ASK[u.id]?u.id:null}
+// A granted request: what the Monarch gives (u = who asked, M = the Monarch)
+function grantReq(u,M,k){poof(u.x,u.y-24,'#f2c84a');u.mood='happy';u.mt=2;u.hop=.5;
+ if(k==='blacksmith'){u.helper=true;say(u,'An apprentice! I will teach him everything.')}
+ if(k==='wizard'){u.staff=true;poof(u.x-u.face*13,u.y-44,'#7ff0ff');say(u,'Dark steel... and the orb floats! Marvelous.')}
+ if(k==='priest'){u.barrel=true;say(u,'A whole barrel of holy water. Bless you!')}
+ if(k==='alchemist'){addItem('potion',2,u.x,u.y-50);say(u,'Dragon scales and moon dust! Two potions, coming up.')}
+ if(k==='rogue'){u.sacks=true;say(u,'Sacks of gold! I will put them... somewhere safe.')}
+ if(k==='merchant'){u.pine=true;say(u,'Pineapples! The customers will go wild.')}
+ if(k==='necromancer'){u.thenPrison=true;say(u,'Three prisoners. Splendid. I will see them at home.')}
+ if(k==='druid'){say(u,spawnFarm(u,DRUID_FARMS)?'The fields will grow wild and free!':'Hmm. There is no free land nearby.')}
+ save()}
 function visit(u,h,vk){
  const hx=h.c*CELL,hy=h.r*CELL,dc=h.c-u.c;let dest=standBy(h,30,dc!==0?-dc:pick([-1,1])),ox=0; // beside the host, never on top of them
  // Orc fight: the orc appears on the far side of the room from the host; the knight stands between them
@@ -814,6 +894,7 @@ function arrive(u){u.inv=false;
  u.tp=false;u.sneak=false;
  // Home from buying poison: he gives the poisoned wine to another free neighbor
  if(u.thenVisit){const q=u.thenVisit;u.thenVisit=null;const o=nbrs(u).filter(v=>v.id!==q.not);if(o.length){visit(u,pick(o),q.kind);return}say(u,'Nobody to share my wine with. Pity.')}
+ if(u.thenPrison){u.thenPrison=false;beginAct(u,'prisoners');u.dur=6.4;return} // home with the Monarch's prisoners: the ritual
  if(u.after){const a=u.after;u.after=null;beginAct(u,a);return}
  u.st='idle';u.wait=u.form==='dknight'?.3:2+Math.random()*3;
 }
@@ -1329,6 +1410,31 @@ function talk(u,dt){
   once('a',.3,()=>{say(Pr,'To the crusade!');gest(Pr,'both',1);gest(K,'up',1);K.mood=Pr.mood='happy';K.mt=Pr.mt=1.5});
   if(u.tt>1.6){const q=cl(1-(u.tt-1.6)/.6,0,1);u.al=h.al=q} // they fade away on their journey
   if(u.tt>=2.2){goCrusade(u,h);return}}
+ // ---------- the Monarch ----------
+ // A request (once per character): generous Monarchs grant 80%, greedy ones 10% (with a scoff). A refusal leaves a grudge.
+ else if(k==='request'){const M=h,gen=M.trait!=='greedy';if(!u.reqKind)u.reqKind=reqOf(u)||'wizard';const q=u.reqKind;end=q==='paladin'&&u.reqOk?8:6.4;
+  once('a',.4,()=>{say(u,REQ_ASK[q]);gest(u,'fwd',1.4);if(q==='paladin')u.kneel=true});
+  once('b',2.8,()=>{const ok=Math.random()<(gen?ODDS.reqGenerous:ODDS.reqGreedy);u.reqOk=ok;u.asked=true;markSeen('rq:'+q);
+   say(M,pick((ok?REQ_YES:REQ_NO)[gen?'generous':'greedy']));gest(M,ok?'up':'fwd',1.2);M.mood=ok?(gen?'happy':'roll'):(gen?'hurt':'mad');M.mt=2;
+   if(!ok){u.grudge=true;u.kneel=false;markSeen('rqdeny')}save()});
+  once('c',4.4,()=>{if(!u.reqOk){u.mood='mad';u.mt=2;say(u,pick(['...I will remember this.','Hmph. So much for royal kindness.','As you wish... Your Majesty.']));return}
+   if(q==='apothecary'){const ex=EXIT[doorOf(M)],door=M.c*CELL+ex.x,by=M.r*CELL;npcDoor(M,1);M.crowd=[crowdPerson('noble2',door,by+ex.ay,[{x:door,y:by+FY},{x:standBy(u,24),y:by+FY}],'happy')];say(u,'Oh! Here is my date now.');hearts(u)}
+   else if(q!=='paladin')grantReq(u,M,q)});
+  // the knighting ceremony: the Paladin kneels, the Monarch dubs him
+  if(q==='paladin'&&u.reqOk){once('k1',4.4,()=>{say(M,'I dub thee... Sir Paladin!');gest(M,'fwd',2);flashes.push({x:M.c*CELL,y:M.r*CELL,t:0,col:'255,220,100'})});
+   once('k2',6,()=>{u.kneel=false;u.sir=true;setLabel(u);poof(u.x,u.y-30,'#f2c84a');u.mood='happy';u.mt=2;u.hop=.5;say(u,'I am honored, Your Majesty!');save()})}}
+ // Secret: revenge for a refused request. The Monarch dies (the killer does not attend the funeral).
+ else if(k==='regicide'){end=4;const M=h;
+  once('a',.3,()=>{say(u,pick(['You refused me. Now you pay!','No one turns me away!']));u.mood='mad';u.mt=3;M.mood='shock';M.mt=3;M.hop=.4});
+  once('b',1.3,()=>{u.act=fightAct(u);u.at=0;gest(u,'fwd',1)});
+  once('c',2,()=>{flashes.push({x:M.c*CELL,y:M.r*CELL,t:0,col:'200,40,40'});M.blink=.6;M.mood='hurt';M.mt=2});
+  once('d',2.6,()=>{u.act=null;u.regicide=true;markSeen('regicide');const nm=(M.color==='f'?'Queen':'King');kill(M);toast('The '+nm+' has been assassinated by the '+CH[idOf(u)].name+'!')})}
+ // Necromancer on the bottom row and the Druid beside him: black lightning drains the Druid's life
+ else if(k==='drain'){end=4.4;const Dr=h;
+  once('a',.3,()=>{say(u,'Your life force... I will take it.');gest(u,'both',2.4);Dr.mood='shock';Dr.mt=1.5});
+  for(let i=0;i<4;i++)once('z'+i,1+i*.4,()=>{zaps.push(mkZap(u,Dr,true));Dr.blink=.3});
+  once('h',2.2,()=>{Dr.mood='hurt';Dr.mt=2;say(Dr,'The grove... grows dark...')});
+  once('k',3.2,()=>{if(U[Dr.id]&&!Dr.dead){markSeen('drain');kill(Dr)}u.mood='happy';u.mt=1.5})}
  else if(k==='cleanse'){end=4.6;// the Priest frees the Death Knight with holy light; he becomes a Knight again
   const D=Object.values(U).find(v=>v.form==='dknight');
   once('a',.3,()=>{Pr.act='smite';Pr.at=0;gest(Pr,'both',2);N.mood='shock';N.mt=2.5});
@@ -1344,6 +1450,9 @@ function talk(u,dt){
  if(k==='bees'&&u.tt>end){clearFx(u);h.act=null;h.hosting=null;u.target=null;
   h.st='back';h.path=[...route(h,h.r,h.c,u.r,u.c,{x:u.c*CELL+30+Math.random()*36,y:u.r*CELL+FY}),{k:'pause',w:BEES_TIME-2.5},...route(h,u.r,u.c,h.r,h.c,home(h))];
   u.st='back';u.path=route(u,h.r,h.c,u.r,u.c,home(u));return}
+ // Time off granted: the Apothecary leaves with her noble date for LEAVE_TIME seconds
+ if(k==='request'&&u.reqKind==='apothecary'&&u.reqOk&&u.tt>end){const M=h;(M.crowd||[]).forEach(p=>poof(p.x,p.y-20,'#f080a0'));M.crowd=null;if(M.npcDoor)npcDoor(M,0);freeHost(M);u.target=null;u.reqKind=null;goAway([u],'leave',LEAVE_TIME);save();return}
+ if(k==='request'&&u.tt>end)u.reqKind=null;
  if(k==='dknight'&&u.tt>end){clearFx(u);freeHost(h);u.target=null;u.st='idle';u.wait=.5;return} // the new Death Knight stays with the Necromancer
  // Four Mages: the potion takes effect on the Mage once the Alchemist heads home
  if(k==='fourmage'&&u.tt>end){clearFx(u);freeHost(h);u.target=null;u.st='back';u.path=route(u,h.r,h.c,u.r,u.c,home(u));const fx=ITEM_FX.potion[h.id];if(fx&&U[h.id]&&fx(h)!==false)markSeen(ITEM_KEY.potion[h.id]);return}
@@ -1371,7 +1480,7 @@ function step(dt){
  bubs.forEach(u=>{if((!u.talker&&(!U[u.id]||U[u.id]!==u))||(u.bubT-=dt)<=0)dropBub(u)}); // talker = a creature that speaks (the demon whispering to the Rogue)
  refreshTags();
  rains.forEach(q=>q.t+=dt);rains=rains.filter(q=>q.t<6);
- stepWeather(dt);
+ stepWeather(dt);stepRoyal(dt);stepTraveler(dt);
  for(const id in U){const u=U[id];
   if(u.dead)continue; // a buried Druid does nothing at all
   if(u.id==='druid'&&!u.pet)u.pet={kind:u.fam||'bear',x:u.x,y:u.y,face:1}; // his animal: grizzly bear, eagle or wolf
@@ -1379,6 +1488,10 @@ function step(dt){
   if(u.hop>(u.hp||0)+1e-4)u.hd=u.hop;if(u.hop>0)u.hop-=dt;u.hp=u.hop;if(u.blink>0)u.blink-=dt;if(u.gt>0)u.gt-=dt;if(u.ward!=null)u.ward+=dt;if(u.wardHit>0)u.wardHit-=dt;
   if(u.glow>0)u.glow-=dt;if(u.drink>0&&(u.drink-=dt)<=0)u.drinkIcon=null;
   // the Necromancer's little skeleton follower (after the Rogue's betrayal) trots along behind him
+  // the Necromancer's skeletons from the Monarch's prisoners trot behind him in a line
+  if(u.minions){if(!u.mins)u.mins=[];while(u.mins.length<u.minions)u.mins.push({x:u.x,y:u.y,face:1,t:0});const bx=cellX(u)*CELL;u.mins.forEach((p,i)=>{const tx=cl(u.x-u.face*(18+i*11),bx+10,bx+86);if(Math.abs(tx-p.x)>60||Math.abs(u.y-p.y)>3){p.x=tx;p.y=u.y;p.walk=false}else{const d=tx-p.x;p.walk=Math.abs(d)>1;if(p.walk){p.face=d>0?1:-1;p.x+=Math.sign(d)*Math.min(Math.abs(d),40*dt);p.t+=dt}else p.face=u.face}})}
+  // the Blacksmith's apprentice (from the Monarch) potters about the forge on his own
+  if(u.helper){const bx=u.c*CELL;let a=u.appr;if(!a||Math.abs(a.x-bx-48)>48)a=u.appr={x:bx+30,face:1,t:0,tx:null,w:1};if(a.tx==null){a.walk=false;if((a.w-=dt)<=0)a.tx=bx+14+Math.random()*68}else{const d=a.tx-a.x;if(Math.abs(d)<1){a.tx=null;a.w=1.5+Math.random()*3;a.walk=false}else{a.walk=true;a.face=d>0?1:-1;a.x+=Math.sign(d)*Math.min(Math.abs(d),18*dt);a.t+=dt}}}
   if(u.pet){const p=u.pet,bx=cellX(u)*CELL,tx=cl(u.x-u.face*(p.kind==='bear'?32:p.kind==='wolf'?26:16),bx+(p.kind==='bear'?20:12),bx+(p.kind==='bear'?76:84));if(Math.abs(tx-p.x)>60||Math.abs(u.y-p.y)>3){p.x=tx;p.y=u.y;p.walk=false}else{const d=tx-p.x;p.walk=Math.abs(d)>1;if(p.walk){p.face=d>0?1:-1;p.x+=Math.sign(d)*Math.min(Math.abs(d),40*dt);p.t=(p.t||0)+dt}else p.face=u.face}}
   // poisoned wine: sick for SICK_TIME (no neighbor scenes); 5% it is fatal when it wears off
   if(u.sickT>0){if(Math.random()<dt*1.5)parts.push({k:'sick',x:u.x+Math.random()*12-6,y:u.y-40,t:0,life:1});
@@ -1392,6 +1505,8 @@ function step(dt){
   if(u.made)u.made.t+=dt;if(u.beam){u.beam.t+=dt;if(u.beam.t>.5)u.beam=null}
   if(u.st==='sleep'){stepSleep(u,dt);continue}
   if(u.st==='away'){stepAway(u,dt);continue} // on crusade
+  // the Traveling Merchant moves on when his time is up (once he is not in the middle of something)
+  if(u.id==='traveler'&&(u.travelT-=dt)<=0&&(u.st==='idle'||u.st==='walk'||u.st==='act')&&!u.hosting&&!u.target){travelerLeave(u);continue}
   if(u.disguiseT>0)u.disguiseT-=dt;if(u.as&&u.disguiseT<=0&&!u.target&&!u.hosting&&(u.st==='idle'||u.st==='walk'))undisguise(u); // the Rogue's disguise wears off
   if(u.luckT>0)u.luckT-=dt;
   // a Fighter neighbor died: after 1.5 s the Priest holds a funeral. An idle activity is interrupted; if he is busy otherwise he waits (up to 30 s).
@@ -1400,7 +1515,7 @@ function step(dt){
    if(freeU(u)&&home){u.funeral=0;startGather(u,nbrs(u),'funeral')}else if(u.funeral<-30)u.funeral=0}}
   if(u.bearT>0&&(u.bearT-=dt)<=0){u.form=null;setLabel(u);poof(u.x,u.y-24,'#a07850');u.mood='shock';u.mt=1.5;say(u,'What happened? Why am I so hairy?')}
   if(u.monkeyT>0&&(u.monkeyT-=dt)<=0){u.form=null;setLabel(u);poof(u.x,u.y-24,'#f2d040');u.mood='shock';u.mt=1.5;u.st='idle';u.path=[];u.act=null;u.wait=2}
-  if(u.farmT>0)u.farmT-=dt;if(u.id==='farmer'&&u.farmT<=0&&u.act!=='harvest'&&(u.st==='idle'||u.st==='walk'||u.st==='act')){u.path=[];beginAct(u,'harvest');u.dur=3.4}
+  if(u.farmT>0)u.farmT-=dt;if(isFarm(u.id)&&u.farmT<=0&&u.act!=='harvest'&&(u.st==='idle'||u.st==='walk'||u.st==='act')){u.path=[];beginAct(u,'harvest');u.dur=3.4}
   if(u.goldT>0)u.goldT-=dt;
   if(u.rotT>0&&(u.rotT-=dt)<=0){u.worms=false;poof(u.c*CELL+30,u.r*CELL+46,'#f08a20');say(u,'My fruit is fresh again!')}
   if(u.st==='gathered'){const P=U[u.gatherOf];if(!P||!P.gather){u.gatherOf=null;goHome(u)}else if(Math.abs(P.x-u.x)>2)u.face=P.x>u.x?1:-1;continue}
@@ -1427,18 +1542,20 @@ function render(){
  const dm=drag&&drag.moved?drag.id:null,live=Object.values(U).filter(u=>u.id!==dm);
  for(const id in U){const u=U[id],x=u.c*CELL,y=u.r*CELL;
   if(id===dm){g.strokeStyle='#5a5590';g.lineWidth=2;g.setLineDash([4,4]);g.strokeRect(x+4,y+4,CELL-8,CELL-8);g.setLineDash([])}
-  else{box(g,id,x,y,id==='druid'?u.r:u.weapon);const nb=(r2,c2)=>{const o=at(r2,c2);return o&&o!==dm};boxFrame(g,x,y,{t:!nb(u.r-1,u.c),b:!nb(u.r+1,u.c),l:!nb(u.r,u.c-1),r:!nb(u.r,u.c+1)})} // shared edges stay as thin as outer ones
+  else{box(g,id,x,y,id==='druid'?u.r:id==='monarch'?u.pal:u.weapon);const nb=(r2,c2)=>{const o=at(r2,c2);return o&&o!==dm};boxFrame(g,x,y,{t:!nb(u.r-1,u.c),b:!nb(u.r+1,u.c),l:!nb(u.r,u.c-1),r:!nb(u.r,u.c+1)})} // shared edges stay as thin as outer ones
   u.lb.style.opacity=id===dm?0:u.st==='away'?.45:u.dead?.6:1;
   if(id==='necromancer'&&id!==dm&&u.r===ROWS-1)drawSkulls(g,x,y); // easter egg: skulls on the bottom row
   if(id==='wizard'&&id!==dm&&deskOn(u))drawDesk(g,x,y); // writing desk (Merchant + Mage next door)
   if(id==='merchant'&&u.rotT>0&&id!==dm)drawRot(g,x,y,T,u.worms); // cursed: rotten fruit (and worms, from the Necromancer)
-  if(id==='farmer'&&id!==dm)drawField(g,x,y,u.crop||'wheat',u.harvested?.05:cl(1-u.farmT/FARM_TIME,0,1),T); // the growing field
+  if(id!==dm&&u.barrel)drawBarrel(g,x,y);if(id!==dm&&u.sacks)drawSacks(g,x,y);if(id!==dm&&u.pine)drawPines(g,x,y); // gifts from the Monarch
+  if(isFarm(id)&&id!==dm)drawField(g,x,y,u.crop||'wheat',u.harvested?.05:cl(1-u.farmT/FARM_TIME,0,1),T); // the growing field
   if(id==='merchant'&&u.goldT>0&&id!==dm&&!(u.rotT>0))drawGold(g,x,y,T); // golden apples
   if(id==='rogue'&&id!==dm&&graveyardOn(u))drawGraveyard(g,x,y,T); // secret: next to the Necromancer on the bottom row
   if(id!==dm)drawRoomLife(g,id,x,y,T)} // candle flames, clouds
  if(S.goldCell&&isOpen(S.goldCell[0],S.goldCell[1]))drawGoldCell(g,S.goldCell[1]*CELL,S.goldCell[0]*CELL,T); // philosopher's stone
  Object.values(U).forEach(u=>u.fxs.forEach(f=>drawFx(f)));
- live.forEach(u=>{if(u.act==='funeral')drawGrave(g,u.c*CELL,u.r*CELL)}); // the Priest's funeral
+ live.forEach(u=>{if(u.act==='funeral')drawGrave(g,u.c*CELL,u.r*CELL)});
+ live.forEach(u=>{const a=u.appr;if(u.helper&&a&&u.id!==dm)spr(g,'apprentice','ok',a.x,u.r*CELL+FY-3,a.face,a.walk?Math.sin(a.t*14):0,1,.8,'none',a.walk?stepOf(a.t):0)}); // the Blacksmith's apprentice // the Priest's funeral
  // background details behind the characters: horse, cat, tentacles through the Priest's window
  live.forEach(u=>{if(u.act==='horse')drawHorse(g,(u.c+1)*CELL,u.r*CELL+FY,u.at)});
  if(U.wizard&&dm!=='wizard')cats.forEach(k=>drawCat(g,U.wizard.c*CELL,U.wizard.r*CELL,k.t,k.dir));
@@ -1456,7 +1573,9 @@ function render(){
    if(p.act==='prac'){g.save();g.beginPath();g.rect(cellX(p)*CELL+4,cellY(p)*CELL,CELL-8,CELL);g.clip();drawAct(g,{act:'prac',at:p.t,x:p.x,y:p.y,face:p.face,weapon:'wood',form:'squire'});g.restore()}return}
   if(u.npcOf){const n=u.npcOf.npc,nh=n.hop>0?-Math.sin((1-n.hop/.5)*Math.PI)*8:0;
    spr(g,n.id,blinkMood(n.mood,7,T),n.x+(n.shake?Math.round(Math.sin(T*40)):0),n.y,n.face,(n.walk?Math.sin(n.t*14)*1:0)+nh,n.al,scl({y:n.y,sk:1}),'none',n.walk?stepOf(n.t):0);return}
+  if(u.dead&&u.id==='monarch'){drawCoffin(g,u.c*CELL,u.r*CELL,T);return} // the Monarch lying in state (grand funeral)
   if(u.dead){const bx=u.c*CELL,by=u.r*CELL,k=u.fam||'bear';drawMound(g,bx,by,T);if(k==='bear')drawBearPet(g,bx+70,by+FY,-1,0,false);else if(k==='wolf')drawWolfPet(g,bx+74,by+FY,-1,0,false);else drawEagle(g,bx+66,by+FY-4,-1,T,true);return} // buried Druid: a mound with a sapling, his animal keeping watch
+  if(u.staff&&!u.form&&!u.dress&&!u.asSprite){g.fillStyle='rgba(127,240,255,'+(.2+.1*Math.sin(T*3))+')';g.beginPath();g.arc(u.x-u.face*13,u.y-43,6,0,Math.PI*2);g.fill()} // the Wizard's floating orb glows
   if(u.arch&&!u.form&&!u.dress&&!u.asSprite){const ox=u.x-u.face*13,oy=u.y-41;g.fillStyle='rgba(150,255,170,'+(.22+.1*Math.sin(T*3))+')';g.beginPath();g.arc(ox,oy,7,0,Math.PI*2);g.fill()} // the Archdruid's staff glows
   const walking=(u.path.length&&u.path[0].k==='walk')||u.mv,hd=Math.max(u.hd||0,u.hop),hop=u.hop>0?-Math.sin((1-u.hop/hd)*Math.PI)*10*Math.min(1,hd/.5):0,bl=u.blink>0&&Math.floor(u.blink*14)%2?.2:1;
   const sink=u.act==='demon'?sinkOf(u.at):0,low=sink*46+(u.kneel?6:0)+(u.fall?12:0)+(u.st==='sleep'?Math.round(Math.sin(T*2)):0);
@@ -1466,6 +1585,7 @@ function render(){
   else if(u.pet&&u.pet.kind==='wolf')drawWolfPet(g,u.pet.x,u.pet.y,u.pet.face,u.pet.t||0,u.pet.walk,u.al); // his wolf
   else if(u.pet&&u.pet.kind==='eagle'){const bx=cellX(u)*CELL;drawEagle(g,cl(u.x+Math.sin(T*1.3)*22,bx+12,bx+84),u.y-58+Math.sin(T*2.6)*4,Math.cos(T*1.3)>0?1:-1,T,false,u.al)} // his eagle circles above him
   else if(u.pet)spr(g,'skeleton','ok',u.pet.x,u.pet.y,u.pet.face,0,u.al,.55*scl(u),'none',u.pet.walk?stepOf(u.pet.t):0); // the Necromancer's little skeleton
+  if(u.mins)u.mins.forEach(p=>spr(g,'skeleton','ok',p.x,p.y,p.face,0,u.al,.55*scl(u),'none',p.walk?stepOf(p.t):0)); // the skeletons from the Monarch's prisoners
   if(low>0){g.save();g.beginPath();g.rect(u.x-30,u.y-70,60,70);g.clip()} // sinking through the floor, or kneeling
   const args=[sid(u),u.st==='sleep'?u.mood:blinkMood(u.mood,seedOf(u.id),T),u.x+actDx(u),u.y+low,u.face,(walking?Math.sin(u.t*14)*1:0)+hop,u.al*bl*(u.inv?.25:1),scl(u)*(u.tinyT>0?.6:1),poseNow(u),walking&&!u.kneel?stepOf(u.t):0];
   spr(g,...args);
@@ -1512,7 +1632,7 @@ function render(){
  bolts.forEach(b=>{const a=1-b.t/.5;g.fillStyle='rgba(255,255,255,'+(a*.6)+')';b.cells.forEach(q=>g.fillRect(q[0],q[1],CELL,CELL));
   [['rgba(140,210,255,'+a+')',6],['#fff',2]].forEach(s=>{g.strokeStyle=s[0];g.lineWidth=s[1];g.beginPath();b.p.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.stroke()})});
  // coin buttons on shop rooms (drawn on top so characters never hide them): tap to buy
- for(const id in U){const u=U[id];if(id!==dm&&(id==='apothecary'||id==='blacksmith'||deskOn(u)))drawShopCoin(g,u.c*CELL,u.r*CELL)}
+ for(const id in U){const u=U[id];if(id!==dm&&(id==='apothecary'||id==='blacksmith'||id==='traveler'||deskOn(u)))drawShopCoin(g,u.c*CELL,u.r*CELL)}
  // bats and bee swarms fly on top of everything
  // the Druid's weather on board spaces (fades in and out), and a werewolf leaping out of the moonlight
  weathers.forEach(w=>{if(isOpen(w.r,w.c))drawWeather(g,w.c*CELL,w.r*CELL,w.k,w.t,cl(w.t/1,0,1)*cl((WEATHER_TIME+1-w.t)/1,0,1));const f=w.wolf;if(f){const a=cl(f.t/.3,0,1)*cl((2.6-f.t)/.4,0,1),lunge=f.t>=.9&&f.t<1.4;
@@ -1524,7 +1644,7 @@ function render(){
    if(i<3&&A&&t>1.4){const d=cl((t-1.4)/.8,0,1),ax=A.c*CELL+48+Math.sin(t*3+i*2)*26,ay=A.r*CELL+36+Math.cos(t*4+i)*14;x=lerp(x,ax,d);y=lerp(y,ay,d)}
    g.save();g.globalAlpha=k*cl((4.8-t)/.5,0,1);drawBat(g,x,y,t+i*.13);g.restore()}}});
  if(hover){g.strokeStyle='#f2a93b';g.lineWidth=3;g.strokeRect(hover[1]*CELL+3,hover[0]*CELL+3,CELL-6,CELL-6)}
- if(dm){const u=U[dm],x=drag.p.x-48,y=drag.p.y-48;g.globalAlpha=.9;box(g,dm,x,y,dm==='druid'?u.r:u.weapon);boxFrame(g,x,y,{t:1,b:1,l:1,r:1});spr(g,sid(u),'ok',x+48,y+FY,1,0);g.globalAlpha=1}
+ if(dm){const u=U[dm],x=drag.p.x-48,y=drag.p.y-48;g.globalAlpha=.9;box(g,dm,x,y,dm==='druid'?u.r:dm==='monarch'?u.pal:u.weapon);boxFrame(g,x,y,{t:1,b:1,l:1,r:1});spr(g,sid(u),'ok',x+48,y+FY,1,0);g.globalAlpha=1}
  bubs.forEach(placeBub);
 }
 let last=0;
@@ -1537,7 +1657,7 @@ const inRect=(el,e)=>{const R=el.getBoundingClientRect();return e.clientX>=R.lef
 function pt(e){const R=cv.getBoundingClientRect(),s=W/R.width;return{x:(e.clientX-R.left)*s,y:(e.clientY-R.top)*s,inb:inRect(cv,e)}}
 const cellOf=p=>[cl(Math.floor(p.y/CELL),0,ROWS-1),cl(Math.floor(p.x/CELL),0,COLS-1)];
 let lockTap=null; // a tap on a locked space (buy it on release)
-cv.onpointerdown=e=>{const p=pt(e),[r,c]=cellOf(p),id=at(r,c);lockTap=null;if(!id){if(!isOpen(r,c))lockTap=[r,c];return}drag={id,sx:e.clientX,sy:e.clientY,moved:false,p};cv.setPointerCapture(e.pointerId)};
+cv.onpointerdown=e=>{const p=pt(e),[r,c]=cellOf(p),id=at(r,c);lockTap=null;if(!id){if(!isOpen(r,c))lockTap=[r,c];return}if(id==='monarch'&&U[id].dead){toast('The Monarch lies in state. Their box cannot be moved during the funeral.');return}drag={id,sx:e.clientX,sy:e.clientY,moved:false,p};cv.setPointerCapture(e.pointerId)};
 // Shop coin button in the bottom-right of a room
 const onShopCoin=(u,p)=>p.x>=u.c*CELL+64&&p.x<u.c*CELL+CELL&&p.y>=u.r*CELL+64&&p.y<u.r*CELL+CELL;
 cv.onpointermove=e=>{if(!drag)return;const p=pt(e);drag.p=p;
@@ -1549,6 +1669,7 @@ cv.onpointerup=e=>{if(!drag){const p=pt(e);if(lockTap&&p.inb){const[r,c]=cellOf(
   // the coin in the bottom-right of a shop room: the Apothecary sells a potion; the Wizard writes a scroll (while his desk is there)
   if(u&&u.id==='apothecary'&&onShopCoin(u,p)){buyPotion(u);return}
   if(u&&u.id==='blacksmith'&&onShopCoin(u,p)){buyIngot(u);return}
+  if(u&&u.id==='traveler'&&onShopCoin(u,p)){buyArtifact(u);return}
   if(u&&deskOn(u)&&onShopCoin(u,p)){writeScroll(u);return}
   if(u&&Math.hypot(p.x-u.x,p.y-(u.y-22))<30){u.hop=.5;u.mood='happy';u.mt=1;gest(u,'up',.6)}return}
  if(inRect(tray,e))sendToShelf(d.id);
@@ -1556,8 +1677,9 @@ cv.onpointerup=e=>{if(!drag){const p=pt(e);if(lockTap&&p.inb){const[r,c]=cellOf(
  save()};
 // Dragging a box back onto the shelf costs REMOVE_COST coins (asks first)
 function sendToShelf(id){const u=U[id];if(!u)return;
+ if(isFarm(id)){toast('The Farmer is only here for the harvest. Farmers cannot go on the shelf.');return}
  if((S.coins||0)<REMOVE_COST){toast('Moving a box back to the shelf costs '+REMOVE_COST+' coins. You have '+(S.coins||0)+'.');return}
- ask('Move the '+CH[u.id].name+' back to the shelf for '+REMOVE_COST+' coins?','Pay '+REMOVE_COST,()=>{if(!U[id]||S.coins<REMOVE_COST)return;spend(REMOVE_COST);showCoins();removeUnit(id);save()})}
+ ask('Move the '+CH[u.id].name+' back to the shelf for '+REMOVE_COST+' coins?','Pay '+REMOVE_COST,()=>{if(!U[id]||S.coins<REMOVE_COST)return;spend(REMOVE_COST);showCoins();removeUnit(id);if(id==='traveler')S.travelRoam=false;buildShelf();save()})}
 cv.onpointercancel=()=>{drag=null;hover=null;tray.classList.remove('over')};
 const gh=$('#ghost'),gx=gh.getContext('2d');
 function firstFree(){for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c)&&!at(r,c))return[r,c]}
@@ -1576,12 +1698,14 @@ function buildShelf(){
  tray.querySelectorAll('.it').forEach(b=>b.remove());
  const have=ALL_CHARS.filter(id=>SHELF_CHARS.includes(id)||S.un[id]);
  tray.querySelector('.lbl').textContent='Shelf: drag a box up to the board ('+have.length+'/'+ALL_CHARS.length+' unlocked)';
- have.forEach(id=>{
+ // (the Traveling Merchant is not on the shelf while he is on the road)
+ have.filter(id=>!(id==='traveler'&&S.travelRoam)).forEach(id=>{
   const b=document.createElement('button');b.className='it';b.dataset.id=id;b.innerHTML='<canvas width="96" height="96"></canvas>'+CH[id].name+tagImg(id);
   const t=b.firstChild.getContext('2d');t.imageSmoothingEnabled=false;box(t,id,0,0,'longsword');spr(t,id,'ok',48,FY,1,0);
-  const place=(r,c,col)=>{if(id!=='apothecary'){addUnit(id,r,c,false,null,null,col);return}
-   if((S.coins||0)<APOTH_PLACE_COST){toast('Setting up the Apothecary costs '+APOTH_PLACE_COST+' coins.');return}
-   ask('Set up the Apothecary for '+APOTH_PLACE_COST+' coins?','Pay '+APOTH_PLACE_COST,()=>{if(at(r,c)||U[id]||S.coins<APOTH_PLACE_COST)return;spend(APOTH_PLACE_COST);showCoins();addUnit(id,r,c,false);parts.push({k:'txt',s:'-'+APOTH_PLACE_COST,x:c*CELL+48,y:r*CELL+30,t:0,life:1.4,icon:'coin'})})};
+  // placing costs coins for the Apothecary, and for every Monarch after the first one of the game
+  const place=(r,c,col)=>{const cost=id==='apothecary'?APOTH_PLACE_COST:id==='monarch'&&(S.monarchs||0)>=1?MONARCH_COST:0;if(!cost){addUnit(id,r,c,false,null,null,col);return}
+   const nm=CH[id].name;if((S.coins||0)<cost){toast('Setting up the '+nm+' costs '+cost+' coins. You have '+(S.coins||0)+'.');return}
+   ask('Set up the '+nm+' for '+cost+' coins?','Pay '+cost,()=>{if(at(r,c)||U[id]||S.coins<cost)return;spend(cost);showCoins();addUnit(id,r,c,false);parts.push({k:'txt',s:'-'+cost,x:c*CELL+48,y:r*CELL+30,t:0,life:1.4,icon:'coin'})})};
   const tap=()=>{const f=firstFree();if(f)place(f[0],f[1],id==='wizard'?pick(WIZ_RANDOM):null);else toast('No free space. Tap a locked space to buy more room.')};
   draggable(b,()=>!U[id],(r,c)=>{if(!isOpen(r,c))toast('That space is locked. Tap it to buy it.');else if(!at(r,c))place(r,c)},tap);
   b.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!U[id]){e.preventDefault();tap()}};
@@ -1658,7 +1782,8 @@ const PD={study:['wizard','right'],gossip:['wizard','left'],undead:['wizard','be
  rgossip:['wizard','above','rogue'],spell:['wizard','below','rogue'],dressup:['wizard','right','rogue'],rsteal:['wizard','left','rogue'],
  rritual:['necromancer','above','rogue'],betray:['necromancer','below','rogue'],rcandles:['necromancer','right','rogue'],fairies:['necromancer','left','rogue'],
  nscoff:['necromancer','left','blacksmith'],smithk:['knight','left','blacksmith'],reforge:['knight','left','blacksmith'],metal:['wizard','left','blacksmith'],greenarmor:['wizard','left','blacksmith'],metaltalk:['wizard','left','blacksmith'],
- awkjoke:['merchant','left','blacksmith'],flirt:['apothecary','left','blacksmith'],childhood:['alchemist','left','blacksmith'],holyfire:['priest','left','blacksmith'],rbuy:['rogue','left','blacksmith'],metalitch:['druid','left','blacksmith']};
+ awkjoke:['merchant','left','blacksmith'],flirt:['apothecary','left','blacksmith'],childhood:['alchemist','left','blacksmith'],holyfire:['priest','left','blacksmith'],rbuy:['rogue','left','blacksmith'],metalitch:['druid','left','blacksmith'],rqdeny:['monarch','left','rogue'],drain:['druid','left','necromancer']};
+REQS.forEach(q=>PD['rq:'+q]=['monarch','left',q==='paladin'?'knight':q]);
 function pairDiagram(k){
  const[o,rl,a0]=PD[k],a=a0||'priest',v=rl==='above'||rl==='below',[c,x]=mkc(v?96:192,v?192:96,NAMES[k]);let od=o,ad=a; // od/ad = sprites drawn (can differ from the room)
  const P={left:[[0,0],[96,0]],right:[[96,0],[0,0]],above:[[0,0],[0,96]],below:[[0,96],[0,0]]}[rl],p=P[0],q=P[1],pf=v?1:(p[0]<q[0]?1:-1);
@@ -1764,6 +1889,10 @@ function pairDiagram(k){
  if(k==='jokes'){pm=om='happy'}
  if(k==='murder'){om='hurt';pp='fwd'}
  if(k==='advertW'){pp=op='both';pm=om='happy'}
+ // the Monarch: requests (the one asking is in the first room), a refusal; the Necromancer draining the Druid
+ if(k.startsWith('rq:')){const w=k.slice(3);pp='fwd';op='up';om='happy';pm='happy';if(w==='paladin'){ad='paladin';pp='pray'}if(w==='wizard')ad='wizard_purple_st';it(REQ_ICON[w])}
+ if(k==='rqdeny'){pp='fwd';op='fwd';om='mad';pm='hurt';x.strokeStyle='#e03030';x.lineWidth=3;x.beginPath();x.moveTo(M[0]-6,M[1]-6);x.lineTo(M[0]+6,M[1]+6);x.moveTo(M[0]+6,M[1]-6);x.lineTo(M[0]-6,M[1]+6);x.stroke()}
+ if(k==='drain'){pp='both';om='hurt';drawZap(x,{p:[[60,40],[74,48],[86,38],[100,50],[116,44]],t:0,blk:1})}
  const one=(id,pt,pose,m,face)=>{x.save();x.beginPath();x.rect(pt[0],pt[1],96,FY);x.clip();spr(x,id,m,pt[0]+48,pt[1]+FY+low,face,0,1,1,pose);x.restore()};
  one(ad,p,pp,pm,pf);one(od,q,op,om,-pf);
  if(k==='tomes'){drawAct(x,{act:'nread',at:.5,x:p[0]+48,y:p[1]+FY,face:pf});drawAct(x,{act:'tome',at:2,x:q[0]+48,y:q[1]+FY,face:-pf})}
@@ -1938,6 +2067,15 @@ function idleTile(kind,wp){
   else if(kind==='archdruid'){const tt=t%4;box(x,'druid',0,0);if(tt<1)drawItem(x,'artifact',48,Math.round(10+tt*30),2);if(tt>1.4){x.fillStyle='rgba(150,255,170,'+(.25+.1*Math.sin(t*3))+')';x.beginPath();x.arc(48+13,FY-41,7,0,Math.PI*2);x.fill()}
    spr(x,tt>1.4?'druid_arch':'druid',tt>1.4?'happy':'ok',48,FY,-1,0,1,1,tt>1&&tt<2.2?'both':'none');if(tt>1&&tt<1.6)poofTile(x,48,FY-30,(tt-1)/.6,'#9affb0')}
   else if(kind==='ddiscount'){const tt=t%4;box(x,'apothecary',0,0);spr(x,'apothecary','happy',40,FY,1,0,1,1,tt>.8&&tt<2?'fwd':'none');drawEagle(x,74,FY-8,-1,t,true);if(tt>1&&tt<2.6)drawItem(x,'potion',56,Math.round(FY-40-(tt-1)*8),2);drawShopCoin(x,0,0)}
+  // ---- the Monarch's funeral and secrets; the Traveling Merchant ----
+  else if(kind==='royalfuneral'){box(x,'monarch',0,0,'black');drawCoffin(x,0,0,t);x.save();x.beginPath();x.rect(0,0,96,FY);x.clip();[['knight',14,78],['priest',82,78],['wizard_blue',24,74],['merchant',72,74]].forEach(q=>spr(x,q[0],'hurt',q[1],q[2]+6,q[1]<48?1:-1,0,1,.8,'pray'));x.restore()}
+  else if(kind==='regicide'){const tt=t%4;box(x,'monarch',0,0);if(tt<2.6)spr(x,'monarch_f','ok',30,FY,1,0,flash(tt>1.6&&tt<2.4,tt),1,tt>.8&&tt<1.6?'both':'none');else poofTile(x,30,FY-24,(tt-2.6)/.6,'#d03030');spr(x,'rogue_ninja','mad',70,FY,-1,0,1,1,tt>1.2&&tt<2.2?'fwd':'none')}
+  else if(kind==='royalpatron'){const tt=t%4;box(x,'blacksmith',0,0);spr(x,'monarch_m','happy',30,FY,1,0,1,1,tt>.6&&tt<2?'up':'none');spr(x,'knight','happy',70,FY,-1,0,1,.9);if(tt>.8)drawItem(x,'artifact',50,Math.round(FY-30-Math.min(tt-.8,1)*14),2)}
+  else if(kind==='wares'){const tt=t%4.4;box(x,'traveler',0,0);drawRoomLife(x,'traveler',0,0,t);spr(x,Math.floor(t/4.4)%2?'traveler_f':'traveler_m','ok',24,FY,-1,0,1,1,poseOf('wares',tt))}
+  else if(kind==='troad'){const tt=t%6,a=cl(tt/.8,0,1)*cl((5-tt)/.8,0,1);box(x,'traveler',0,0);drawRoomLife(x,'traveler',0,0,t);spr(x,'traveler_m','happy',40,FY,1,0,a,1)}
+  else if(kind==='tshop'){const tt=t%4;box(x,'traveler',0,0);spr(x,'traveler_f',tt>1&&tt<2.4?'happy':'ok',40,FY,1,0,1,1,tt>.8&&tt<2?'fwd':'none');if(tt>1&&tt<2.6)drawItem(x,'artifact',56,Math.round(FY-40-(tt-1)*8),2);drawShopCoin(x,0,0)}
+  else if(kind==='tscroll'||kind==='tpotion'||kind==='tingot'){const tt=t%4,it=kind==='tscroll'?'scroll':kind==='tpotion'?'potion':'ingot';box(x,'traveler',0,0);spr(x,'traveler_m',tt>1?'happy':'ok',48,FY,1,tt>1&&tt<1.5?-4:0,1,1,tt>1&&tt<2?'fwd':'none');
+   if(tt<1)drawItem(x,it,48,Math.round(10+tt*30),2);else if(tt<2.6)drawItem(x,'coin',62,Math.round(FY-40-(tt-1)*8),2)}
   else if(kind==='court'){const tt=t%5;box(x,'monarch',0,0);drawRoomLife(x,'monarch',0,0,t);spr(x,Math.floor(t/5)%2?'monarch_f':'monarch_m','ok',36,FY,1,0,1,1,poseOf('court',tt))}
   // ---- Blacksmith ----
   else if(kind==='forgework'||kind==='smelt'||kind==='coal'||kind==='pour'||kind==='leadgold'){const tt=t%5,hx=kind==='smelt'||kind==='coal'?44:52,u={act:kind,at:1+tt*.9,x:hx,y:FY,face:-1,smeltWhat:Math.floor(t/5)%2?'sword':'armor'};box(x,'blacksmith',0,0);drawRoomLife(x,'blacksmith',0,0,t);
@@ -1973,9 +2111,9 @@ function idleTile(kind,wp){
  });
  return c}
 // Things a scene gives you, shown as small icons in the bottom-left of its Compendium tile
-const GAINS={pour:['ingot'],leadgold:['coin'],adventure:['coin','scroll','artifact'],ingotshop:['ingot'],nefarious:['coin'],poisons:['coin'],wine:['coin'],promo:['coin'],twopot:['potion'],dungeon:['coin','artifact','scroll','potion'],bloodorange:['coin'],ntrade:['potion'],heal:['coin'],roguemage:['artifact'],stone:['coin'],greenapple:['coin'],cobrew:['potion'],mcust:['coin'],acust:['coin'],farm:['coin'],apcoins:['coin'],appotion:['potion'],starfruit:['coin'],durian:['coin'],advertW:['coin'],tithe:['coin'],crusade:['coin','artifact'],craft:['scroll'],forge:['scroll','potion'],brew:['potion'],sell:['coin'],apple:['coin'],apoth:['potion'],desk:['scroll']};
+const GAINS={tshop:['artifact'],tscroll:['coin'],tpotion:['coin'],tingot:['coin'],royalpatron:['artifact'],'rq:alchemist':['potion'],'rq:druid':['coin'],pour:['ingot'],leadgold:['coin'],adventure:['coin','scroll','artifact'],ingotshop:['ingot'],nefarious:['coin'],poisons:['coin'],wine:['coin'],promo:['coin'],twopot:['potion'],dungeon:['coin','artifact','scroll','potion'],bloodorange:['coin'],ntrade:['potion'],heal:['coin'],roguemage:['artifact'],stone:['coin'],greenapple:['coin'],cobrew:['potion'],mcust:['coin'],acust:['coin'],farm:['coin'],apcoins:['coin'],appotion:['potion'],starfruit:['coin'],durian:['coin'],advertW:['coin'],tithe:['coin'],crusade:['coin','artifact'],craft:['scroll'],forge:['scroll','potion'],brew:['potion'],sell:['coin'],apple:['coin'],apoth:['potion'],desk:['scroll']};
 const ICONURL={};function iconURL(k){if(!ICONURL[k]){const c=document.createElement('canvas');c.width=16;c.height=16;const x=c.getContext('2d');drawItem(x,k,8,9,1);ICONURL[k]=c.toDataURL()}return ICONURL[k]}
-const ITEMLBL={archdruid:'artifact',bpotion:'potion',bscroll:'scroll',dpotion:'potion',dscroll:'scroll',drevive:'scroll',reinforce:'ingot',nscroll:'scroll',alcpotion:'potion',alcscroll:'scroll',stone:'artifact 80%',elixir:'artifact 20%',spook:'potion',roguemage:'scroll',apcoins:'potion',appotion:'scroll',monkey:'scroll',backwards:'potion',fireball:'scroll',glow:'scroll',banish:'scroll',raise:'scroll',teleport:'potion',flex:'potion',wings:'potion',sniff:'potion',relic:'artifact'};
+const ITEMLBL={tscroll:'scroll',tpotion:'potion',tingot:'ingot',archdruid:'artifact',bpotion:'potion',bscroll:'scroll',dpotion:'potion',dscroll:'scroll',drevive:'scroll',reinforce:'ingot',nscroll:'scroll',alcpotion:'potion',alcscroll:'scroll',stone:'artifact 80%',elixir:'artifact 20%',spook:'potion',roguemage:'scroll',apcoins:'potion',appotion:'scroll',monkey:'scroll',backwards:'potion',fireball:'scroll',glow:'scroll',banish:'scroll',raise:'scroll',teleport:'potion',flex:'potion',wings:'potion',sniff:'potion',relic:'artifact'};
 function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  const b=$('#refs');b.innerHTML='';
  // % chance (or a short label) in the top right corner
@@ -2028,6 +2166,10 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
   // Druid weather, familiars, Archdruid; the Monarch
   metalitch:[P('metalitch'),pv],story:[I('story'),Math.round(ODDS.rainStory*100)+'% in rain'],wolfkill:[I('wolfkill'),ODDS.werewolf],archdruid:[I('archdruid')],ddiscount:[I('ddiscount'),'secret'],court:[I('court'),'100%']};
  for(const k in WX_NAMES)T['wx:'+k]=[I('wx:'+k),ODDS.visit*ODDS.weather[k]];
+ // the Monarch's requests (granted: 80% generous / 10% greedy), the Traveling Merchant
+ REQS.forEach(q=>T['rq:'+q]=[P('rq:'+q),'80% / 10%']);
+ Object.assign(T,{rqdeny:[P('rqdeny'),'20% / 90%'],drain:[P('drain'),pv*ODDS.drain],royalfuneral:[I('royalfuneral'),'on death'],regicide:[I('regicide'),'secret'],royalpatron:[I('royalpatron'),'secret'],
+  wares:[I('wares'),'100%'],troad:[I('troad'),'5 min'],tshop:[I('tshop'),TRAVEL_ARTIFACT+' coins'],tscroll:[I('tscroll')],tpotion:[I('tpotion')],tingot:[I('tingot')]});
  ROGUE_SCENES.forEach(k=>{if(!T[k])T[k]=[P(k),pv]});
  WEAPONS.forEach(w=>T['prac:'+w]=[I('prac',w),K.prac]);
  // Tabs, one per character type, with "found / total" (hidden easter eggs count in the total)
@@ -2072,15 +2214,19 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
 
 // ---------- state ----------
 function ui(){document.querySelectorAll('.it[data-id]').forEach(b=>b.classList.toggle('used',!!U[b.dataset.id]))}
-function save(){if(resetting)return;try{const b={};for(const i in U)if(i!=='farmer')b[i]=[U[i].r,U[i].c,U[i].weapon,TEMP_FORM[U[i].form]?null:U[i].form,U[i].color,U[i].backwards?1:0,U[i].skin||0,U[i].mageTag?1:0,U[i].dead?1:0,U[i].reinforced?1:0,U[i].paladin?1:0,U[i].armor?1:0,U[i].fam||0,U[i].arch?1:0,U[i].trait||0];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,spent:S.spent||0,inv:S.inv,seen:S.seen,rewarded:S.rewarded||0,cells:S.cells,bought:S.bought||0,revealed:S.revealed,goldCell:S.goldCell}))}catch(e){}}
+function save(){if(resetting)return;try{const b={};for(const i in U)if(!isFarm(i))b[i]=[U[i].r,U[i].c,U[i].weapon,TEMP_FORM[U[i].form]?null:U[i].form,U[i].color,U[i].backwards?1:0,U[i].skin||0,U[i].mageTag?1:0,U[i].dead?1:0,U[i].reinforced?1:0,U[i].paladin?1:0,U[i].armor?1:0,U[i].fam||0,U[i].arch?1:0,U[i].trait||0,extras(U[i])];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,spent:S.spent||0,inv:S.inv,seen:S.seen,rewarded:S.rewarded||0,cells:S.cells,bought:S.bought||0,revealed:S.revealed,goldCell:S.goldCell,monarchs:S.monarchs||0,travelRoam:!!S.travelRoam}))}catch(e){}}
+// [15] in a saved box: everything newer, by name (royal colors, requests made, grudges, the Monarch's gifts, the Traveling Merchant's time left)
+const EXTRA_KEYS=['pal','asked','grudge','sir','helper','staff','barrel','sacks','pine','minions','travelT'];
+const extras=u=>{const o={};EXTRA_KEYS.forEach(k=>{if(u[k])o[k]=k==='travelT'?Math.round(u[k]):u[k]});return o};
 function load(){let d=null;try{d=JSON.parse(localStorage.getItem(KEY))}catch(e){}
  if(d){S.un=d.un||{};S.coins=d.coins||0;S.inv=Object.assign({scroll:0,potion:0,artifact:0,ingot:0},d.inv);S.spent=d.spent||0;S.seen=d.seen||{};S.rewarded=d.rewarded!=null?d.rewarded:Math.floor(ALL_KEYS.filter(k=>S.seen[k]).length/DISCOVER_EVERY)}
  // Bought board spaces. An older save made before spaces were locked: any space that already holds a box stays open, free.
- S.cells=(d&&d.cells)||[];S.bought=(d&&d.bought)||0;S.revealed=(d&&d.revealed)||{};S.goldCell=(d&&d.goldCell)||null;
+ S.cells=(d&&d.cells)||[];S.bought=(d&&d.bought)||0;S.revealed=(d&&d.revealed)||{};S.goldCell=(d&&d.goldCell)||null;S.travelRoam=!!(d&&d.travelRoam);
+ S.monarchs=d&&d.monarchs!=null?d.monarchs:d&&d.boxes&&d.boxes.monarch?1:0; // (an older save with a Monarch on the board: that one was the free one)
  if(d&&d.boxes&&!d.cells)for(const i in d.boxes){const q=d.boxes[i],k=q[0]+','+q[1];if(!isOpen(q[0],q[1]))S.cells.push(k)}
  showCoins();showItems();checkUnlocks();
  buildShelf();
- if(d&&d.boxes){for(const i in d.boxes)if(CH[i]){const q=d.boxes[i];addUnit(i,q[0],q[1],true,q[2],q[3],q[4],q[6]!=null?q[6]:0);const v=U[i];if(q[5])v.backwards=true;if(q[7])v.mageTag=true;if(q[9])v.reinforced=true;if(q[10])v.paladin=true;if(q[11])v.armor=true;if(i==='druid')v.fam=q[12]||'bear';if(q[13])v.arch=true;if(q[14])v.trait=q[14];if(q[8]){v.dead=true;v.st='dead'}setLabel(v)}} // [8] buried Druid, [9] ingot, [10] Paladin, [11] green mage armor, [12] Druid's animal, [13] Archdruid, [14] generous / greedy Monarch
+ if(d&&d.boxes){for(const i in d.boxes)if(CH[i]&&!(i==='monarch'&&d.boxes[i][8])){const q=d.boxes[i];addUnit(i,q[0],q[1],true,q[2],q[3],q[4],q[6]!=null?q[6]:0);const v=U[i];if(q[5])v.backwards=true;if(q[7])v.mageTag=true;if(q[9])v.reinforced=true;if(q[10])v.paladin=true;if(q[11])v.armor=true;if(i==='druid')v.fam=q[12]||'bear';if(q[13])v.arch=true;if(q[14])v.trait=q[14];if(q[15])Object.assign(v,q[15]);if(i==='monarch'&&!(q[15]&&q[15].pal))v.pal='red';if(q[8]){v.dead=true;v.st='dead'}setLabel(v)}} // [8] buried Druid, [9] ingot, [10] Paladin, [11] green mage armor, [12] Druid's animal, [13] Archdruid, [14] generous / greedy Monarch, [15] newer extras (a Monarch saved before royal colors stays red and gold)
  else{addUnit('knight',1,1,true);addUnit('wizard',1,3,true)}
  save();ui()}
 load();requestAnimationFrame(frame);
