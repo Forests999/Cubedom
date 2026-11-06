@@ -854,3 +854,4 @@ Object.assign(DESC,{
 // ---------- bigger Compendium rewards ----------
 // A character's tab fully discovered (secrets included): +1 artifact. Every BIG_EVERY discoveries: one random item (ODDS.bigReward).
 const BIG_EVERY=50;ODDS.bigReward={scroll:.45,potion:.45,ingot:.1};
+ODDS.revealScene=.7; // a clue reveals an undiscovered interaction 70%, a secret 30%

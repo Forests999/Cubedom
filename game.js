@@ -341,12 +341,12 @@ function acting(u,dt){
  if(u.act==='grove'){if(walkTo(u.hx)&&u.at>=1.2)u.face=-1;once('p',2.4,()=>poof(u.c*CELL+24,u.r*CELL+54,'#6aba4a'));once('s',3.4,()=>say(u,pick(['Grow strong, little ones.','This oak is three hundred years old.','Who has been picking my mushrooms?'])))}
  if(u.act==='animals'){once('s',1.6,()=>say(u,pick(['Hello, little friends.','The deer say the river is high this year.','The birds have gossip about the Rogue.'])));once('h',3.6,()=>{u.mood='happy';u.mt=1.5;u.hop=.3})}
  if(u.act==='weather'){once('s',2.6,()=>say(u,pick(['Rain by evening. Or sun. Possibly snow.','The leaves say... wind. Lots of wind.','A storm is coming. Or a light drizzle.'])))}
- if(u.act==='spirit'){once('s',1,()=>say(u,'Spirit of the wood... speak to me.'));once('r',4,()=>{revealSecret('A nature spirit whispered a secret to the Druid! It is now shown in the Compendium.');u.mood='happy';u.mt=1.5})}
+ if(u.act==='spirit'){once('s',1,()=>say(u,'Spirit of the wood... speak to me.'));once('r',4,()=>{revealSecret('A nature spirit whispered to the Druid!');u.mood='happy';u.mt=1.5})}
  if(u.act==='stash'){once('s',.3,()=>say(u,'I will save this for a rainy day.'))}
  // the Druid casts weather on a space (instead of visiting a neighbor)
  if(u.act==='wcast'){once('s',.3,()=>say(u,WX_SAY[u.wx.k]));once('w',1.6,()=>{addWeather(u.wx.r,u.wx.c,u.wx.k,u.id);u.mood='happy';u.mt=1.2})}
  // a short story in the Druid's rain (10%: it reveals a secret)
- if(u.act==='story'){once('s',1,()=>say(u,pick(STORIES)));once('r',3.6,()=>{if(Math.random()<ODDS.storySecret&&revealSecret('A story in the rain held a hidden secret! It is now shown in the Compendium.')){u.mood='happy';u.mt=1.5}})}
+ if(u.act==='story'){once('s',1,()=>say(u,pick(STORIES)));once('r',3.6,()=>{if(Math.random()<ODDS.storySecret&&revealSecret('A story in the rain held a clue!')){u.mood='happy';u.mt=1.5}})}
  // artifact on the Druid: he becomes the Archdruid
  if(u.act==='ascend'){once('a',.2,()=>{say(u,'This artifact... the forest is calling me.');u.glow=2.6});once('b',1.6,()=>{u.arch=true;setLabel(u);poof(u.x,u.y-30,'#9affb0');poof(u.x,u.y-10,'#f2d870');u.mood='happy';u.mt=2;save()});once('c',2.2,()=>say(u,'I am the Archdruid now.'))}
  // the Monarch holds court on the throne (generous or greedy orders)
@@ -883,7 +883,11 @@ function disguise(u,t){u.as=t.id;u.asSprite=sid(t);u.asWeapon=u.weapon;u.weapon=
  poof(u.x,u.y-24,'#8a8a9a');poof(u.x,u.y-10,'#5a5a64');setLabel(u);u.st='idle';u.wait=1}
 function undisguise(u){if(!u.as)return;u.as=null;u.asSprite=null;u.weapon=u.asWeapon||null;u.form=null;u.disguiseT=0;poof(u.x,u.y-24,'#8a8a9a');setLabel(u);say(u,'Did you miss me?')}
 // Priest + Apothecary studying: show one hidden easter egg in the Compendium (not counted as found: no gold border)
-function revealSecret(msg){const hid=EGGS.filter(k=>!S.seen[k]&&!S.revealed[k]);if(!hid.length)return false;S.revealed[pick(hid)]=1;save();toast(msg||'Their studies uncovered a clue! A secret is now shown in the Compendium.');return true}
+// A clue (Priest + Apothecary studies, the dungeon, the Druid's nature spirit, a story in his rain): 70% an undiscovered interaction, 30% a secret (ODDS.revealScene).
+// It is shown in the Compendium (image and full text) without a gold border and is not counted as found. Falls back to the other kind if none is left.
+function revealSecret(intro){const scenes=[...new Set(COMP_TABS.filter(t=>compUnl(t.id)).flatMap(tabKeys))].filter(k=>!EGGS.includes(k)&&!S.seen[k]&&!S.revealed[k]),eggs=EGGS.filter(k=>!S.seen[k]&&!S.revealed[k]);
+ let egg=Math.random()>=ODDS.revealScene;if(egg&&!eggs.length)egg=false;if(!egg&&!scenes.length)egg=true;const pool=egg?eggs:scenes;if(!pool.length)return false;
+ S.revealed[pick(pool)]=1;save();toast((intro||'Their studies uncovered a clue!')+' '+(egg?'A secret':'An undiscovered interaction')+' is now shown in the Compendium.');return true}
 // Secret: the mad scientist turns into a beast-man and goes after neighbor h (talk 'beast')
 function beastOut(u,h){u.form='beast';u.beastT=30;setLabel(u);poof(u.x,u.y-24,'#7aff7a');poof(u.x,u.y-10,'#6a5a4a');u.mood='mad';u.mt=3;say(u,'The formula... it is WORKING!');
  visit(u,h,'beast');u.path.unshift({k:'pause',w:1})}
@@ -893,7 +897,7 @@ function dungeonLoot(v){const r=Math.random(),D=ODDS.dungeon;let s;
  else if(r<D.coins+D.artifact){addItem('artifact',1,v.x,v.y-50);s='An artifact!'}
  else if(r<D.coins+D.artifact+D.scrolls){addItem('scroll',2,v.x,v.y-50);s='Two spell scrolls!'}
  else if(r<D.coins+D.artifact+D.scrolls+D.potions){addItem('potion',3,v.x,v.y-50);s='Three potions!'}
- else if(revealSecret('An old map from the dungeon! A secret is now shown in the Compendium.'))s='An old map... with a secret on it!';
+ else if(revealSecret('An old map from the dungeon!'))s='An old map... with a clue on it!';
  else{addCoins(DUNGEON_GOLD,v.x,v.y-50);s='Fifty gold coins!'}
  say(v,'Back from the dungeon! '+s)}
 function arrive(u){u.inv=false;
@@ -1748,7 +1752,15 @@ $('#reset').onclick=()=>{const b=$('#reset');
 const anim=[],tabRef=$('#tab-ref');
 // Description bubble for Compendium tiles: hover with a mouse, or tap (phones). Tap again or anywhere else to close.
 const tipEl=document.createElement('div');tipEl.id='tip';tipEl.hidden=true;document.body.append(tipEl);let tipOn=null;
-function showTip(tile,k){tipEl.textContent=DESC[k]||NAMES[k]||'';tipEl.hidden=false;tipOn=tile;
+// Hint for a tile not discovered yet: the description without where the characters must be, which item to use, or any chance (those show once discovered)
+// (leading sentences about placement or chance are dropped; later ones lose "30% more" style numbers, or are dropped if they still give a chance)
+const HINT_CUT=/\b(left of|right of|above|below|any side|next to|beside|bottom row|top row|bottom-right|top-left|four sides|all four|whenever|each time|checked first|idle activities|of their visits|of his visits|weather casts)\b|%/i,HINT_HEAD=/^\s*(spell scroll|potion|artifact|ingot|secret|tap|the druid never visits)/i;
+function hintOf(k){const t=(DESC[k]||'').replace(/(\d)\.(\d)/g,'$1․$2').replace(/\.\.\./g,'…'),ss=t.match(/[^.!?]+[.!?]+["')]*\s*/g)||[t];
+ let lead=true;const out=ss.map(s=>{const i=s.indexOf(':');if(i>0&&(HINT_CUT.test(s.slice(0,i))||HINT_HEAD.test(s.slice(0,i))))s=' '+s.slice(i+1).trim().replace(/^[a-z]/,c=>c.toUpperCase())+' ';
+  if(lead&&HINT_CUT.test(s))return '';lead=false;s=s.replace(/\b\d+% (more|less|higher|fewer)\b/g,'$1');return s.includes('%')?'':s})
+  .join('').replace(/․/g,'.').replace(/…/g,'...').replace(/\s+/g,' ').replace(/ ([;,.!?])/g,'$1').trim();
+ return 'Not discovered yet. '+(out?out[0].toUpperCase()+out.slice(1):'Keep exploring!')}
+function showTip(tile,k,hint){tipEl.textContent=hint?hintOf(k):DESC[k]||NAMES[k]||'';tipEl.hidden=false;tipOn=tile;
  const R=tile.getBoundingClientRect(),w=Math.min(260,innerWidth-16);tipEl.style.width=w+'px';
  tipEl.style.left=cl(R.left+R.width/2-w/2,8,innerWidth-w-8)+scrollX+'px';tipEl.style.top=R.bottom+scrollY+6+'px'}
 function hideTip(){tipEl.hidden=true;tipOn=null}
@@ -2195,7 +2207,12 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  // A grid of tiles (easter eggs only once found)
  const grid=(keys,items)=>{const d=document.createElement('div');d.className='cg';
   // easter eggs show once found, or once revealed by the Priest's studies
-  keys.filter(k=>!EGGS.includes(k)||S.seen[k]||S.revealed[k]).forEach(k=>{const[make,p]=T[k],tile=document.createElement('div'),s=document.createElement('span');
+  // a tile not discovered (or revealed) yet is a blank square: its hover text leaves out where, how and how likely
+  keys.filter(k=>!EGGS.includes(k)||S.seen[k]||S.revealed[k]).forEach(k=>{if(!S.seen[k]&&!S.revealed[k]){const tile=document.createElement('div'),[c,x]=mkc(96,96,'Not discovered yet');tile.className='tile unknown';tile.dataset.k=k;
+    x.fillStyle='#221e3c';x.fillRect(0,0,96,96);x.font='28px '+GAME_FONT;x.fillStyle='#4a4470';x.textAlign='center';x.fillText('?',48,58);
+    tile.onpointerenter=e=>{if(e.pointerType==='mouse')showTip(tile,k,1)};tile.onpointerleave=e=>{if(e.pointerType==='mouse')hideTip()};
+    tile.onclick=e=>{e.stopPropagation();if(tipOn===tile&&e.pointerType!=='mouse')hideTip();else showTip(tile,k,1)};tile.append(c);d.append(tile);return}
+   const[make,p]=T[k],tile=document.createElement('div'),s=document.createElement('span');
    tile.className='tile'+(S.seen[k]?' seen':'')+(EGGS.includes(k)?' egg':'');tile.dataset.k=k;
    tile.onpointerenter=e=>{if(e.pointerType==='mouse')showTip(tile,k)};tile.onpointerleave=e=>{if(e.pointerType==='mouse')hideTip()};
    tile.onclick=e=>{e.stopPropagation();if(tipOn===tile&&e.pointerType!=='mouse')hideTip();else showTip(tile,k)};s.className='pct';s.textContent=fmt(ITEMLBL[k]&&items?ITEMLBL[k]:p);tile.append(make(),s);
