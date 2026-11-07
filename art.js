@@ -16,7 +16,10 @@ const SHELF2=[[56,30,24,36,'#6a4a2a'],[58,32,20,32,'#3a2410'],[58,47,20,2,'#6a4a
 const down=(list,dy)=>list.map(r=>[r[0],r[1]+dy,r[2],r[3],r[4]]);
 function bg(id,w){
  // Farmer: open sky, sun (top right, clear of the label) and a fence; no doors at all (crops drawn by drawField)
- if(isFarm(id))return [[74,10,10,10,'#f8e070'],[72,12,14,6,'#f8e070'],[6,52,84,2,'#a07840'],[10,48,2,18,'#a07840'],[30,48,2,18,'#a07840'],[50,48,2,18,'#a07840'],[70,48,2,18,'#a07840'],[88,48,2,18,'#a07840']];
+ if(isFarm(id))return [[74,10,10,10,'#f8e070'],[72,12,14,6,'#f8e070'],[73,11,12,8,'#fff4a0'],
+  [4,38,26,24,'#a83028'],[2,32,30,7,'#6a2a20'],[6,28,22,5,'#7a3428'],[10,25,14,4,'#7a3428'],[4,38,26,1,'#f0e8d8'],[11,46,12,16,'#7a2018'],[11,46,12,1,'#f0e8d8'],[11,46,1,16,'#f0e8d8'],[22,46,1,16,'#f0e8d8'],[12,47,10,1,'#f0e8d8'],[16,40,2,3,'#3a1a10'], // a red barn
+  [40,58,10,8,'#d8b860'],[40,58,10,1,'#f2d070'],[52,60,8,6,'#d8b860'], // hay bales
+  [6,52,84,2,'#a07840'],[10,48,2,18,'#a07840'],[30,48,2,18,'#a07840'],[50,48,2,18,'#a07840'],[70,48,2,18,'#a07840'],[88,48,2,18,'#a07840']];
  // Apothecary: a window to the blue sky, herbs growing in planters, potions on display shelves, back door on the LEFT
  if(id==='apothecary')return [...backDoor(id,1),
   [37,24,24,18,'#5a4024'],[39,26,20,14,'#8ac8f0'],[39,34,20,6,'#a8d8f8'],[44,29,7,3,'#ffffff'],[42,30,4,2,'#ffffff'],[48,33,2,7,'#5a4024'],[39,32,20,2,'#5a4024'],
@@ -47,7 +50,15 @@ function bg(id,w){
   [6,25,3,3,'#f4ece0'],[16,27,3,2,'#f4ece0'],[44,20,4,3,'#f4ece0'],[58,23,3,3,'#f4ece0'],[78,27,3,3,'#f4ece0'],[88,29,3,2,'#f4ece0'],
   [24,60,2,6,'#e0d8c4'],[21,57,8,3,'#c04a6a'],[36,62,2,4,'#e0d8c4'],[34,60,6,2,'#9a60d0'],[66,62,2,4,'#e0d8c4'],[64,60,6,2,'#e07a40'],[16,76,2,4,'#e0d8c4'],[14,74,6,2,'#c04a6a'],[44,84,2,4,'#e0d8c4'],[42,82,6,2,'#7ae0c0'],[76,80,2,4,'#e0d8c4'],[74,78,6,2,'#9a60d0']];
  // Traveling Merchant: a dirt road through the meadow, a tree, flowers, a covered wagon with a mule, and a stand covered in striped cloth for the wares
- if(id==='traveler')return [[0,50,96,16,'#7ab05a'],[60,56,36,10,'#6aa04a'],[80,28,4,38,'#6a4424'],[70,14,24,16,'#3a8a3a'],[74,10,16,6,'#4aa04a'],[68,26,26,6,'#2e7a30'],  [34,30,30,4,'#e8dcc0'],[32,34,34,16,'#ece2c8'],[38,34,1,16,'#c8b898'],[48,34,1,16,'#c8b898'],[58,34,1,16,'#c8b898'],[30,50,38,6,'#7a5030'],[30,50,38,1,'#5a3a20'],[34,55,8,8,'#4a3020'],[56,55,8,8,'#4a3020'],[37,58,2,2,'#a07850'],[59,58,2,2,'#a07850'],  [66,52,8,1,'#5a3a20'],[72,46,14,8,'#8a7a6a'],[72,54,2,10,'#6a5a4a'],[83,54,2,10,'#6a5a4a'],[84,42,4,7,'#8a7a6a'],[86,38,6,6,'#8a7a6a'],[88,35,1,3,'#6a5a4a'],[90,35,1,3,'#6a5a4a'],[90,41,2,3,'#5a4a3a'],[88,40,1,1,O],  [4,30,2,30,'#6a4424'],[26,30,2,30,'#6a4424'],[2,26,28,5,'#c04040'],[2,26,5,5,'#f0e8d8'],[12,26,5,5,'#f0e8d8'],[22,26,5,5,'#f0e8d8'],[2,31,28,2,'#a02a2a'],[2,48,28,10,'#c04040'],[2,48,28,2,'#f0e8d8'],[7,48,2,10,'#f0e8d8'],[17,48,2,10,'#f0e8d8'],  [5,43,4,5,'#7ae0ff'],[11,44,4,4,'#c890ff'],[17,42,3,6,'#d03050'],[22,44,5,4,'#f2c84a'],[24,42,1,2,'#f2c84a'],  [30,66,36,30,'#b89a68'],[34,72,2,1,'#a08458'],[52,84,3,1,'#a08458'],[44,92,2,1,'#a08458'],[10,74,2,2,'#f080a0'],[18,86,2,2,'#f2e060'],[78,72,2,2,'#c890ff'],[86,88,2,2,'#f080a0'],[72,82,2,2,'#f2e060'],[6,92,2,2,'#c890ff'],[9,76,1,2,'#3a7a2a'],[87,90,1,2,'#3a7a2a']];
+ if(id==='traveler')return [[0,50,96,16,'#7ab05a'],[0,56,30,10,'#6aa04a'],[60,56,36,10,'#6aa04a'],
+  [82,26,5,40,'#6a4424'],[83,30,1,30,'#4e3018'],[70,10,26,18,'#3a8a3a'],[74,6,18,6,'#4aa04a'],[68,24,28,8,'#2e7a30'],[76,9,6,3,'#6aba5a'],[88,14,4,3,'#6aba5a'], // a big tree
+  [6,40,3,22,'#6a4424'],[0,30,16,12,'#3a8a3a'],[2,27,10,4,'#4aa04a'],[0,40,16,4,'#2e7a30'],[4,29,4,2,'#6aba5a'], // a small tree (below the name label)
+  [20,28,40,3,'#d8ccb0'],[18,31,44,19,'#ece2c8'],[18,31,44,2,'#f8f2e0'],[26,31,1,19,'#c8b898'],[36,31,1,19,'#c8b898'],[46,31,1,19,'#c8b898'],[56,31,1,19,'#c8b898'],[18,44,44,1,'#d8ccb0'], // the canvas cover on its hoops
+  [16,50,48,6,'#7a5030'],[16,50,48,1,'#9a6a40'],[16,55,48,1,'#5a3a20'],[22,52,6,2,'#c04040'],[52,52,6,2,'#c04040'],
+  [20,55,10,10,'#4a3020'],[22,57,6,6,'#7a5a3a'],[24,59,2,2,'#4a3020'],[48,55,10,10,'#4a3020'],[50,57,6,6,'#7a5a3a'],[52,59,2,2,'#4a3020'], // wheels
+  [8,58,8,7,'#8a5a2a'],[8,58,8,1,'#a8784a'],[12,58,1,7,'#6a4420'],[1,60,6,6,'#7a4a24'],[1,62,6,1,'#5a5a64'], // a crate and a barrel
+  [64,52,8,1,'#5a3a20'],[70,46,14,8,'#8a7a6a'],[70,54,2,10,'#6a5a4a'],[81,54,2,10,'#6a5a4a'],[82,42,4,7,'#8a7a6a'],[84,38,6,6,'#8a7a6a'],[86,35,1,3,'#6a5a4a'],[88,35,1,3,'#6a5a4a'],[88,41,2,3,'#5a4a3a'],[86,40,1,1,O],[72,47,10,1,'#c04040'], // the mule
+  [30,66,36,30,'#b89a68'],[34,72,2,1,'#a08458'],[52,84,3,1,'#a08458'],[44,92,2,1,'#a08458'],[10,74,2,2,'#f080a0'],[18,86,2,2,'#f2e060'],[78,72,2,2,'#c890ff'],[86,88,2,2,'#f080a0'],[72,82,2,2,'#f2e060'],[6,92,2,2,'#c890ff'],[9,76,1,2,'#3a7a2a'],[87,90,1,2,'#3a7a2a']]; // the road, flowers
  // Monarch: a throne on a dais, red banners, a fancy back door with gold trim, a red carpet
  if(id==='monarch'){const P=MPAL[w]||MPAL.red,mc={'#a01a3a':P.main,'#8a1030':P.dark,'#f2c84a':P.trim};return [[6,24,10,26,'#a01a3a'],[6,24,10,2,'#f2c84a'],[8,44,6,6,'#a01a3a'],[10,30,2,6,'#f2c84a'],[49,24,8,26,'#a01a3a'],[49,24,8,2,'#f2c84a'],[50,44,6,6,'#a01a3a'],[52,30,2,6,'#f2c84a'],
   [22,62,40,4,'#6a5a6a'],[24,30,20,32,'#c8a030'],[27,34,14,20,'#8a1030'],[29,36,10,16,'#a01a3a'],[22,28,4,6,'#f2c84a'],[42,28,4,6,'#f2c84a'],[32,26,4,4,'#f2c84a'],[33,24,2,2,'#d03050'],[22,54,24,4,'#c8a030'],[24,58,3,4,'#a08020'],[41,58,3,4,'#a08020'],
@@ -423,7 +434,7 @@ function drawGold(c,bx,by,t){c.fillStyle='#f2c84a';[[11,42,4,4],[16,41,4,4],[21,
 function drawRoomLife(c,id,bx,by,t){const fl=(k)=>Math.floor(t*8+k)%3;
  if(id==='knight'){const h=3+fl(1);c.fillStyle='#f08a20';c.fillRect(bx+88,by+34-h,3,h);c.fillStyle='#ffd040';c.fillRect(bx+89,by+35-h,1,h-1)} // the torch flame
  if(id==='wizard'){[[13,22],[41,22]].forEach((q,i)=>{const h=1+fl(i*2);c.fillStyle='#ffd060';c.fillRect(bx+q[0],by+q[1]-h,1,h)})} // candle flames on the bookshelf
- if(id==='traveler'){const s=Math.floor(t*2.2)%5===0?1:0;c.fillStyle='#5a4a3a';c.fillRect(bx+70-s,by+47,2,1);c.fillRect(bx+69-s,by+48,1,7)} // the mule swishes its tail
+ if(id==='traveler'){const s=Math.floor(t*2.2)%5===0?1:0;c.fillStyle='#5a4a3a';c.fillRect(bx+68-s,by+47,2,1);c.fillRect(bx+67-s,by+48,1,7)} // the mule swishes its tail
  if(id==='priest'){const h=2+fl(0);c.fillStyle='#4a4458';c.fillRect(bx+48,by+44,4,6);c.fillStyle='#ffd060';c.fillRect(bx+49,by+50-h,2,h);c.fillStyle='#fff6c0';c.fillRect(bx+49,by+49,1,1)}
  if(id==='necromancer'){[[40,23],[16,41]].forEach((q,i)=>{const h=2+fl(i*2);c.fillStyle='#26262c';c.fillRect(bx+q[0],by+q[1]-2,3,3);c.fillStyle='#7aff7a';c.fillRect(bx+q[0],by+q[1]+3-h,3,h)})}
  if(id==='apothecary'){c.save();c.beginPath();c.rect(bx+39,by+26,20,6);c.clip();c.fillStyle='#8ac8f0';c.fillRect(bx+39,by+26,20,6);const cx=bx+39+((t*4)%34)-8;c.fillStyle='#ffffff';c.fillRect(Math.round(cx),by+28,7,3);c.fillRect(Math.round(cx)+2,by+27,4,1);c.restore()}
@@ -787,8 +798,8 @@ const ROOM_EXTRA={
   c.fillStyle='#f2e8a0';c.fillRect(71,12,4,4);c.fillStyle='#2a2a5a';c.fillRect(73,11,3,3);c.strokeStyle='#8a7ae0';c.lineWidth=1;c.beginPath();c.moveTo(58.5,8.5);c.lineTo(64.5,14.5);c.lineTo(72.5,9.5);c.stroke(); // star chart with a crescent moon
   rects(c,[[12,22,3,2,'#d8d0b0'],[40,22,3,2,'#d8d0b0'],[26,20,5,4,'#8a5ae0'],[27,19,3,1,'#c890ff']],0,0); // candles and a potion on top of the shelf
   rects(c,[[14,74,64,16,'#3a2a6a'],[16,76,60,12,'#4a3a8a'],[30,80,2,2,'#f2e8a0'],[46,78,2,2,'#f2e8a0'],[62,83,2,2,'#f2e8a0'],[38,85,1,1,'#f2e8a0'],[54,82,1,1,'#f2e8a0']],0,0)}, // starry rug
- priest(c){rects(c,[[13,9,34,3,'#b8b0c8'],[13,9,3,45,'#b8b0c8'],[44,9,3,45,'#b8b0c8'],[12,52,36,3,'#9a92aa']],0,0); // stone arch around the window
-  c.save();c.globalAlpha=.16;[['#c04040',18],['#3a6ad0',26],['#d0b030',35]].forEach(q=>{c.fillStyle=q[0];c.beginPath();c.moveTo(q[1],52);c.lineTo(q[1]+8,52);c.lineTo(q[1]+30,92);c.lineTo(q[1]+18,92);c.closePath();c.fill()});c.restore(); // colored light from the window
+ priest(c){rects(c,[[18,19,24,2,'#b8b0c8'],[15,21,30,3,'#b8b0c8'],[13,24,3,40,'#b8b0c8'],[44,24,3,40,'#b8b0c8'],[12,63,36,3,'#9a92aa'],[29,17,2,2,'#d8b860']],0,0); // stone arch hugging the window (the glass is x 16-44, y 24-64)
+  c.save();c.globalAlpha=.16;[['#c04040',18],['#3a6ad0',26],['#d0b030',35]].forEach(q=>{c.fillStyle=q[0];c.beginPath();c.moveTo(q[1],66);c.lineTo(q[1]+8,66);c.lineTo(q[1]+22,93);c.lineTo(q[1]+12,93);c.closePath();c.fill()});c.restore(); // colored light from the window onto the floor
   rects(c,[[86,26,8,40,'#a8a0b8'],[85,24,10,3,'#c8c0d8'],[85,64,10,2,'#8a8296'],[88,30,1,32,'#8a8296']],0,0); // a pillar
   rects(c,[[30,72,40,20,'#7a1a2a'],[32,72,36,20,'#9a2a3a'],[30,72,40,1,'#d8b860']],0,0)}, // red carpet
  necromancer(c){c.strokeStyle='rgba(220,220,230,.35)';c.lineWidth=1;c.beginPath();for(let i=0;i<4;i++){c.moveTo(95,1);c.lineTo(95-i*6,1+(3-i)*4+4)}for(let r=4;r<14;r+=4){c.moveTo(95-r,1);c.lineTo(95,1+r)}c.stroke(); // cobweb
@@ -803,8 +814,37 @@ const ROOMC={};
 function paintRoom(c,id,w){const k=id==='druid'&&DRUID_WALL[w]||WALL[id],st=ROOM_STYLE[id];
  c.fillStyle=k[0];c.fillRect(0,0,CELL,CELL);c.fillStyle=k[1];c.fillRect(0,66,CELL,30);
  if(st){wallTex(c,st.wall,k[0]);floorTex(c,st.floor,k[1])}
+ const outdoor=outBack(c,id,w); // sky, hills, far trees (farm, forest, road)
  c.fillStyle='rgba(0,0,0,.3)';c.fillRect(0,66,CELL,2);
  bg(id,w).forEach(d=>{c.fillStyle=d[4];c.fillRect(d[0],d[1],d[2],d[3])});if(id==='alchemist')drawAlembic(c,0,0,0);
  if(ROOM_EXTRA[id])ROOM_EXTRA[id](c,w);
+ if(outdoor)outFront(c,id,w);
  if(st)roomLight(c);
  c.strokeStyle='#000';c.lineWidth=2;c.strokeRect(1,1,CELL-2,CELL-2)} // thin frame; boxFrame() thickens the outside edges
+
+// ---------- outdoor rooms (farm, the Druid's forest by row, the Traveling Merchant's road): painted behind and in front of their bg rects ----------
+// key: farmer, traveler, or 'druid'+row. sky = [top, bottom] gradient; far = distant shapes
+const OUTDOOR={farmer:{sky:['#4a8ad0','#bfe2f4']},traveler:{sky:['#5a9ad8','#cfe8f4']},
+ druid0:{sky:['#060e08','#123018']},druid1:{sky:['#1e4a26','#4a8a4a']},druid2:{sky:['#6a4a24','#d8a050']},druid3:{sky:['#140c22','#3a2a4e']}};
+const outKey=(id,w)=>id==='druid'?'druid'+(w>=0&&w<=3?w:1):id;
+function outBack(c,id,w){const k=outKey(id,w),o=OUTDOOR[k];if(!o)return false;const gr=c.createLinearGradient(0,0,0,66);gr.addColorStop(0,o.sky[0]);gr.addColorStop(1,o.sky[1]);c.fillStyle=gr;c.fillRect(0,0,96,66);
+ const blob=(x,y,r,col)=>{c.fillStyle=col;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill()};
+ if(k==='farmer'||k==='traveler'){[[30,14,5],[37,12,6],[44,15,4]].forEach(q=>blob(q[0],q[1],q[2],'rgba(255,255,255,.85)'));[[60,30,3],[65,28,4],[70,31,3]].forEach(q=>blob(q[0],q[1],q[2],'rgba(255,255,255,.6)'));
+  if(k==='traveler'){c.fillStyle='#8aa4c8';c.beginPath();c.moveTo(0,52);c.lineTo(18,30);c.lineTo(30,40);c.lineTo(46,24);c.lineTo(66,46);c.lineTo(66,52);c.closePath();c.fill();
+   c.fillStyle='#e8f0f8';c.beginPath();c.moveTo(14,35);c.lineTo(18,30);c.lineTo(22,35);c.closePath();c.fill();c.beginPath();c.moveTo(41,30);c.lineTo(46,24);c.lineTo(51,30);c.closePath();c.fill()} // far mountains with snow
+  c.fillStyle=k==='farmer'?'#7ab868':'#8ac070';c.beginPath();c.moveTo(0,50);c.quadraticCurveTo(24,36,50,48);c.quadraticCurveTo(74,38,96,46);c.lineTo(96,66);c.lineTo(0,66);c.closePath();c.fill(); // rolling hills
+  c.fillStyle=k==='farmer'?'#5a9a50':'#6aa858';c.beginPath();c.moveTo(0,58);c.quadraticCurveTo(40,48,96,56);c.lineTo(96,66);c.lineTo(0,66);c.closePath();c.fill()}
+ else{const far=k==='druid0'?'#0e1e12':k==='druid1'?'#2e6a36':k==='druid2'?'#a8682a':'#2a1e3e';c.fillStyle=far;
+  [[20,8],[40,10],[66,6],[88,9]].forEach((q,i)=>{c.fillRect(q[0]+4,20,4,46);blob(q[0]+6,22+(i%2)*4,q[1],far)}); // trees far behind
+  if(k==='druid1'||k==='druid2'){c.save();c.globalAlpha=.12;c.fillStyle='#fff6c0';[[24,0],[58,0]].forEach(q=>{c.beginPath();c.moveTo(q[0],q[1]);c.lineTo(q[0]+8,0);c.lineTo(q[0]+26,66);c.lineTo(q[0]+16,66);c.closePath();c.fill()});c.restore()}} // sun shafts
+ return true}
+function outFront(c,id,w){const k=outKey(id,w);if(!OUTDOOR[k])return;
+ // grass tufts and little plants on the ground
+ const tuft=k==='druid0'?'#1e3a20':k==='druid2'?'#8a8a3a':k==='druid3'?'#4a3a5a':'#4a8a3a';
+ for(let i=0;i<26;i++){const x=Math.floor(rnd(i*7+3)*92),y=68+Math.floor(rnd(i*11+5)*26);if(k==='traveler'&&x>28&&x<68)continue;c.fillStyle=tuft;c.fillRect(x,y,1,2);c.fillRect(x+2,y-1,1,3);c.fillStyle=shade(tuft,.25);c.fillRect(x+1,y,1,2)}
+ if(k.startsWith('druid')){const trunks=k==='druid3'?[8,50,80]:[6,46,80],bark=k==='druid3'?'#b8b09c':k==='druid0'?'#1e160c':'#3a2414';
+  trunks.forEach((x,i)=>{c.fillStyle=bark;for(let y=34;y<64;y+=5)c.fillRect(x+1+((y/5+i)%3),y,1,3);c.fillStyle=shade(bark,.3);c.fillRect(x+6,30,1,34)}); // bark lines and a lit edge
+  if(k==='druid3')[[20,74],[60,80],[36,88],[82,70],[12,60],[70,50]].forEach((q,i)=>{c.fillStyle=['#7ae0c0','#c890ff','#f2e060'][i%3];c.fillRect(q[0],q[1],1,1)}); // glowing specks
+  if(k==='druid1'||k==='druid0'){c.fillStyle=k==='druid0'?'#24402a':'#3a7a34';[[28,64],[66,68],[88,62]].forEach(q=>{c.fillRect(q[0],q[1],5,2);c.fillRect(q[0]+1,q[1]-2,1,2);c.fillRect(q[0]+3,q[1]-3,1,3)})}} // ferns
+ if(k==='farmer'){const gr=c.createLinearGradient(0,0,0,40);gr.addColorStop(0,'rgba(255,240,180,.18)');gr.addColorStop(1,'rgba(255,240,180,0)');c.fillStyle=gr;c.fillRect(48,0,48,40)} // sunshine
+ const gr=c.createRadialGradient(48,50,40,48,50,74);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,'+(k==='druid0'?.4:.18)+')');c.fillStyle=gr;c.fillRect(0,0,96,96)}

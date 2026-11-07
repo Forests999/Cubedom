@@ -957,3 +957,13 @@ Object.assign(FLAVOR,{beast:'The formula works! He turns into a beast-man and go
  'prac:shield':'A squire comes to spar with a wooden sword while the Knight blocks.','prac:spear':'Poke, poke, poke. Very serious poking.','prac:glaive':'Big sweeping swings. Stand back.',
  'prac:longsword':'Classic swordplay against an invisible foe.','prac:axe':'Big, heavy chops. Firewood for a week.'});
 HINTS.promo='A shopkeeper with the Alchemist next door sometimes sells his potions.';
+// ---------- two more tags: Monstrous and Structure (Structure has no members yet) ----------
+TAG_ICON.monstrous=[0,1,2].flatMap(k=>[[k*2,0,1,2,'#e04848'],[k*2+1,2,1,3,'#e04848'],[k*2+2,5,1,2,'#e04848']]); // three claw slashes
+TAG_ICON.structure=[[3,0,1,1,'#c8c0b8'],[2,1,3,1,'#c8c0b8'],[1,2,5,1,'#c8c0b8'],[0,3,7,1,'#c8c0b8'],[1,4,5,3,'#8a8494'],[3,5,1,2,'#3a2a1a']]; // a little house
+Object.assign(TAG_NAMES,{'tag:monstrous':'a Monstrous one','tag:structure':'a Structure'});
+TAG_NOTES.alchemist='{merchant} Merchant. He also gets the {mage} Mage tag while a Mage is next to him (both tags show), and the {monstrous} Monstrous tag on the bottom-right space (the mad scientist). His neighbor effects go by tag: Mages, Merchants and Fighters next to him each get something.';
+// ---------- Super Secrets: their own Compendium tab; no hints, no clues, tied to no character ----------
+COMP_TABS.push({id:'super',name:'Super Secrets',pairs:[],idle:[],items:['ss:gold','ss:alltags']});EGGS.push('ss:gold','ss:alltags');
+Object.assign(NAMES,{'ss:gold':'Super secret: a golden kingdom','ss:alltags':'Super secret: one of everything'});
+Object.assign(DESC,{'ss:gold':'Super secret: every space on the board turned golden by philosopher\'s stones. A kingdom of gold!',
+ 'ss:alltags':'Super secret: one character with every tag at once: Fighter, Mage, Merchant and Monstrous.'});

@@ -34,10 +34,10 @@ const idOf=u=>u.as||u.id;
 // (also: a second built-in tag, EXTRA_CLASS, e.g. the Blacksmith's Fighter tag; and Fighter for anyone reinforced with an ingot)
 // (the Druid's Decay weather hides every tag a character was not born with, while it lasts)
 function hasClass(u,c){if(!u)return false;const id=idOf(u);if(id==='monarch')return false; // the Monarch never has a tag
- if(CLASS[id]===c)return true;if(EXTRA_CLASS[id]&&EXTRA_CLASS[id].includes(c))return true;const dec=wxOf(u)==='decay';if(c==='fighter'&&u.reinforced&&!dec)return true;if(c!=='mage'||dec)return false;if(u.mageTag)return true;
+ if(CLASS[id]===c)return true;if(EXTRA_CLASS[id]&&EXTRA_CLASS[id].includes(c))return true;const dec=wxOf(u)==='decay';if(c==='fighter'&&u.reinforced&&!dec)return true;if(c==='monstrous')return madSci(u);if(c!=='mage'||dec)return false;if(u.mageTag)return true;
  return id==='alchemist'&&Object.values(U).some(v=>v!==u&&idOf(v)!=='alchemist'&&hasClass(v,'mage')&&rel(v,u))} // any Mage by tag (a Rogue with the Mage tag counts too)
-const classesOf=u=>{const b=CLASS[idOf(u)];return[b,...['fighter','mage','merchant'].filter(c=>c!==b&&hasClass(u,c))].filter(Boolean)};
-function setLabel(u){u.lb.innerHTML='';u.lb.append(u.paladin&&!u.form&&idOf(u)==='knight'?(u.sir?'Sir Paladin':'Paladin'):u.arch&&!u.form&&idOf(u)==='druid'?'Archdruid':CH[u.form||idOf(u)].name);const cs=classesOf(u);u.tagKey=cs.join();u.lb.insertAdjacentHTML('beforeend',cs.map(tagOf).join(''));fitLabel(u)}
+const classesOf=u=>{const b=CLASS[idOf(u)];return[b,...['fighter','mage','merchant','monstrous','structure'].filter(c=>c!==b&&hasClass(u,c))].filter(Boolean)};
+function setLabel(u){u.lb.innerHTML='';u.lb.append(u.paladin&&!u.form&&idOf(u)==='knight'?(u.sir?'Sir Paladin':'Paladin'):u.arch&&!u.form&&idOf(u)==='druid'?'Archdruid':CH[u.form||idOf(u)].name);const cs=classesOf(u);u.tagKey=cs.join();u.lb.insertAdjacentHTML('beforeend',cs.map(tagOf).join(''));fitLabel(u);if(['fighter','mage','merchant','monstrous'].every(c=>cs.includes(c)))markSeen('ss:alltags')} // super secret: every tag at once (Structure aside)
 // Re-draw a label when its class tags change (e.g. the Alchemist moves next to a Mage)
 const refreshTags=()=>Object.values(U).forEach(u=>{if(classesOf(u).join()!==u.tagKey)setLabel(u)});
 // Shrink a name label until it fits inside its square (squares are small on phones)
@@ -523,7 +523,7 @@ function markSeen(k){k=SEEN_ALIAS[k]||k;if(!k||S.seen[k])return;S.seen[k]=1;save
 const ALL_KEYS=[...new Set(COMP_TABS.flatMap(t=>[...t.pairs,...t.idle,...t.items]))];
 const foundCount=()=>ALL_KEYS.filter(k=>S.seen[k]).length;
 // Which characters have a Compendium tab (once unlocked, always; 'anyone' and tags count as unlocked), and the tiles a tab shows
-const compUnl=id=>id==='anyone'||!!TAG_NAMES[id]||SHELF_CHARS.includes(id)||!!S.un[id]||!!(S.ever&&S.ever[id]);
+const compUnl=id=>id==='anyone'||id==='super'||!!TAG_NAMES[id]||SHELF_CHARS.includes(id)||!!S.un[id]||!!(S.ever&&S.ever[id]);
 const tabPairs=t=>t.pairs.filter(k=>(PAIR_WITH[k]||[]).every(compUnl)),tabKeys=t=>[...tabPairs(t),...t.idle,...t.items];
 function checkDiscoveries(){const n=foundCount(),due=Math.floor(n/DISCOVER_EVERY);
  // a character's whole tab discovered (secrets too): +1 artifact, once per tab
@@ -636,7 +636,8 @@ ITEM_KEY.scroll.druid='dscroll';ITEM_KEY.artifact.druid='archdruid';ITEM_KEY.scr
 function alcLuck(u){u.luckT=ALC_LUCK_TIME;poof(u.x,u.y-24,'#f2c84a');u.hop=.5;u.mood='happy';u.mt=1.5;say(u,'Luck for my neighbors! For one minute.')}
 function alcScroll(u){beginAct(u,'tear');u.dur=2.2;u.mood='shock';u.mt=.8;say(u,'What is this gibberish? *rip*')}
 function alcArtifact(u){if(Math.random()<ODDS.stone){ // philosopher's stone: a random open space turns golden (coins there are doubled)
-  const G=S.goldCells,isG=(r,c)=>G.some(q=>q[0]===r&&q[1]===c),open=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c)&&!isG(r,c))open.push([r,c]);if(!open.length){addCoins(50,u.x,u.y-50);say(u,'Every space is golden already! Have some gold instead.');return}const q=pick(open);G.push(q);save();markSeen('stone');
+  const G=S.goldCells,isG=(r,c)=>G.some(q=>q[0]===r&&q[1]===c),open=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c)&&!isG(r,c))open.push([r,c]);if(!open.length){addCoins(50,u.x,u.y-50);say(u,'Every space is golden already! Have some gold instead.');return}const q=pick(open);G.push(q);save();markSeen('stone');if(G.length>=ROWS*COLS)markSeen('ss:gold'); // super secret: the whole board golden
+ 
   flashes.push({x:q[1]*CELL,y:q[0]*CELL,t:0,col:'255,210,60'});u.hop=.5;u.mood='happy';u.mt=2;say(u,"The philosopher's stone!");toast("A philosopher's stone! Another space on the board is golden for good: coins earned there are doubled.");return}
  beginAct(u,'retire');u.dur=3;say(u,'The elixir of life! I think... I shall retire.')} // 20%: elixir of life (secret)
 // ---- items on the Rogue ----
@@ -856,7 +857,8 @@ function undisguise(u){if(!u.as)return;u.as=null;u.asSprite=null;u.weapon=u.asWe
 // Priest + Apothecary studying: show one hidden easter egg in the Compendium (not counted as found: no gold border)
 // A clue (Priest + Apothecary studies, the dungeon, the Druid's nature spirit, a story in his rain): 70% an undiscovered interaction, 30% a secret (ODDS.revealScene).
 // It is shown in the Compendium (image and full text) without a gold border and is not counted as found. Falls back to the other kind if none is left.
-function revealSecret(intro){const scenes=[...new Set(COMP_TABS.filter(t=>compUnl(t.id)).flatMap(tabKeys))].filter(k=>!EGGS.includes(k)&&!S.seen[k]&&!S.revealed[k]),eggs=EGGS.filter(k=>!S.seen[k]&&!S.revealed[k]);
+function revealSecret(intro){const scenes=[...new Set(COMP_TABS.filter(t=>compUnl(t.id)).flatMap(tabKeys))].filter(k=>!EGGS.includes(k)&&!S.seen[k]&&!S.revealed[k]),eggs=EGGS.filter(k=>!k.startsWith('ss:')&&!S.seen[k]&&!S.revealed[k]); // (super secrets are never revealed)
+
  let egg=Math.random()>=ODDS.revealScene;if(egg&&!eggs.length)egg=false;if(!egg&&!scenes.length)egg=true;const pool=egg?eggs:scenes;if(!pool.length)return false;
  S.revealed[pick(pool)]=1;save();toast((intro||'Their studies uncovered a clue!')+' '+(egg?'A secret':'An undiscovered interaction')+' is now shown in the Compendium.');return true}
 // Secret: the mad scientist turns into a beast-man and goes after neighbor h (talk 'beast')
@@ -2134,6 +2136,8 @@ function idleTile(kind,wp){
   else if(kind==='tshop'){const tt=t%4;box(x,'traveler',0,0);spr(x,'traveler_f',tt>1&&tt<2.4?'happy':'ok',40,FY,1,0,1,1,tt>.8&&tt<2?'fwd':'none');if(tt>1&&tt<2.6)drawItem(x,'artifact',56,Math.round(FY-40-(tt-1)*8),2);drawShopCoin(x,0,0)}
   else if(kind==='tscroll'||kind==='tpotion'||kind==='tingot'){const tt=t%4,it=kind==='tscroll'?'scroll':kind==='tpotion'?'potion':'ingot';box(x,'traveler',0,0);spr(x,'traveler_m',tt>1?'happy':'ok',48,FY,1,tt>1&&tt<1.5?-4:0,1,1,tt>1&&tt<2?'fwd':'none');
    if(tt<1)drawItem(x,it,48,Math.round(10+tt*30),2);else if(tt<2.6)drawItem(x,'coin',62,Math.round(FY-40-(tt-1)*8),2)}
+  else if(kind==='ss:gold'){x.fillStyle='#1a1733';x.fillRect(0,0,96,96);for(let r=0;r<4;r++)for(let c=0;c<5;c++){x.fillStyle='#c8962a';x.fillRect(4+c*18,12+r*18,16,16);x.fillStyle='#f2c84a';x.fillRect(5+c*18,13+r*18,14,14);x.fillStyle='#fff0a8';x.fillRect(6+c*18,14+r*18,4,2);if(Math.floor(t*3+r+c*2)%7===0){x.fillStyle='#ffffff';x.fillRect(12+c*18,18+r*18,2,2)}}}
+  else if(kind==='ss:alltags'){box(x,'alchemist',0,0);spr(x,'alchemist_mad','happy',48,FY,1,0,1,1,'both');['fighter','mage','merchant','monstrous'].forEach((g2,i)=>{TAG_ICON[g2].forEach(r=>{x.fillStyle=r[4];x.fillRect(6+r[0]*2,8+i*17+r[1]*2,r[2]*2,r[3]*2)})})}
   else if(kind==='dingot'){const tt=t%4;box(x,'druid',0,1);spr(x,'druid',tt>1&&tt<3?'roll':'ok',48,FY,Math.floor(tt*4)%2&&tt>1&&tt<2.2?-1:1,0,1,1,tt>1&&tt<2.4?'fwd':'none');if(tt<1)drawItem(x,'ingot',48,Math.round(10+tt*30),2);else if(tt<2.6)drawItem(x,'ingot',Math.round(62+(tt-1)*14),Math.round(FY-30-Math.sin((tt-1)*2)*14),2)}
   else if(kind==='court'){const tt=t%5;box(x,'monarch',0,0);drawRoomLife(x,'monarch',0,0,t);spr(x,Math.floor(t/5)%2?'monarch_f':'monarch_m','ok',36,FY,1,0,1,1,poseOf('court',tt))}
   // ---- Blacksmith ----
@@ -2227,7 +2231,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  for(const k in WX_NAMES)T['wx:'+k]=[I('wx:'+k),ODDS.visit*ODDS.weather[k]];
  // the Monarch's requests (granted: 80% generous / 10% greedy), the Traveling Merchant
  REQS.forEach(q=>T['rq:'+q]=[P('rq:'+q),'80% / 10%']);
- Object.assign(T,{dingot:[I('dingot')],rqdeny:[P('rqdeny'),'20% / 90%'],drain:[P('drain'),pv*ODDS.drain],royalfuneral:[I('royalfuneral'),'on death'],regicide:[I('regicide'),'secret'],royalpatron:[I('royalpatron'),'secret'],
+ Object.assign(T,{'ss:gold':[I('ss:gold'),'super secret'],'ss:alltags':[I('ss:alltags'),'super secret'],dingot:[I('dingot')],rqdeny:[P('rqdeny'),'20% / 90%'],drain:[P('drain'),pv*ODDS.drain],royalfuneral:[I('royalfuneral'),'on death'],regicide:[I('regicide'),'secret'],royalpatron:[I('royalpatron'),'secret'],
   wares:[I('wares'),'100%'],troad:[I('troad'),'5 min'],tshop:[I('tshop'),TRAVEL_ARTIFACT+' coins'],tscroll:[I('tscroll')],tpotion:[I('tpotion')],tingot:[I('tingot')]});
  ROGUE_SCENES.forEach(k=>{if(!T[k])T[k]=[P(k),pv]});
  WEAPONS.forEach(w=>T['prac:'+w]=[I('prac',w),K.prac]);
@@ -2244,7 +2248,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  // Tags: what this character's class tags are and what changes them
  const tn=document.createElement('p');tn.className='cinfo';tn.innerHTML='<b>Tags:</b> '+(TAG_NOTES[tab.id]||'').replace(/\{(\w+)\}/g,(m,c)=>tagOf(c));
  const dn=document.createElement('p');dn.className='cinfo';dn.innerHTML='<b>Decisions.</b> '+decideText(tab.id); // how often this character idles, visits or wanders
- b.append(bar,info,dn,tn);
+ if(tab.id==='super'){const sp=document.createElement('p');sp.className='cinfo';sp.textContent='Super Secrets belong to no character and have no hints or clues. They come from simply playing around. Good luck!';b.append(bar,info,sp)}else b.append(bar,info,dn,tn);
  // A grid of tiles (easter eggs only once found)
  const grid=(keys,items)=>{const d=document.createElement('div');d.className='cg';
   // easter eggs show once found, or once revealed by the Priest's studies
@@ -2268,7 +2272,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  [...new Set(pairs.map(other))].sort((a,c)=>nameOf(a).localeCompare(nameOf(c))).forEach(id=>{const keys=pairs.filter(k=>other(k)===id),h=document.createElement('h3');
   h.className='sub';h.innerHTML='with '+(id==='anyone'?'anyone':TAG_NAMES[id]?TAG_NAMES[id]+tagOf(id.slice(4)):'the '+nameOf(id)+tagImg(id))+' <small>'+count(keys)+'</small>';b.append(h,grid(keys))});
  const items=tab.items.filter(k=>!EGGS.includes(k)),eggs=tab.items.filter(k=>EGGS.includes(k));
- b.append(head('Idle activities',tab.idle),grid(tab.idle),head('Items and shops',items),grid(items,1));
+ if(tab.idle.length)b.append(head('Idle activities',tab.idle),grid(tab.idle));if(items.length)b.append(head('Items and shops',items),grid(items,1)); // (empty groups are left out)
  // Secrets: their own group at the bottom; hidden until found but counted
  if(eggs.length){b.append(head('Secrets',eggs));if(eggs.some(k=>S.seen[k]||S.revealed[k]))b.append(grid(eggs,1));
   else{const q=document.createElement('p');q.className='cinfo';q.textContent='Not found yet. Keep exploring!';b.append(q)}}

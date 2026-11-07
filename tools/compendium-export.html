@@ -1,0 +1,31 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body>
+<div id="items"><div class="lbl"></div></div><div id="wrap"><canvas id="cv"></canvas><div id="labels"></div><div id="bub"></div></div>
+<div id="tray"><div class="lbl"></div></div><button id="reset"></button><section id="tab-board"></section><section id="tab-ref" hidden><div id="refs"></div></section>
+<canvas id="ghost" width="96" height="96"></canvas><div id="toast"></div><div id="modal" hidden><div class="mbox"><p></p><button id="mYes"></button><button id="mNo"></button></div></div>
+<script src="../data.js"></script><script src="../art.js"></script><script src="../game.js"></script>
+<script>
+// Every Compendium entry, tab by tab, in the order the Compendium shows them
+const L=[];const line=s=>L.push(s);
+line('SQUAREDOM - ALL COMPENDIUM TEXT');
+line('Edit the lines that start with Name:, Story:, Hint: or Note: and send the file back. Keep each [key] as it is (it tells me which entry it is).');
+line('Name  = the tile title.   Story = the fun description (shown before AND after discovery).');
+line('Hint  = the unlock nudge in the clue before discovery ("auto" = made from the rules; write your own to replace it).');
+line('Note  = extra rule text after the chance, once discovered.   "Shown once found" lines are for reference only (made from the rules).');
+line('');
+const seenK={};
+COMP_TABS.forEach(t=>{const other=k=>{const w=PAIR_WITH[k]||[];return w.find(c=>c!==t.id)||w[0]};
+ line('==================== '+t.name.toUpperCase()+' ====================');
+ const groups=[['With neighbors',t.pairs],['Idle activities',t.idle],['Items and shops',t.items.filter(k=>!EGGS.includes(k))],['Secrets',t.items.filter(k=>EGGS.includes(k))]];
+ groups.forEach(([gname,keys])=>{if(!keys.length)return;line('');line('---- '+gname+' ----');
+  keys.forEach(k=>{line('');if(seenK[k]){line('['+k+'] '+(NAMES[k]||k)+'  (same entry as under '+seenK[k]+')');return}seenK[k]=t.name;
+   line('['+k+'] '+(gname==='With neighbors'?'(with '+CNAME(other(k))+') ':''));
+   line('Name: '+(NAMES[k]||''));
+   line('Story: '+(flavorOf(k)||''));
+   line('Hint: '+(HINTS[k]?HINTS[k]:(unlockHint(k)?'(auto) '+unlockHint(k):'')));
+   line('Note: '+(NOTE[k]||''));
+   line('Shown once found: '+infoText(k).replace(/\n/g,' '))})})
+ line('')});
+line('==================== SHELF CLUES (locked characters) ====================');
+Object.keys(SHELF_CLUE).forEach(k=>{line('');line('['+k+']');line('Clue: '+SHELF_CLUE[k])});
+document.body.innerHTML='';const pre=document.createElement('pre');pre.id='out';pre.textContent=L.join('\n');document.body.append(pre);
+</script></body></html>
