@@ -18,7 +18,7 @@ function bg(id,w){
  // Farmer: open sky, sun (top right, clear of the label) and a fence; no doors at all (crops drawn by drawField)
  if(isFarm(id))return [[74,10,10,10,'#f8e070'],[72,12,14,6,'#f8e070'],[6,52,84,2,'#a07840'],[10,48,2,18,'#a07840'],[30,48,2,18,'#a07840'],[50,48,2,18,'#a07840'],[70,48,2,18,'#a07840'],[88,48,2,18,'#a07840']];
  // Apothecary: a window to the blue sky, herbs growing in planters, potions on display shelves, back door on the LEFT
- if(id==='apothecary')return [...BACKDOOR_L,
+ if(id==='apothecary')return [...backDoor(id,1),
   [37,24,24,18,'#5a4024'],[39,26,20,14,'#8ac8f0'],[39,34,20,6,'#a8d8f8'],[44,29,7,3,'#ffffff'],[42,30,4,2,'#ffffff'],[48,33,2,7,'#5a4024'],[39,32,20,2,'#5a4024'],
   [38,56,22,10,'#8a5a2a'],[38,56,22,2,'#6a4420'],[40,46,2,10,'#4a9a3a'],[39,44,4,4,'#6aba4a'],[45,48,2,8,'#3a8a3a'],[44,46,4,3,'#d8e070'],[50,44,2,12,'#4a9a3a'],[48,42,6,4,'#6aba4a'],[55,49,2,7,'#3a8a3a'],[54,47,4,3,'#c890ff'],
   ...down([[62,22,30,2,'#6a4a2a'],[62,40,30,2,'#6a4a2a'],[64,13,4,9,'#d03050'],[70,15,4,7,'#4fb0ff'],[76,12,5,10,'#7aff7a'],[83,15,4,7,'#f2c84a'],[64,32,5,8,'#c890ff'],[71,30,4,10,'#f08a20'],[77,33,4,7,'#4fb0ff'],[83,31,5,9,'#d03050'],[65,14,2,2,'#ffffff'],[77,13,2,2,'#ffffff'],[72,31,2,2,'#ffffff']],10),
@@ -58,21 +58,21 @@ function bg(id,w){
  // Blacksmith: a stone furnace with a fire (animated), a rack of tools, an anvil with a hammer, a back door
  if(id==='blacksmith')return [[4,24,32,42,'#5a5050'],[4,24,32,3,'#6a6060'],[10,10,12,14,'#4a4040'],[11,40,18,16,'#1a1010'],[13,48,14,8,'#c05020'],
   [38,30,20,2,'#5a3a1e'],[40,32,2,10,'#8a5a2a'],[39,40,4,3,'#5a5a64'],[46,32,2,12,'#8a5a2a'],[44,32,6,2,'#5a5a64'],[52,32,2,10,'#5a5a64'],[51,41,4,2,'#5a5a64'],
-  [38,54,22,4,'#3a3a44'],[34,55,5,2,'#3a3a44'],[42,58,14,4,'#2a2a30'],[40,62,18,4,'#3a3a44'],[48,48,2,6,'#8a5a2a'],[45,46,8,3,'#5a5a64'],...BACKDOOR];
+  [38,54,22,4,'#3a3a44'],[34,55,5,2,'#3a3a44'],[42,58,14,4,'#2a2a30'],[40,62,18,4,'#3a3a44'],[48,48,2,6,'#8a5a2a'],[45,46,8,3,'#5a5a64'],...backDoor(id)];
  // Alchemist: back door on the LEFT, potions on shelves, a long table with a brewing setup (flask and flame animated in drawRoomLife)
- if(id==='alchemist')return [...BACKDOOR_L,
+ if(id==='alchemist')return [...backDoor(id,1),
   [56,30,36,2,'#6a4a2a'],[56,44,36,2,'#6a4a2a'],[58,22,4,8,'#d03050'],[64,24,4,6,'#7aff7a'],[70,21,5,9,'#4fb0ff'],[77,23,4,7,'#f2c84a'],[84,22,5,8,'#c890ff'],
   [59,37,5,7,'#f08a20'],[66,36,4,8,'#c890ff'],[72,38,5,6,'#d03050'],[79,36,4,8,'#7aff7a'],[85,37,5,7,'#4fb0ff'],[59,22,1,2,'#ffffff'],[71,22,1,2,'#ffffff'],[67,37,1,2,'#ffffff'],
   [38,56,54,3,'#7a4a22'],[38,59,54,1,'#5a3418'],[41,59,3,7,'#5a3418'],[86,59,3,7,'#5a3418'],
   [53,53,7,3,'#4a4a52'],[61,43,2,2,'#cfe8f0'],[63,41,8,2,'#cfe8f0'],[71,41,2,6,'#cfe8f0'],[71,47,4,2,'#cfe8f0'],
   [76,47,7,9,'#cfe8f0'],[77,51,5,4,'#c890ff'],[78,45,3,2,'#8a5a2a'],[42,50,8,6,'#8a6a4a'],[43,48,6,2,'#a8884a']];
  // Fruit Merchant: striped banner just below the name label, crates of fruit
- if(id==='merchant')return [[6,24,84,6,'#c04040'],[6,24,12,6,'#f0e8d8'],[30,24,12,6,'#f0e8d8'],[54,24,12,6,'#f0e8d8'],[78,24,12,6,'#f0e8d8'],[8,46,22,18,'#8a5a2a'],[8,46,22,2,'#6a4420'],[11,42,4,4,'#d03030'],[16,41,4,4,'#e04040'],[21,42,4,4,'#c02828'],[13,38,4,4,'#d83838'],[32,50,20,14,'#8a5a2a'],[32,50,20,2,'#6a4420'],[34,46,4,4,'#f08a20'],[39,45,4,4,'#f8a030'],[44,46,4,4,'#e88018'],[48,38,3,8,'#f2d040'],[51,37,3,8,'#e8c830'],[54,38,3,8,'#f2d040'],...BACKDOOR];
- if(id==='priest')return [...WINDOW,[48,52,4,14,'#d8d0b0'],[47,50,6,2,'#a08a50'],[49,47,2,3,'#ffd060'],...BACKDOOR];
- if(id==='necromancer')return [...down([[10,22,40,3,'#3a3028'],[10,42,40,3,'#3a3028'],[14,14,7,8,'#e8e4d0'],[15,16,2,2,O],[18,16,2,2,O],[30,15,6,7,'#e8e4d0'],[31,17,2,2,O],[33,17,2,2,O],[40,16,3,6,'#2a2a2a'],[40,13,3,3,'#7aff7a'],[16,34,4,8,'#2a2a2a'],[16,31,4,3,'#7aff7a'],[26,36,10,6,'#4a3a5a'],[38,33,6,9,'#e8e4d0'],[39,35,2,2,O],[41,35,2,2,O]],10),...BACKDOOR];
+ if(id==='merchant')return [[6,24,84,6,'#c04040'],[6,24,12,6,'#f0e8d8'],[30,24,12,6,'#f0e8d8'],[54,24,12,6,'#f0e8d8'],[78,24,12,6,'#f0e8d8'],[8,46,22,18,'#8a5a2a'],[8,46,22,2,'#6a4420'],[11,42,4,4,'#d03030'],[16,41,4,4,'#e04040'],[21,42,4,4,'#c02828'],[13,38,4,4,'#d83838'],[32,50,20,14,'#8a5a2a'],[32,50,20,2,'#6a4420'],[34,46,4,4,'#f08a20'],[39,45,4,4,'#f8a030'],[44,46,4,4,'#e88018'],[48,38,3,8,'#f2d040'],[51,37,3,8,'#e8c830'],[54,38,3,8,'#f2d040'],...backDoor(id)];
+ if(id==='priest')return [...WINDOW,[48,52,4,14,'#d8d0b0'],[47,50,6,2,'#a08a50'],[49,47,2,3,'#ffd060'],...backDoor(id)];
+ if(id==='necromancer')return [...down([[10,22,40,3,'#3a3028'],[10,42,40,3,'#3a3028'],[14,14,7,8,'#e8e4d0'],[15,16,2,2,O],[18,16,2,2,O],[30,15,6,7,'#e8e4d0'],[31,17,2,2,O],[33,17,2,2,O],[40,16,3,6,'#2a2a2a'],[40,13,3,3,'#7aff7a'],[16,34,4,8,'#2a2a2a'],[16,31,4,3,'#7aff7a'],[26,36,10,6,'#4a3a5a'],[38,33,6,9,'#e8e4d0'],[39,35,2,2,O],[41,35,2,2,O]],10),...backDoor(id)];
  if(id==='wizard')return [...down([[10,14,38,42,'#6a4a2a'],[12,18,5,14,'#c04040'],[18,18,5,14,'#40a0c0'],[24,18,5,14,'#d0b030'],[30,18,5,14,'#8a5ae0'],[36,18,5,14,'#40c070'],[10,34,38,3,'#3a2410'],[12,38,5,14,'#d0b030'],[18,38,8,14,'#c04040'],[28,38,5,14,'#40a0c0'],[34,38,6,14,'#8a5ae0']],10),...SHELF2];
  // Knight: armor stand, back door, and a shorter wall weapon (kept below the label)
- const a=[[12,64,22,3,'#4a4e5a'],[16,60,5,5,'#8a94a8'],[25,60,5,5,'#8a94a8'],[14,44,16,16,'#8a94a8'],[24,44,6,16,'#667088'],[10,44,4,10,'#aab4c8'],[30,44,4,10,'#aab4c8'],[16,28,12,16,'#aab4c8'],[18,34,8,2,O],[21,24,2,4,'#c03030'],...BACKDOOR];
+ const a=[[12,64,22,3,'#4a4e5a'],[16,60,5,5,'#8a94a8'],[25,60,5,5,'#8a94a8'],[14,44,16,16,'#8a94a8'],[24,44,6,16,'#667088'],[10,44,4,10,'#aab4c8'],[30,44,4,10,'#aab4c8'],[16,28,12,16,'#aab4c8'],[18,34,8,2,O],[21,24,2,4,'#c03030'],...backDoor(id)];
  const m={shield:[[41,40,14,17,'#3a5aa8'],[43,42,10,13,'#2a4488'],[46,45,4,7,'#f2c84a']],
   spear:[[47,32,2,34,'#8a5a2a'],[45,25,6,8,'#cfd6e0'],[47,23,2,3,'#fff']],
   glaive:[[47,34,2,32,'#8a5a2a'],[47,26,8,10,'#cfd6e0'],[49,28,4,6,'#8a94a8']],
@@ -192,10 +192,7 @@ function poseOf(act,at){
  return 'none';
 }
 function box(c,id,x,y,w){if(isFarm(id))id='farmer'; // every Farmer box (farmer2, farmer3) looks the same
- const k=id==='druid'&&DRUID_WALL[w]||WALL[id];c.fillStyle=k[0];c.fillRect(x,y,CELL,CELL);c.fillStyle=k[1];c.fillRect(x,y+66,CELL,30);c.fillStyle='rgba(0,0,0,.3)';c.fillRect(x,y+66,CELL,2);
- bg(id,w).forEach(d=>{c.fillStyle=d[4];c.fillRect(x+d[0],y+d[1],d[2],d[3])});if(id==='alchemist')drawAlembic(c,x,y,0);
- c.strokeStyle='#000';c.lineWidth=2;c.strokeRect(x+1,y+1,CELL-2,CELL-2); // thin frame; boxFrame() thickens the outside edges
-}
+ const key=id+'|'+(w==null?'':w);let rc=ROOMC[key];if(!rc){rc=document.createElement('canvas');rc.width=rc.height=CELL;const q=rc.getContext('2d');q.imageSmoothingEnabled=false;paintRoom(q,id,w);ROOMC[key]=rc}c.drawImage(rc,x,y)} // each room is painted once (paintRoom) and reused
 // Extra 2px of frame on the sides of a box that have no neighbor box, so every edge on the board looks the same thickness
 // (two boxes side by side each draw their 2px, making 4px; a lone edge gets 2 + 2 = 4px too). sides = {t,b,l,r} true = add.
 function boxFrame(c,x,y,s){c.fillStyle='#000';if(s.t)c.fillRect(x,y+2,CELL,2);if(s.b)c.fillRect(x,y+CELL-4,CELL,2);if(s.l)c.fillRect(x+2,y,2,CELL);if(s.r)c.fillRect(x+CELL-4,y,2,CELL)}
@@ -203,7 +200,7 @@ function boxFrame(c,x,y,s){c.fillStyle='#000';if(s.t)c.fillRect(x,y+2,CELL,2);if
 // ---------- ways between rooms (drawn behind the characters) ----------
 // backdoor and shelf are always part of the room, so only their open state is drawn here.
 function drawFx(f){
- const x=f.x,y=f.y,o=f.open,roy=f.type==='royaldoor',fan=f.fancy,t=f.type==='backdoorL'||roy?'backdoor':f.type,fixed=t==='backdoor'||t==='shelf'||t==='rope'||t==='trapdoor';
+ const x=f.x,y=f.y,o=f.open,roy=f.type==='royaldoor',ds=DOOR_STYLE[f.room]||DOOR_STYLE.knight,t=f.type==='backdoorL'||roy?'backdoor':f.type,fixed=t==='backdoor'||t==='shelf'||t==='rope'||t==='trapdoor';
  if(t==='rope'&&o>.02){const by=Math.floor((y-1)/CELL)*CELL;g.fillStyle='#000';g.fillRect(x-9,by+4,18,4); // open ceiling hatch, rope dropping down
   const len=Math.round(o*(y-by-10));g.fillStyle=O;g.fillRect(x-2,by+7,4,len+1);g.fillStyle='#b8946a';g.fillRect(x-1,by+7,2,len);g.fillStyle='#8a6a44';for(let k=by+10;k<by+7+len;k+=4)g.fillRect(x-1,k,2,1);return}
  if(t==='shadow'&&o>.02){g.fillStyle='rgba(6,12,6,'+(.6*o)+')';g.fillRect(x-10,y-38,20,38);return} // the Druid slips into the shadow between the trees
@@ -215,18 +212,18 @@ function drawFx(f){
   // Closed = flat against the line (invisible). Opening, it swings out toward the viewer
   // into the next room (f.dir), so it shows as a narrow panel seen from the side.
   if(o>.03){const d=f.dir||1,sn=Math.sin(o*1.1),w=Math.max(3,Math.round(22*sn)),fx=x+d*w,top=y-58,grow=Math.round(3*sn);
-   g.beginPath();g.moveTo(x,top);g.lineTo(fx,top-grow);g.lineTo(fx,y+grow);g.lineTo(x,y);g.closePath();g.fillStyle=fan?'#7a2a2a':'#9a6a34';g.fill();g.lineWidth=2;g.strokeStyle=O;g.stroke();
-   g.fillStyle=fan?'#f2c84a':'#7a5226';for(const k of [.33,.66]){const py=top+58*k;g.beginPath();g.moveTo(x,py);g.lineTo(fx,py-grow*(1-2*k));g.lineTo(fx,py-grow*(1-2*k)+2);g.lineTo(x,py+2);g.closePath();g.fill()}
-   g.fillStyle=fan?'#c8a030':'#5a3a1e';g.fillRect(d>0?fx-2:fx,top-grow,2,58+grow*2); // the door's outer edge
-   if(w>8){g.fillStyle='#f2c84a';g.fillRect(fx-d*5-1,y-30,3,3)}}}
+   g.beginPath();g.moveTo(x,top);g.lineTo(fx,top-grow);g.lineTo(fx,y+grow);g.lineTo(x,y);g.closePath();g.fillStyle=ds.wood;g.fill();g.lineWidth=2;g.strokeStyle=O;g.stroke();
+   g.fillStyle=ds.band||ds.dark;for(const k of [.33,.66]){const py=top+58*k;g.beginPath();g.moveTo(x,py);g.lineTo(fx,py-grow*(1-2*k));g.lineTo(fx,py-grow*(1-2*k)+2);g.lineTo(x,py+2);g.closePath();g.fill()}
+   g.fillStyle=ds.dark;g.fillRect(d>0?fx-2:fx,top-grow,2,58+grow*2); // the door's outer edge (colors: DOOR_STYLE of the room)
+   if(w>8){g.fillStyle=ds.knob;g.fillRect(fx-d*5-1,y-30,3,3)}}}
  else if(t==='portal'){const h=58,w=36,c=Math.floor(T*8)%2?'#8fe0ff':'#c890ff';
   g.fillStyle='#6a4cc2';g.fillRect(x-w/2,y-h,w,h);g.fillStyle=c;g.fillRect(x-w/2+2,y-h+2,w-4,h-4);g.fillStyle='#fff';g.fillRect(x-w/2+5,y-h+6,w-10,h-12)}
  else if(t==='backdoor'&&o>.02){
   // black doorway, door panel swinging toward the viewer on its left hinge
   g.fillStyle='#000000';g.fillRect(x-9,y-33,18,33);
   const pw=Math.max(2,Math.round(18*Math.cos(o*1.35))),gr=Math.round(3*Math.sin(o*1.35));
-  g.fillStyle=O;g.fillRect(x-10,y-34-gr,pw+2,35+gr*2);g.fillStyle=roy?'#7a2a2a':'#6a4420';g.fillRect(x-9,y-33-gr,pw,33+gr*2);
-  g.fillStyle=roy?'#f2c84a':'#3a2a1a';g.fillRect(x-9,y-28-gr,pw,2);g.fillRect(x-9,y-8+gr,pw,2)}
+  g.fillStyle=O;g.fillRect(x-10,y-34-gr,pw+2,35+gr*2);g.fillStyle=ds.wood;g.fillRect(x-9,y-33-gr,pw,33+gr*2);
+  g.fillStyle=ds.band||ds.dark;g.fillRect(x-9,y-28-gr,pw,2);g.fillRect(x-9,y-8+gr,pw,2)}
  else if(t==='shelf'&&o>.02){
   // black opening; the bookshelf slides right into the wall
   const bl=Math.floor(x/CELL)*CELL,top=y-66;
@@ -424,6 +421,8 @@ function drawGold(c,bx,by,t){c.fillStyle='#f2c84a';[[11,42,4,4],[16,41,4,4],[21,
  if(Math.floor(t*3)%2){c.fillStyle='#fffbe0';c.fillRect(bx+10+Math.floor(t*3)%14,by+36,2,2)}}
 // Little bits of life in the rooms: flickering candle flames, a cloud drifting past the Apothecary's window
 function drawRoomLife(c,id,bx,by,t){const fl=(k)=>Math.floor(t*8+k)%3;
+ if(id==='knight'){const h=3+fl(1);c.fillStyle='#f08a20';c.fillRect(bx+88,by+34-h,3,h);c.fillStyle='#ffd040';c.fillRect(bx+89,by+35-h,1,h-1)} // the torch flame
+ if(id==='wizard'){[[13,22],[41,22]].forEach((q,i)=>{const h=1+fl(i*2);c.fillStyle='#ffd060';c.fillRect(bx+q[0],by+q[1]-h,1,h)})} // candle flames on the bookshelf
  if(id==='traveler'){const s=Math.floor(t*2.2)%5===0?1:0;c.fillStyle='#5a4a3a';c.fillRect(bx+70-s,by+47,2,1);c.fillRect(bx+69-s,by+48,1,7)} // the mule swishes its tail
  if(id==='priest'){const h=2+fl(0);c.fillStyle='#4a4458';c.fillRect(bx+48,by+44,4,6);c.fillStyle='#ffd060';c.fillRect(bx+49,by+50-h,2,h);c.fillStyle='#fff6c0';c.fillRect(bx+49,by+49,1,1)}
  if(id==='necromancer'){[[40,23],[16,41]].forEach((q,i)=>{const h=2+fl(i*2);c.fillStyle='#26262c';c.fillRect(bx+q[0],by+q[1]-2,3,3);c.fillStyle='#7aff7a';c.fillRect(bx+q[0],by+q[1]+3-h,3,h)})}
@@ -731,3 +730,81 @@ function drawPines(c,bx,by){c.fillStyle=O;c.fillRect(bx+83,by+57,12,10);c.fillSt
 function drawCoffin(c,bx,by,t){const x=bx+48,y=by+FY;c.fillStyle=O;c.fillRect(x-18,y-12,36,13);c.fillStyle='#4a2a1a';c.fillRect(x-17,y-11,34,11);c.fillStyle='#6a3e24';c.fillRect(x-17,y-11,34,3);
  c.fillStyle='#f2c84a';c.fillRect(x-17,y-8,34,1);c.fillRect(x-2,y-7,4,1);c.fillRect(x-1,y-8,2,5);
  [-24,24].forEach((d,i)=>{c.fillStyle=O;c.fillRect(x+d-2,y-22,5,23);c.fillStyle='#e8e4d0';c.fillRect(x+d-1,y-21,3,21);const h=2+Math.floor(t*8+i*2)%3;c.fillStyle='#ffd060';c.fillRect(x+d,y-21-h,1,h)})}
+
+// ---------- room look: wall and floor textures, light, doors, extra decor (painted once per room, ROOMC) ----------
+// wall: stone (castle blocks), block (big smooth blocks), brick, plank (wood boards), plaster (with beams); floor: flag (stones), plank, dirt
+const ROOM_STYLE={knight:{wall:'stone',floor:'flag'},wizard:{wall:'stone',floor:'plank'},priest:{wall:'block',floor:'flag'},necromancer:{wall:'stone',floor:'flag'},
+ merchant:{wall:'plank',floor:'plank'},apothecary:{wall:'plaster',floor:'plank'},alchemist:{wall:'brick',floor:'flag'},rogue:{wall:'plank',floor:'plank'},
+ blacksmith:{wall:'brick',floor:'dirt'},monarch:{wall:'block',floor:'flag'}};
+// Door look per room (back doors and the side doors you leave by): wood, dark (seams, edge), band (iron or gold straps), rivet, knob, frame, arch, deco
+const DOOR_STYLE={knight:{wood:'#7a5030',dark:'#4e3220',band:'#4a4e5a',rivet:'#aab0c0',knob:'#aab0c0',frame:'#2a2c3a',arch:1},
+ priest:{wood:'#a8784a',dark:'#7a5430',band:'#d8b860',knob:'#f2c84a',frame:'#8a8296',arch:1,deco:'cross'},
+ necromancer:{wood:'#2e2a34',dark:'#1a181e',band:'#3e4a36',rivet:'#7aff7a',knob:'#5a6a50',frame:'#121216',arch:1,deco:'skull'},
+ merchant:{wood:'#3a7a6a',dark:'#285446',band:'#c04040',knob:'#f2c84a',frame:'#3a2a1c',deco:'sign'},
+ apothecary:{wood:'#4e7a46',dark:'#36582f',band:'#8a6a3a',knob:'#f2c84a',frame:'#2a3226',arch:1,deco:'wreath'},
+ alchemist:{wood:'#8a5a3a',dark:'#5e3a22',band:'#c87a40',rivet:'#f0a868',knob:'#c87a40',frame:'#2c2232',deco:'porthole'},
+ blacksmith:{wood:'#4a4a52',dark:'#2a2a30',band:'#2a2a30',rivet:'#8a8a96',knob:'#8a8a96',frame:'#1a1416'},
+ rogue:{wood:'#3e3428',dark:'#26201a',band:'#1a1a1e',knob:'#cfd6e0',frame:'#1a1612',deco:'lock'},
+ monarch:{wood:'#7a2a2a',dark:'#c8a030',band:'#f2c84a',knob:'#f2c84a',frame:'#1e1020'}};
+// A room's back door (left = the Apothecary's and Alchemist's door on the left side)
+function backDoor(id,left){const s=DOOR_STYLE[id]||DOOR_STYLE.knight,o=left?-48:0,R=[],p=(x,y,w,h,col)=>R.push([x+o,y,w,h,col]);
+ p(60,30,24,36,s.frame);if(s.arch){p(62,27,20,3,s.frame);p(65,25,14,2,s.frame)}
+ p(63,33,18,33,s.wood);if(s.arch){p(64,30,16,3,s.wood);p(67,28,10,2,s.wood)}
+ p(68,33,1,33,s.dark);p(74,33,1,33,s.dark);p(63,63,18,3,s.dark);
+ if(s.band){p(63,38,18,2,s.band);p(63,57,18,2,s.band);if(s.rivet)[64,67,77,80].forEach(xx=>{p(xx,38,1,1,s.rivet);p(xx,57,1,1,s.rivet)})}
+ p(65,48,2,3,s.knob);
+ if(s.deco==='cross'){p(71,40,2,12,s.band);p(68,43,8,2,s.band)}
+ if(s.deco==='skull'){p(69,42,6,5,'#e8e4d0');p(70,47,4,2,'#d8d4c0');p(70,44,1,1,O);p(73,44,1,1,O)}
+ if(s.deco==='sign'){p(66,41,12,6,'#e8dcb4');p(67,43,10,1,'#8a6a44');p(67,45,6,1,'#8a6a44')}
+ if(s.deco==='wreath'){p(69,40,6,1,'#3a8a3a');p(68,41,1,5,'#3a8a3a');p(75,41,1,5,'#3a8a3a');p(69,46,6,1,'#3a8a3a');p(70,40,1,1,'#d03050');p(74,45,1,1,'#d03050')}
+ if(s.deco==='porthole'){p(68,39,8,8,s.band);p(69,40,6,6,'#7ae0ff');p(70,41,2,2,'#d8f8ff')}
+ if(s.deco==='lock'){p(76,46,4,5,'#8a8a96');p(77,44,2,2,'#8a8a96')}
+ return R}
+// Colors: shade a #rrggbb by f (negative = darker), a stable pseudo-random number per spot
+const shade=(h,f)=>{const n=parseInt(h.slice(1),16),r=n>>16,g2=n>>8&255,b=n&255,m=v=>Math.max(0,Math.min(255,Math.round(f<0?v*(1+f):v+(255-v)*f)));return 'rgb('+m(r)+','+m(g2)+','+m(b)+')'};
+const rnd=i=>{const s=Math.sin(i*12.9898+78.233)*43758.5453;return s-Math.floor(s)};
+function wallTex(c,st,base){
+ if(st==='stone'||st==='block'){const hgt=st==='block'?11:8;for(let row=0,y=0;y<66;row++,y+=hgt){let x=-(row%2)*(st==='block'?10:7);let i=0;
+   while(x<96){const w=st==='block'?20:12+Math.floor(rnd(row*31+i)*7);c.fillStyle=shade(base,(rnd(row*17+i*3)-.5)*.14);c.fillRect(x+1,y+1,w-1,hgt-1);c.fillStyle=shade(base,.08);c.fillRect(x+1,y+1,w-1,1);x+=w;i++}
+   c.fillStyle=shade(base,-.35);c.fillRect(0,y,96,1)}}
+ if(st==='brick'){for(let row=0,y=0;y<66;row++,y+=5){for(let x=-(row%2)*5,i=0;x<96;x+=10,i++){c.fillStyle=shade(base,(rnd(row*13+i*7)-.5)*.18);c.fillRect(x+1,y+1,9,4)}c.fillStyle=shade(base,-.35);c.fillRect(0,y,96,1)}}
+ if(st==='plank'){for(let x=0,i=0;x<96;x+=8,i++){c.fillStyle=shade(base,(rnd(i*5)-.5)*.16);c.fillRect(x,0,8,66);c.fillStyle=shade(base,-.3);c.fillRect(x,0,1,66);if(rnd(i*9)>.6){c.fillStyle=shade(base,-.22);c.fillRect(x+3,Math.floor(10+rnd(i*7)*44),2,1)}}}
+ if(st==='plaster'){for(let i=0;i<60;i++){c.fillStyle=shade(base,(rnd(i*3)-.5)*.2);c.fillRect(Math.floor(rnd(i)*96),Math.floor(rnd(i+99)*64),2,1)}c.fillStyle=shade(base,-.45);c.fillRect(0,20,96,3);c.fillRect(46,0,3,20)}}
+function floorTex(c,st,base){
+ if(st==='plank'){for(let row=0,y=66;y<96;row++,y+=5){for(let x=-(row%3)*11,i=0;x<96;x+=32,i++){c.fillStyle=shade(base,(rnd(row*7+i*11)-.5)*.16);c.fillRect(x,y,31,5);c.fillStyle=shade(base,-.3);c.fillRect(x+31,y,1,5)}c.fillStyle=shade(base,-.3);c.fillRect(0,y+4,96,1)}}
+ if(st==='flag'){for(let row=0,y=66;y<96;row++,y+=7){for(let x=-(row%2)*8,i=0;x<96;x+=16,i++){c.fillStyle=shade(base,(rnd(row*19+i*5)-.5)*.18);c.fillRect(x+1,y+1,15,6)}c.fillStyle=shade(base,-.35);c.fillRect(0,y,96,1)}}
+ if(st==='dirt'){for(let i=0;i<70;i++){c.fillStyle=shade(base,(rnd(i*7)-.5)*.3);c.fillRect(Math.floor(rnd(i*3)*94),66+Math.floor(rnd(i*5)*29),2,1)}}}
+// Soft light: a darker ceiling, darker corners, a shadow where the wall meets the floor
+function roomLight(c){let gr=c.createLinearGradient(0,0,0,24);gr.addColorStop(0,'rgba(0,0,0,.35)');gr.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=gr;c.fillRect(0,0,96,24);
+ gr=c.createLinearGradient(0,66,0,76);gr.addColorStop(0,'rgba(0,0,0,.3)');gr.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=gr;c.fillRect(0,66,96,10);
+ gr=c.createRadialGradient(48,52,30,48,52,72);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,.32)');c.fillStyle=gr;c.fillRect(0,0,96,96)}
+// Extra decor for the older rooms (drawn on top of the bg rects; floor pieces lie under the characters)
+const ROOM_EXTRA={
+ knight(c){rects(c,[[66,3,14,17,'#8a1a2a'],[66,3,14,2,'#f2c84a'],[66,20,3,3,'#8a1a2a'],[77,20,3,3,'#8a1a2a'],[70,7,6,7,'#f2c84a'],[72,14,2,4,'#f2c84a'],[71,9,4,3,'#8a1a2a'],[64,2,18,1,'#5a3a1e']],0,0); // heraldic banner over the door
+  rects(c,[[88,36,3,8,'#4a4e5a'],[87,34,5,2,'#5a5f6a'],[88,44,3,1,'#2a2c3a']],0,0); // torch sconce (flame: drawRoomLife)
+  rects(c,[[18,74,60,16,'#6a1a28'],[20,76,56,12,'#8a2434'],[18,74,60,1,'#c8a040'],[18,89,60,1,'#c8a040'],[44,80,8,4,'#c8a040']],0,0)}, // rug
+ wizard(c){c.fillStyle='#1a1a3a';c.fillRect(54,4,26,20);c.fillStyle='#2a2a5a';c.fillRect(55,5,24,18);[[58,8],[64,14],[72,9],[76,18],[60,19],[68,6]].forEach(q=>{c.fillStyle='#f2e8a0';c.fillRect(q[0],q[1],1,1)});
+  c.fillStyle='#f2e8a0';c.fillRect(71,12,4,4);c.fillStyle='#2a2a5a';c.fillRect(73,11,3,3);c.strokeStyle='#8a7ae0';c.lineWidth=1;c.beginPath();c.moveTo(58.5,8.5);c.lineTo(64.5,14.5);c.lineTo(72.5,9.5);c.stroke(); // star chart with a crescent moon
+  rects(c,[[12,22,3,2,'#d8d0b0'],[40,22,3,2,'#d8d0b0'],[26,20,5,4,'#8a5ae0'],[27,19,3,1,'#c890ff']],0,0); // candles and a potion on top of the shelf
+  rects(c,[[14,74,64,16,'#3a2a6a'],[16,76,60,12,'#4a3a8a'],[30,80,2,2,'#f2e8a0'],[46,78,2,2,'#f2e8a0'],[62,83,2,2,'#f2e8a0'],[38,85,1,1,'#f2e8a0'],[54,82,1,1,'#f2e8a0']],0,0)}, // starry rug
+ priest(c){rects(c,[[13,9,34,3,'#b8b0c8'],[13,9,3,45,'#b8b0c8'],[44,9,3,45,'#b8b0c8'],[12,52,36,3,'#9a92aa']],0,0); // stone arch around the window
+  c.save();c.globalAlpha=.16;[['#c04040',18],['#3a6ad0',26],['#d0b030',35]].forEach(q=>{c.fillStyle=q[0];c.beginPath();c.moveTo(q[1],52);c.lineTo(q[1]+8,52);c.lineTo(q[1]+30,92);c.lineTo(q[1]+18,92);c.closePath();c.fill()});c.restore(); // colored light from the window
+  rects(c,[[86,26,8,40,'#a8a0b8'],[85,24,10,3,'#c8c0d8'],[85,64,10,2,'#8a8296'],[88,30,1,32,'#8a8296']],0,0); // a pillar
+  rects(c,[[30,72,40,20,'#7a1a2a'],[32,72,36,20,'#9a2a3a'],[30,72,40,1,'#d8b860']],0,0)}, // red carpet
+ necromancer(c){c.strokeStyle='rgba(220,220,230,.35)';c.lineWidth=1;c.beginPath();for(let i=0;i<4;i++){c.moveTo(95,1);c.lineTo(95-i*6,1+(3-i)*4+4)}for(let r=4;r<14;r+=4){c.moveTo(95-r,1);c.lineTo(95,1+r)}c.stroke(); // cobweb
+  rects(c,[[86,4,2,30,'#3a3a40'],[85,34,4,4,'#4a4a52'],[86,8,2,1,'#5a5a64'],[86,16,2,1,'#5a5a64'],[86,24,2,1,'#5a5a64']],0,0); // hanging chain
+  c.strokeStyle='rgba(122,255,122,.28)';c.lineWidth=1;c.beginPath();c.ellipse(40,82,22,7,0,0,Math.PI*2);c.stroke();c.beginPath();c.ellipse(40,82,16,5,0,0,Math.PI*2);c.stroke(); // rune circle
+  [[22,82],[58,82],[40,76],[40,88]].forEach(q=>{c.fillStyle='rgba(122,255,122,.4)';c.fillRect(q[0]-1,q[1]-1,3,3)})},
+ merchant(c){rects(c,[[58,4,32,16,'#8a5a2a'],[59,5,30,14,'#c8a070'],[64,2,2,3,'#5a3a1e'],[82,2,2,3,'#5a3a1e'],[62,9,6,6,'#d03030'],[64,8,1,2,'#4a9a3a'],[70,9,16,2,'#5a3a1e'],[70,13,12,2,'#5a3a1e']],0,0); // shop sign with an apple
+  rects(c,[[87,32,1,20,'#8a6a44'],[85,36,4,4,'#e8d8a0'],[86,42,4,4,'#d8c890'],[85,48,4,4,'#e8d8a0']],0,0); // a string of onions
+  rects(c,[[14,74,68,14,'#5a6a3a'],[16,76,64,10,'#6a7a44'],[14,74,68,1,'#8a9a5a']],0,0)}}; // mat
+const ROOMC={};
+// Paint room id (w = the Knight's weapon, the Druid's row, the Monarch's colors) into its own 96x96 canvas once
+function paintRoom(c,id,w){const k=id==='druid'&&DRUID_WALL[w]||WALL[id],st=ROOM_STYLE[id];
+ c.fillStyle=k[0];c.fillRect(0,0,CELL,CELL);c.fillStyle=k[1];c.fillRect(0,66,CELL,30);
+ if(st){wallTex(c,st.wall,k[0]);floorTex(c,st.floor,k[1])}
+ c.fillStyle='rgba(0,0,0,.3)';c.fillRect(0,66,CELL,2);
+ bg(id,w).forEach(d=>{c.fillStyle=d[4];c.fillRect(d[0],d[1],d[2],d[3])});if(id==='alchemist')drawAlembic(c,0,0,0);
+ if(ROOM_EXTRA[id])ROOM_EXTRA[id](c,w);
+ if(st)roomLight(c);
+ c.strokeStyle='#000';c.lineWidth=2;c.strokeRect(1,1,CELL-2,CELL-2)} // thin frame; boxFrame() thickens the outside edges

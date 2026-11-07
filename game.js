@@ -420,7 +420,7 @@ function acting(u,dt){
 // Which back door a room has (the Apothecary's is on the left)
 const doorOf=u=>TR[u.id]&&TR[u.id].up==='backdoorL'?'backdoorL':TR[u.id]&&TR[u.id].up==='royaldoor'?'royaldoor':'backdoor';
 function npcDoor(u,open){let f=u.npcDoor;
- if(open){if(!f||!u.fxs.includes(f)){const ex=doorOf(u);f={type:ex,x:u.c*CELL+EXIT[ex].x,y:u.r*CELL+EXIT[ex].y,open:0,want:1,a:1,vis:true,keep:true};u.fxs.push(f);u.npcDoor=f}f.want=1;f.closing=false;f.keep=true}
+ if(open){if(!f||!u.fxs.includes(f)){const ex=doorOf(u);f={type:ex,room:u.id,x:u.c*CELL+EXIT[ex].x,y:u.r*CELL+EXIT[ex].y,open:0,want:1,a:1,vis:true,keep:true};u.fxs.push(f);u.npcDoor=f}f.want=1;f.closing=false;f.keep=true}
  else if(f){f.want=0;f.closing=true}}
 function npcEnter(u,possessed){
  const by=u.r*CELL,door=u.c*CELL+EXIT.backdoor.x;npcDoor(u,1);
@@ -723,7 +723,7 @@ function route(u,r1,c1,r2,c2,fin){
   // The farm, the Druid's forest and the Rogue's graveyard have no side doors: just walk straight across the edge
   if(ty==='door'&&(noSideDoor(ra)||noSideDoor(rb))){const ex=(dc>0?c1+1:c1)*CELL,yy=r1*CELL+FY;return [{k:'walk',x:ex,y:yy},{k:'walk',x:ex+dc*20,y:yy},{k:'walk',x:fin.x,y:fin.y}]}
   if(ty==='door'){
-   const ex=(dc>0?c1+1:c1)*CELL,yy=r1*CELL+FY,f=F('door',ex,yy);f.dir=dc;f.fancy=ra==='monarch'||rb==='monarch'; // the throne room has fancy doors
+   const ex=(dc>0?c1+1:c1)*CELL,yy=r1*CELL+FY,f=F('door',ex,yy);f.dir=dc;f.room=ra==='monarch'||rb==='monarch'?'monarch':ra; // the side door looks like the room you leave (the throne room's always fancy)
   
    return [{k:'walk',x:ex-dc*28,y:yy,on:f},{k:'wait',f,w:.5},{k:'walk',x:ex+dc*28,y:yy,sp:40},{k:'walk',x:fin.x,y:fin.y,close:f}];
   }
@@ -732,7 +732,7 @@ function route(u,r1,c1,r2,c2,fin){
  }
  // sneak = the Rogue snatching a potion: he uses a ceiling hatch and rope or a floor trapdoor in both rooms
  const up=dr<0,out=u.sneak?(up?'rope':'trapdoor'):exitsOf(ra)[up?'up':'down'],inn=u.sneak?(up?'trapdoor':'rope'):exitsOf(rb)[up?'down':'up'],A=EXIT[out],Bx=EXIT[inn];
- const X1=c1*CELL+A.x,X2=c2*CELL+Bx.x,y1=r1*CELL,y2=r2*CELL,f1=F(out,X1,y1+A.y),f2=F(inn,X2,y2+Bx.y);
+ const X1=c1*CELL+A.x,X2=c2*CELL+Bx.x,y1=r1*CELL,y2=r2*CELL,f1=F(out,X1,y1+A.y),f2=F(inn,X2,y2+Bx.y);f1.room=ra;f2.room=rb; // each back door looks like its own room's
  return [{k:'walk',x:X1,y:y1+FY,on:f1},{k:'walk',x:X1,y:y1+A.ay,open:f1},{k:'vanish',f:f1,m:out},
   {k:'appear',x:X2,y:y2+Bx.ay,f:f2,m:inn},{k:'walk',x:X2,y:y2+FY,sp:34,close:f2},{k:'walk',x:fin.x,y:fin.y,off:f2}];
 }
@@ -1734,9 +1734,9 @@ const IDLE_COND={nbr:'with a free neighbor',noRight:'with no box to his right',e
 const fakeU=id=>({id,r:-9,c:-9});
 // Which character's idle list has key k, and its entry
 function idleEntry(k){if(k.startsWith('prac:'))k='prac';for(const id in IDLES){const e=IDLES[id].find(x=>x[0]===k);if(e)return[id,e]}const e=IDLE_ANY.find(x=>x[0]===k);return e?['anyone',e]:null}
-// % of an idle activity: rarer ones that need a special situation are left out of the commons' share (everyday conditions like a free neighbor count)
+// % of an idle activity (commons share what the character's whole list leaves)
 function idlePct(k){const q=idleEntry(k);if(!q)return null;const[id,e]=q;if(e[1]!=='c')return RARITY[e[1]];if(id==='anyone')return null;
- const base=(IDLES[id]||[]).filter(x=>x[1]==='c'||!x[2]||EVERYDAY[x[2]]);return listChances(base)[base.indexOf(e)]}
+ const base=IDLES[id]||[];return listChances(base)[base.indexOf(e)]} // all of the character's activities count, so the list adds up to 100%
 const EVERYDAY={nbr:1,noRight:1,target:1,others:1};
 // Where a visit scene happens: [{a, b, rels}] from PAIRS (a is rel of b)
 function sceneWhere(k){const out=[];for(const p in PAIRS){const rels=Object.keys(PAIRS[p]).filter(r=>{const v=PAIRS[p][r];return v===k||(VISIT_EXPAND[v]||[]).some(e=>e[0]===k)});if(rels.length){const[a,b]=p.split('>');out.push({a,b,rels})}}return out}
@@ -1757,7 +1757,8 @@ function whereText(k){const g={massprayer:'A Priest whose four neighbors are all
  const w=sceneWhere(k)[0];if(!w)return null;const rs=w.rels,ph=rs.length===4?'any side of':rs.length===2&&rs.includes('left')&&rs.includes('right')?'left or right of':rs.length===2&&rs.includes('above')&&rs.includes('below')?'above or below':rs.map(r=>r==='left'||r==='right'?r+' of':r).join(' or ');
  return rs.length===4?CNAME(w.a)+' and the '+CNAME(w.b)+', any side':CNAME(w.a)+' '+ph+' the '+CNAME(w.b)}
 const ITEM_NAME={scroll:'Spell scroll',potion:'Potion',artifact:'Artifact',ingot:'Ingot'};
-const fmtPct=p=>{const v=p*100;return(v<10&&Math.abs(v-Math.round(v))>.05?v.toFixed(v<1?2:1).replace(/0$/,''):Math.round(v))+'%'};
+// Percent text, rounded DOWN (one decimal, two below 1%) so the chances of one list never add up past 100%
+const fmtPct=p=>{const v=p*100,d=v<1?100:10,q=Math.floor(v*d+1e-6)/d;return String(q)+'%'};
 // The description of a discovered (or revealed) tile: "Visit (64% chance): Priest left of the Knight. A short prayer..."
 function infoText(k){const fl=flavorOf(k),note=NOTE[k]?' '+NOTE[k]:'',p=pctOf(k),pc=p!=null?fmtPct(p):'';
  if(k.startsWith('wx:'))return "Weather ("+pc+" of the Druid's casts): a random open space, for 30 s. "+fl+note;
@@ -2175,7 +2176,7 @@ const ITEMLBL={dingot:'ingot',tscroll:'scroll',tpotion:'potion',tingot:'ingot',a
 function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  const b=$('#refs');b.innerHTML='';
  // % chance (or a short label) in the top right corner
- const fmt=p=>{if(typeof p==='string')return p;const v=p*100;return(v<10&&Math.abs(v-Math.round(v))>.05?v.toFixed(1):Math.round(v))+'%'};
+ const fmt=p=>typeof p==='string'?p:fmtPct(p);
  const ev=(1-ODDS.spar)*(1-ODDS.hangout),arr=k=>(k==='friend'?ODDS.visitFriend:ODDS.visit)*ev,pv=ODDS.visit*(1-ODDS.hangout);
  const W=ODDS.wizard,K=ODDS.knight,PR=ODDS.priest,NE=ODDS.necromancer,MR=ODDS.merchant,AP=ODDS.apothecary;
  // How to draw each tile, and its chance. D = Wizard/Knight diagram, P = other pair diagram, I = animated tile
