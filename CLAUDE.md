@@ -66,13 +66,16 @@ Plain scripts, no modules, loaded in this order and sharing global variables (th
 - **Visitors who are not boxes:** commoner customer, thief, imp, demon, bats, bees, carnivorous plant, farmers (sick, possessed, mob), ghost, squire, nobles, orc, skeletons, zombies, golem, fairies, deer, birds, horse, cat, werewolf, prisoners, jester (room decoration), the Blacksmith's apprentice (`u.helper`, `u.appr`, wanders the forge for good).
 
 ## How characters decide
-- Each idle character rolls about every 5-10 seconds: 20% visit a neighbor (`ODDS.visit`), 40% an idle activity (`ODDS.idle`), otherwise wander in the room.
-- Visit chance changes: Knight or Wizard in Old Friends 45%; Knight with a Priest above x1.6 (Zeal); a Mage next to the Alchemist x1.2; in the Druid's Blizzard x0.7.
+- Each idle character rolls about every 5-10 seconds (`decide`): 50% an idle activity, 20% a visit, 30% wander in the room (`DECIDE`). A visit is just hanging out 20% of the time (`HANGOUT`); otherwise one scene is rolled from that visit's list (`visitRoll`, `visitList`, `playScene`).
+- **Rarity tiers** (data.js, `RARITY`; never shown to the player): every list of possible events has uncommon 15%, rare 5% and legendary 0.75% entries with fixed chances; the common entries share whatever is left equally (`listChances`, `rollList`). Keep the non-common entries of one list under about 50%. The same tiers are used for outcome chances inside scenes (deaths, special results: `ODDS.slip`, `horde`, `boomDeath`, ... set from `RARITY`). Plain splits are left as they are (date success, blood orange 30%, crusade reward 70/30, dungeon loot, werewolf 30%, looks like outfits and King/Queen).
+- **Idle lists** (`IDLES` per character, `IDLE_ANY` for everyone): `[key, tier, condition]`; an entry with a condition (`idleOk`) only joins while it holds (`idleList`, `startAct`, `doIdle`). **Visit lists**: the arrangement's scene from `PAIRS`, or several (`VISIT_EXPAND`), plus any-side scenes (`VISIT_ANY`; `fallback` = only when the pair has no common scene) and the visitor's group scenes (`VISIT_GROUP`: great prayer, four Mages, adventure). The Druid's weather uses `WEATHER_TIERS`.
+- Modifiers: the Alchemist's luck makes rare and legendary visit scenes 30% more likely; Blizzard makes the rarest idle tier 30% more likely; Sandstorm makes `DEADLY` events (and death outcomes, `doom`) three times as likely.
+- Visit chance changes: Knight or Wizard in Old Friends 45%; Knight with a Priest above x1.6 (Zeal); a Mage next to the Alchemist x1.2; in the Druid's Blizzard x0.7 (taken from wandering).
 - The Druid never visits: his visit roll casts weather instead (see Druid), except once to make his request when the Monarch is his neighbor. Others can still visit him.
 - A greedy Monarch never visits. The Traveling Merchant never visits and nobody visits him (`nbrs` leaves him out).
 - A visit to the Monarch by someone with a request they haven't made yet (`reqOf`, `u.asked`) is always that request.
 - Which neighbor: random among free ones (`nbrs`, `freeU`; never one in the Druid's Infest), except a Fighter next to the Alchemist picks Mages 50% more often (haste potions, `pickW`).
-- A visit: Knight/Wizard visits are Friendly Sparring 2% of the time; then 15% are plain hangouts (a wave and a hop); the rest play the pair's scene. Some scenes always have the same visitor (noted below).
+- Some scenes always have the same visitor (noted below). The per-scene percentages written in the sections below are older notes on the arrangement; the tiers in `IDLES` / `VISIT_EXPAND` / `VISIT_ANY` / `VISIT_GROUP` are what counts (the Compendium shows the resulting %).
 - Scenes play at `SCENE_PACE` (0.65) so they last a little longer. Asleep, away, sick (for visits), Death Knights, temporary forms and the buried Druid don't roll normally.
 
 ## Neighbor scenes
@@ -173,35 +176,32 @@ Plain scripts, no modules, loaded in this order and sharing global variables (th
 - **Grand funeral:** the Monarch dies (`royalFuneral`, `rf`, `stepRoyal`): the Monarch lies in a coffin (`drawCoffin`, `u.dead`), and EVERYONE on the board drops whatever they are doing and kneels around it for 1 min (`ROYAL_FUNERAL_TIME`; not anyone away, not the killer). Meanwhile no coins are earned and no items bought or gained (`mourning()`; only Compendium rewards still pay). The box can't be moved; afterwards it goes back to the shelf.
 
 ## Idle activities
-- **Anyone:** 10% of idles (rolled first) wave to a neighbor; a free neighbor waves back. Not in the Compendium.
-- **Knight:** weapon practice 75% (a squire spars with him if he has the shield), fight an orc next door 20%, feed his horse 5% (needs no box to his right). Eldritch Knight: 1% a black cat crosses the Wizard's room.
-- **Wizard:** read 60%, practice magic 38%, summon a demon 2% (he dies). Next to a Merchant with 5 coins: 1% brews a potion (-5 coins).
-- **Priest:** pray 50%, bless a farmer 35%, tithe prayer 10% (+5), exorcism 5%.
-- **Necromancer:** spirits 50%, candles and chalk circle 25%, red lightning 24%, raise a skeleton in someone's room 1% (Fighters and Mages win; anyone else dies).
-- **Fruit Merchant:** customer 15% (+2; nothing while rotten), adverts 55%, sell apples next door 29% (+2), angry fruit mob 1%.
-- **Apothecary:** customer 15% (+5), trip 5%, trip and smash a potion 5%, brew 35%, herbs 40%.
-- **Fruit Merchant or Apothecary next to the Alchemist:** 10% the alchemy sale, rolled first.
-- **Alchemist:** brew 60%, research 10%, smoky mistake 30%. Mad scientist (bottom-right space): 15% (rolled first) he becomes a **beast-man** and attacks a free neighbor: a Merchant-only neighbor dies; a Fighter or Mage fights him and one of them dies (50/50).
-- **Rogue:** daggers 50%, smoke bomb 20%, disguise 5%, count his stash 25%. With the Mage tag: 0.2% (rolled first) conjures an artifact, which uses the tag up.
-- **Druid:** tend the grove 40%, talk to a deer and a bird 40%, predict the weather 20%. Secret: with all four spaces around him open and empty, 10% (rolled first) a nature spirit reveals a hidden secret.
-- **Blacksmith:** hammer at the anvil 40% (sparks), smelt armor or a sword in the furnace 40% (50/50), shovel coal 19%, pour an ingot mold 1% (+1 ingot). Secret: next to the Alchemist, 15% (rolled first) they turn lead into gold (+5 coins).
-- **Farmer:** whistle while hoeing 50%, carry a pitchfork 50%; harvest when time is up.
-- **Monarch:** holding court on the throne (generous or greedy orders, `COURT`).
-- **Traveling Merchant:** arranging the wares on his stand (`wares`); no waving.
-- **Anyone with a grudge** against the Monarch: 0.3% (rolled first, `ODDS.regicide`) they go to the throne room from anywhere and kill the Monarch (secret).
+Tiers: C common, U uncommon (15%), R rare (5%), L legendary (0.75%); commons share the rest. Conditions in brackets.
+- **Knight:** weapon practice C (a squire spars with him if he has the shield), orc next door U [a free neighbor], horse R [no box to his right], black cat crossing the Wizard's room L [Eldritch Knight, Wizard on the board].
+- **Wizard:** read C, practice magic C, summon a demon L (he dies), brew a potion L [next to a Merchant, 5 coins; -5 coins].
+- **Priest:** pray C, bless a farmer C, tithe prayer U (+5), exorcism R.
+- **Necromancer:** spirits C, candles and chalk circle C, red lightning C, raise a skeleton in someone's room L (Fighters and Mages win; anyone else dies).
+- **Fruit Merchant:** adverts C, sell apples next door C [a free neighbor] (+2), customer U (+2; nothing while rotten), angry fruit mob L, alchemy sale U [next to the Alchemist].
+- **Apothecary:** brew C, herbs C, customer U (+5), trip R, trip and smash a potion R, alchemy sale U [next to the Alchemist].
+- **Alchemist:** brew C, smoky mistake C, research U, beast-man U [the mad scientist, bottom-right space]: attacks a free neighbor; a Merchant-only neighbor dies, a Fighter or Mage fights him and one of them dies (50/50).
+- **Rogue:** daggers C, count his stash C, smoke bomb U, disguise R, conjure an artifact L [the Mage tag; uses it up].
+- **Druid:** tend the grove C, deer and bird C, predict the weather U, nature spirit R [all four spaces around him open and empty; a clue].
+- **Blacksmith:** hammer C (sparks), smelt armor or a sword C, shovel coal U, pour an ingot mold L (+1 ingot), lead into gold U [next to the Alchemist; +5 coins, secret].
+- **Farmer:** hoe C, pitchfork C; harvest when time is up. **Monarch:** holding court C (`COURT`). **Traveling Merchant:** arranging the wares C.
+- **Anyone:** a short story C [living in the Druid's Rain; 15% of stories are a clue]; revenge on the Monarch L [refused by a Monarch; from anywhere, secret].
 
 ## Druid
 - No doors: left/right he walks across the edge; up/down he slips into the shadow between two trees (exit `shadow`).
 - When he dies he is buried in his space (`bury`): a mound with a sapling, his animal beside it, label dimmed, saved. He does nothing and nobody visits or targets him (`freeU` is false), but his Mage tag and place still count for neighbors. A spell scroll on his space revives him (`revive`); other items do nothing.
 - He has no neighbor scenes of his own (others can have scenes with him, e.g. the Blacksmith). When he would visit, he casts **weather** instead (`startWeather`, act `wcast`) on a random open space with no weather, with or without a box: 30 s each (`WEATHER_TIME`), at most 2 of his at once (`WEATHER_MAX`). Not saved. Kept in `weathers`, read with `weatherAt(r,c)` / `wxOf(u)`, drawn by `drawWeather`; everything ends when it does.
-  - **Blizzard** 10%: snow; that space's character visits 30% less, and their rarest idle activity is 30% more likely (`RARE_IDLE`).
-  - **Sandstorm** 10%: sand; every chance of dying for someone living there is tripled (`doom`).
-  - **Sunshine** 15%: warm light; coins a Merchant earns there +20%, a Farmer +50% (`sunBonus`).
-  - **Rain** 15%: 80% of that character's idles are a short story (`STORIES`), 10% of them reveal a secret.
-  - **Overgrowth** 15%: pink and yellow flowers bloom around the border (looks only).
-  - **Moonlight** 15%: dark with a soft pink glow; when it starts and when it ends, 30% a werewolf kills whoever is in that space (`wolfRoll`).
-  - **Decay** 15%: worms and flies; tags the character was not born with (ingot, Rogue's Mage tag, Alchemist's Mage tag) are gone while it lasts.
-  - **Infest** 5%: a locust swarm; nobody visits that space.
+  - **Blizzard** U: snow; that space's character visits 30% less, and their rarest idle activity is 30% more likely (`RARE_IDLE`).
+  - **Sandstorm** U: sand; every chance of dying for someone living there is tripled (`doom`).
+  - **Sunshine** C: warm light; coins a Merchant earns there +20%, a Farmer +50% (`sunBonus`).
+  - **Rain** C: a short story joins that character's idle list as a common activity (`STORIES`); 15% of them are a clue.
+  - **Overgrowth** C: pink and yellow flowers bloom around the border (looks only).
+  - **Moonlight** C: dark with a soft pink glow; when it starts and when it ends, 30% a werewolf kills whoever is in that space (`wolfRoll`).
+  - **Decay** C: worms and flies; tags the character was not born with (ingot, Rogue's Mage tag, Alchemist's Mage tag) are gone while it lasts.
+  - **Infest** R: a locust swarm; nobody visits that space.
 - **Archdruid** (artifact on the Druid, once): glowing staff; never casts Moonlight, Decay or Infest (`ARCH_SKIP`).
 
 ## Items, coins and shops
@@ -229,7 +229,9 @@ Plain scripts, no modules, loaded in this order and sharing global variables (th
 - One tab per character ever unlocked (`COMP_TABS`, `compUnl`; it stays even if the character is locked again, e.g. the retired Alchemist, `S.ever`), with found / total (`tabKeys`). A neighbor scene only shows once both characters are unlocked (`PAIR_WITH`; 'anyone' and `tag:...` count as unlocked).
 - Under the tabs: the "Discovered" line and a **Tags** line (`TAG_NOTES`) saying the character's tags and what changes them.
 - Groups: With neighbors (one sub-section per neighbor, alphabetical: "with the Knight", "with a Mage", "with anyone"), Idle activities, Items and shops, Secrets (at the bottom; "Not found yet" until one is found or revealed).
-- Descriptions always say what a chance is a chance OF: "of their visits" (when one visits the other), "of his idle activities", "checked first" (rolled before the normal idle choice), "each time he decides" (every roll, before anything else). Request tiles show "80% / 10%" (granted by a generous / greedy Monarch).
+- A tab's top lines: Discovered, **Tags** (`TAG_NOTES`) and **Decisions** (`decideText`, `DECIDE_NOTE`: 50% idle / 20% visit / 30% wander and exceptions).
+- Tile chances come from the rarity lists (`pctOf`: `idlePct`, `visitPct`, weather): the % when that kind of action happens, "of his idle activities" or "of their visits" (hangouts included). For an idle's common share, rare entries with a special condition are left out (`EVERYDAY` conditions count). Request tiles show "80% / 10%" (granted by a generous / greedy Monarch).
+- A discovered (or revealed) tile's description (`infoText`): line 1 the kind of action and arrangement (Idle activity / Visit / Weather / Item; `whereText` from `PAIRS`, `IDLE_COND`), line 2 the chance plus any outcome note (`NOTE`), line 3 the story, the same text as the clue before discovery (`hintOf`, overridden by `FLAVOR`). Other tiles (shops, special secrets, passives) show their `DESC`.
 - Undiscovered tiles are a blank square with a "?" (`tile unknown`); the sub-heading counts (e.g. 1 / 7) still show how many there are with each character or tag. Hovering one shows a hint (`hintOf`): its description without the leading sentences about placement, items or chances (`HINT_CUT`, `HINT_HEAD`), with "30% more" turned into "more" and any other sentence with a chance dropped. Once discovered or revealed, the tile shows its image, chance and full description.
 - Tiles show the chance top right (from `ODDS`), icons bottom left for what a scene gives (`GAINS`), a gold border once it has happened (`markSeen`, `S.seen`); found secrets get a purple dashed outline. Hover or tap a tile for its `DESC` description (`showTip`), written with a little humor.
 

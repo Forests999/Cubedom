@@ -336,7 +336,7 @@ const DESC={
  apcoins:'Potion on the Apothecary: she buys it back for 10 coins.',
  appotion:'Spell scroll on the Apothecary: she brews it into a potion.',
  blackwiz:'Secret: drag a brand new Wizard onto the top-left space. Black robes, red orb, cheaper scrolls.',
- bronze:'Secret: 1% of Knights come in bronze armor.',
+ bronze:'Secret: 0.75% of Knights come in bronze armor.',
  skulls:'Secret: put the Necromancer on the bottom row and his floor fills with skulls.'};
 
 // ---------- Alchemist, more Knight / Wizard / Necromancer scenes with the Merchants ----------
@@ -381,7 +381,7 @@ const DATE_GOOD={knight:['What a wonderful evening!','She laughed at all my joke
 const DATE_BAD={knight:['She laughed at my helmet.','I talked about swords for an hour. Too long?'],wizard:['I turned the waiter into a toad. By accident!','She would not stop sniffing my robes.']};
 Object.assign(NAMES,{thief:'A thief!',lemons:'Out of lemons',greenapple:'Green apples (+2 coins)',rumors:'Rumors of goblins (or a dragon)',
  bear:'Grizzly bear potion (30 s)',kgossip:'Gossip about a Mage',kdate:'A date (1 min)',bees:'Bee swarm!',
- cobrew:'Brewing together (20%: the Alchemist)',boom:'Brewing gone wrong (2% both die)',wdate:'A date (30 s)',imp:'Imp blood for the Apothecary',purplepot:'A purple potion',
+ cobrew:'Brewing together (15%: the Alchemist)',boom:'Brewing gone wrong',wdate:'A date (30 s)',imp:'Imp blood for the Apothecary',purplepot:'A purple potion',
  bats:'Bats!'});
 COMP_TABS.forEach(t=>{const add={knight:['thief','lemons','greenapple','rumors','bear','kgossip','kdate','bees'],merchant:['thief','lemons','greenapple','rumors'],
  apothecary:['bear','kgossip','kdate','bees','cobrew','boom','wdate','imp','purplepot','bats'],wizard:['cobrew','boom','wdate','imp','purplepot'],necromancer:['bats']}[t.id];if(add)t.pairs.push(...add)});
@@ -445,8 +445,8 @@ Object.assign(DESC,{
  research:'The Alchemist researches new formulas in a very thick book.',
  smoke:'The Alchemist mixes the wrong things and the whole room fills with smoke. *cough*',
  alcscroll:'Spell scroll on the Alchemist: he has no idea what it is and tears it up.',
- stone:"Artifact on the Alchemist, 80%: a philosopher's stone turns one more board space golden, for good. Coins earned on a golden space are doubled.",
- elixir:'Secret: 20% the artifact is the elixir of life. The Alchemist drinks it and retires. He must be unlocked again.',
+ stone:"Artifact on the Alchemist: a philosopher's stone turns one more board space golden, for good. Coins earned on a golden space are doubled.",
+ elixir:'Secret: 15% the artifact is the elixir of life. The Alchemist drinks it and retires. He must be unlocked again.',
  daggers:'The Rogue throws daggers at a target on his wall. Bullseye. Mostly.',
  smokebomb:'The Rogue vanishes in a smoke bomb and pops up somewhere else in his room.',
  disguise:'The Rogue disguises himself as another character for 2 minutes and lives their life: their scenes, their idles, everything.',
@@ -512,7 +512,7 @@ Object.assign(DESC,{
  nscroll:'Spell scroll on the Necromancer: he raises a skeleton in a room next door. Fighters and Mages beat it; Merchants do not.',
  magictalk:'The Alchemist and any Mage next to him debate whether magic is actually useful. Passive: Mages next to him visit their neighbors 20% more often.',
  haste:'A Fighter next to the Alchemist drinks his haste potions: he picks Mage neighbors to visit 50% more often than other neighbors.',
- twopot:'Secret: with the Alchemist next to the Apothecary, 20% of the potions you buy from her come as two.',
+ twopot:'Secret: with the Alchemist next to the Apothecary, 15% of the potions you buy from her come as two.',
  madsci:'Secret: put the Alchemist on the bottom-right space and his hair goes wild and white. Mad scientist!',
  nefarious:'Rogue right of the Apothecary. He buys some "nefarious" potions from under the counter. +5 coins.',
  poisons:'Rogue left of the Apothecary. Poison, for "very large rats". +5 coins.',
@@ -750,7 +750,7 @@ CLASS.traveler='merchant';TR.traveler={up:'fade',down:'fade'};SKIN_CHARS.push('t
 const REQS=Object.keys(REQ_ASK);
 Object.assign(NAMES,{'rq:paladin':'Request: knighted','rq:blacksmith':'Request: an apprentice','rq:wizard':'Request: a new staff','rq:priest':'Request: holy water','rq:alchemist':'Request: rare ingredients',
  'rq:rogue':'Request: money','rq:merchant':'Request: exotic fruit','rq:apothecary':'Request: time off for a date','rq:necromancer':'Request: prisoners','rq:druid':'Request: land for nature',
- rqdeny:'A request denied',royalfuneral:'The grand funeral',regicide:'Secret: revenge',royalpatron:'Secret: royal patron',drain:'Life drain (30%)',
+ rqdeny:'A request denied',royalfuneral:'The grand funeral',regicide:'Secret: revenge',royalpatron:'Secret: royal patron',drain:'Life drain',
  wares:'Arranging the wares',troad:'On the road',tshop:'Coin in the Traveling Merchant\'s room: artifact for 300 coins',tscroll:'Scroll on Traveling Merchant: sold (+15 coins)',tpotion:'Potion on Traveling Merchant: sold (+15 coins)',tingot:'Ingot on Traveling Merchant: sold (+30 coins)'});
 EGGS.push('regicide','royalpatron');
 {const mt=COMP_TABS.find(t=>t.id==='monarch');mt.pairs.push(...REQS.map(k=>'rq:'+k),'rqdeny');mt.idle.push('royalfuneral');mt.items.push('regicide','royalpatron');
@@ -855,3 +855,74 @@ Object.assign(DESC,{
 // A character's tab fully discovered (secrets included): +1 artifact. Every BIG_EVERY discoveries: one random item (ODDS.bigReward).
 const BIG_EVERY=50;ODDS.bigReward={scroll:.45,potion:.45,ingot:.1};
 ODDS.revealScene=.7; // a clue reveals an undiscovered interaction 70%, a secret 30%
+
+// ---------- RARITY: how every chance in the game is decided ----------
+// Each idle character decides every 5-10 s: DECIDE.idle = an idle activity, DECIDE.visit = a visit to a neighbor, the rest = wandering.
+// A visit is just hanging out HANGOUT of the time; otherwise one scene is rolled from that visit's list.
+// Lists use rarity tiers: uncommon / rare / legendary are fixed chances (RARITY); the common ones share whatever is left equally.
+// (The player never sees the tier names; the Compendium shows the resulting percentages.)
+const DECIDE={idle:.5,visit:.2},HANGOUT=.2;
+const RARITY={u:.15,r:.05,l:.0075};
+const TIER_NAME={c:'common',u:'uncommon',r:'rare',l:'legendary'};
+// Idle activities per character: [key, tier, condition]. A condition (checked in game.js, idleOk) must hold or the activity is left out.
+// Conditions: nbr = a free neighbor; noRight = no box to his right; eknight = Eldritch Knight with a Wizard on the board; brew = next to a Merchant
+// with 5 coins; target = someone free to haunt; alc = next to the Alchemist; madsci = mad scientist with a free neighbor; others = someone to copy;
+// mageTag = the Rogue's Mage tag; spirit = all four spaces around him open and empty; rain = his space in the Druid's Rain; grudge = refused by a Monarch
+const IDLES={knight:[['prac','c'],['orc','u','nbr'],['horse','r','noRight'],['cat','l','eknight']],
+ wizard:[['read','c'],['magic','c'],['demon','l'],['brew','l','brew']],
+ priest:[['pray1','c'],['farmer','c'],['tithe','u'],['exorcise','r']],
+ necromancer:[['spirits','c'],['candles','c'],['lightning','c'],['raise','l','target']],
+ merchant:[['advert','c'],['sell','c','nbr'],['mcust','u'],['mob','l'],['promo','u','alc']],
+ apothecary:[['abrew','c'],['herbs','c'],['acust','u'],['trip','r'],['tripbreak','r'],['promo','u','alc']],
+ alchemist:[['alcbrew','c'],['smoke','c'],['research','u'],['beast','u','madsci']],
+ rogue:[['daggers','c'],['count','c'],['smokebomb','u'],['disguise','r','others'],['conjure','l','mageTag']],
+ druid:[['grove','c'],['animals','c'],['weather','u'],['spirit','r','spirit']],
+ blacksmith:[['forgework','c'],['smelt','c'],['coal','u'],['pour','l'],['leadgold','u','alc']],
+ farmer:[['hoe','c'],['fork','c']],monarch:[['court','c']],traveler:[['wares','c']]};
+const IDLE_ANY=[['story','c','rain'],['regicide','l','grudge']]; // added to anyone's list while the condition holds
+// Visit scenes. Each arrangement in PAIRS gives one scene, or a list (VISIT_EXPAND). Anything not listed here is one common scene.
+const VISIT_EXPAND={aboveW:[['duel','c'],['craft','c']],appleshop:[['apple','c'],['feast','c']],mabove:[['fruitfall','c'],['starfruit','c']],wabove:[['imp','c'],['purplepot','c']],
+ smithk:[['smithk','c'],['reforge','c']],mtrade:[['mtrade','c'],['farm','r']],sermon:[['sermon','c'],['tentacle','u']],zeal:[['crusade','r']],jokes:[['jokes','c'],['murder','l']]};
+// Scenes two characters can have on any side: [first, second ('tag:fighter' = anyone with that tag, 'anyone'), key, tier, fallback]
+// (fallback = only when the pair has no common scene of its own)
+const VISIT_ANY=[['knight','wizard','spar','r'],['priest','tag:fighter','braver','r'],['wizard','necromancer','forge','l'],['rogue','anyone','assassin','l'],
+ ['necromancer','druid','drain','u'],['alchemist','tag:mage','magictalk','c',1]];
+// Group scenes in the visitor's own list (whoever the neighbor is): [visitor, key, tier]
+const VISIT_GROUP=[['priest','massprayer','r'],['alchemist','fourmage','u'],['blacksmith','adventure','u']];
+// The Druid's weather (instead of his visits)
+const WEATHER_TIERS={blizzard:'u',sandstorm:'u',sunshine:'c',rain:'c',overgrowth:'c',moonlight:'c',decay:'c',infest:'r'};
+// Outcome chances inside a scene, set to the same tiers (deaths and special results)
+Object.assign(ODDS,{slip:RARITY.r,horde:RARITY.r,boomDeath:RARITY.l,alchemist:RARITY.u,reveal:RARITY.r,healFarm:RARITY.r,ntradePotion:RARITY.u,
+ tempt:RARITY.r,betray:RARITY.u,sickDeath:RARITY.r,twopot:RARITY.u,stone:1-RARITY.u,adventureDeath:RARITY.u,advScroll:RARITY.u,advArtifact:RARITY.r,
+ storySecret:RARITY.u,dragon:RARITY.u,bronze:RARITY.l});
+// Deadly events: three times as likely for someone living in a Sandstorm
+const DEADLY={demon:1,murder:1,assassin:1,drain:1};
+// Extra rule text shown in a discovered tile's description (results that are not the scene's own chance)
+const NOTE={horde:'The Knight dies 5% of the time.',apple:'The Priest slips and dies 5% of the time.',boom:'It kills them both 0.75% of the time.',
+ cobrew:'15%: the Alchemist is unlocked (once he is, a free potion instead).',pstudy:'5%: a clue (an undiscovered interaction or a secret is revealed).',
+ heal:'5%: the farmer stays and sets up a farm nearby.',ntrade:'With the Alchemist next to her, 15%: +1 potion.',bloodorange:'30%: there is one left (+3 coins).',
+ tempt:'5%: he does it, and the Priest dies.',betray:'15%: the Rogue is sacrificed and the Necromancer gets a skeleton follower.',kdate:'It goes well 80% of the time.',
+ wdate:'It goes well 40% of the time.',crusade:'They come back with 10 coins (70%) or an artifact (30%).',rumors:'15%: rumors of a dragon instead of goblins.',
+ adventure:'Each one back: 15% did not make it; 1-10 coins per Fighter, 15% a scroll per Mage, 5% an artifact per Merchant.',
+ dungeon:'Loot: 50 coins 20%, an artifact 10%, 2 scrolls 25%, 3 potions 25%, a clue 20%.',wine:'Sick for 1 minute; 5% fatal.',
+ stone:'85% a philosopher\'s stone, 15% the elixir of life (secret).',elixir:'15% of artifacts on the Alchemist.',story:'15%: a clue.',wolfkill:'30% when Moonlight starts, 30% when it ends.',
+ twopot:'15% of the potions you buy from her.',raise:'Fighters and Mages beat it; anyone else dies.',beast:'A neighbor who is only a Merchant dies; a Fighter or Mage fights back and one of the two dies.',
+ farm:'The field grows for 3 minutes, then pays 30 coins.',craft:'Costs 20 coins.',assassin:'Not while he is disguised.',
+ spirit:'A clue: an undiscovered interaction or a secret is revealed.',regicide:'They skip the funeral.',
+ roguemage:'While he has it, 0.75% of his idle activities he conjures an artifact, which uses the tag up.'};
+// Hint text for tiles whose description is all rules (used for the clue before discovery and the story part after)
+const FLAVOR={zeal:'The Knight is so fired up he visits everyone more often.',crusade:'They march off together on a holy crusade.',
+ cleanse:'Holy light frees the Death Knight. He is a Knight again.',haste:'Haste potions! He keeps dashing off to visit Mages.',
+ adventure:'Adventure awaits! Off they go, all of them.',rsteal:'He steals from the Wizard. Your coins get a little lighter.',
+ magictalk:'Is magic actually useful? A heated debate.',wine:'Poison plus wine, gifted to a neighbor. Cheers!',
+ funeral:'A fallen Fighter is honored at a gravestone.',alcpotion:'Luck for his neighbors: their rarest scenes get more likely. Their spaces glitter.',
+ story:'A short story read in the rain.',wolfkill:'A werewolf leaps out of the moonlight.',orc:'He spots an orc in a neighbor\'s room and charges over.',
+ massprayer:'Everyone squeezes into his room to pray together for 20 seconds.',fourmage:'He hands one of his Mage neighbors a potion. It works as if you used it.',
+ 'wx:blizzard':'Snow! Whoever lives there visits less, but their rarest idle activity is more likely.','wx:rain':'Rain: whoever lives there reads short stories.',
+ 'wx:moonlight':'Darkness and soft pink moonlight. Beware the werewolf.','wx:sunshine':'Warm sun: a Merchant there earns more coins, a Farmer even more.',
+ 'wx:decay':'Worms and flies. Tags its character was not born with are gone while it lasts.','wx:infest':'A locust swarm. Nobody visits that space.',
+ 'wx:sandstorm':'Sand everywhere. Every chance of dying there is tripled.','wx:overgrowth':'Pink and yellow flowers bloom all around the border.',
+ royalfuneral:'EVERYONE drops what they are doing and kneels at the coffin for 1 minute. No coins or items meanwhile.',
+ spar:'Sword versus magic shield. Nobody wins, everybody sweats.',braver:'The Priest admits the Fighter is braver. The Fighter pretends not to blush.',
+ forge:'They conjure a free scroll or potion out of thin air.',drain:'Black lightning drains the Druid\'s life, and he dies.',
+ regicide:'Someone the Monarch refused comes for revenge, from anywhere on the board.',royalpatron:'The generous ruler rewards the adventurers with an artifact.'};

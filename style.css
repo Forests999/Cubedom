@@ -96,3 +96,4 @@ h2.sec.done::after{content:' \2605 complete';color:#f2c84a;font-size:13px}
 h3.sub{font-size:15px;color:#d8c8a0;margin:10px 0 6px;text-align:center;font-weight:600}
 h3.sub img{vertical-align:middle;margin-left:4px}
 h3.sub small{color:#9a8f7a;font-size:12px;margin-left:4px}
+#tip{white-space:pre-line}

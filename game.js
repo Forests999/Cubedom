@@ -169,8 +169,8 @@ const doom=(p,...us)=>p*(us.some(v=>v&&wxOf(v)==='sandstorm')?ODDS.sandDeath:1);
 // Instead of visiting a neighbor, the Druid casts weather on a random open space without weather (at most WEATHER_MAX of his at once)
 function startWeather(u){if(weathers.filter(w=>w.by===u.id).length>=WEATHER_MAX)return false;
  const open=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c)&&!weathers.some(w=>w.r===r&&w.c===c))open.push([r,c]);if(!open.length)return false;
- const o=ODDS.weather,ks=Object.keys(o).filter(k=>!(u.arch&&ARCH_SKIP.includes(k))),q=pick(open); // an Archdruid never casts Moonlight, Decay or Infest
- beginAct(u,'wcast',true);u.dur=3;u.wx={k:pickW(ks,k=>o[k]),r:q[0],c:q[1]};return true}
+ const ks=Object.keys(WEATHER_TIERS).filter(k=>!(u.arch&&ARCH_SKIP.includes(k))),q=pick(open); // an Archdruid never casts Moonlight, Decay or Infest
+ beginAct(u,'wcast',true);u.dur=3;u.wx={k:rollList(ks.map(k=>[k,WEATHER_TIERS[k]])),r:q[0],c:q[1]};return true}
 function addWeather(r,c,k,by){const w={r,c,k,t:0,by};weathers.push(w);markSeen('wx:'+k);poof(c*CELL+48,r*CELL+48,'#c8f0c0');
  if(k==='moonlight')wolfRoll(w);refreshTags();return w}
 // Moonlight, when it starts and when it ends: 30% a werewolf leaps out and kills whoever lives in that space (if they are there)
@@ -185,10 +185,6 @@ function stepWeather(dt){weathers.forEach(w=>{const was=w.t;w.t+=dt;
   if(f.t>=1.6&&!f.done){f.done=1;if(v&&U[v.id]&&!v.dead&&v.st!=='away'){const nm=CH[idOf(v)].name;kill(v);markSeen('wolfkill');toast('A werewolf leapt out of the moonlight! The '+nm+' is dead.')}}
   if(f.t>=2.6)w.wolf=null});
  weathers=weathers.filter(w=>w.t<WEATHER_TIME+1||w.wolf)}
-// The rarest idle activity of each character, as the part of the 0..1 roll that picks it (the Blizzard makes it 30% more likely)
-const RARE_IDLE={wizard:()=>{const W=ODDS.wizard;return[W.read+W.magic,1]},priest:()=>{const P=ODDS.priest;return[P.pray+P.farmer+P.tithe,1]},necromancer:()=>{const N=ODDS.necromancer;return[N.spirits+N.candles+N.lightning,1]},
- merchant:()=>{const M=ODDS.merchant;return[M.customer+M.advert+M.sell,1]},apothecary:()=>{const A=ODDS.apothecary;return[A.customer,A.customer+A.trip]},alchemist:()=>{const A=ODDS.alchemistIdle;return[A.alcbrew,A.alcbrew+A.research]},
- rogue:()=>{const R=ODDS.rogue;return[R.daggers+R.smokebomb,R.daggers+R.smokebomb+R.disguise]},druid:()=>{const D=ODDS.druid;return[D.grove+D.animals,1]},blacksmith:()=>{const M=ODDS.smith;return[M.forgework+M.smelt+M.coal,1]},knight:()=>{const K=ODDS.knight;return[K.prac+K.orc,1]}};
 // Stop a character's idle activity (and send away its visitors) so they can join something else
 function stopIdle(v){if(v.st!=='act')return;if(v.npc)npcLeave(v);if(v.crowd)crowdLeave(v);v.act=null;v.kneel=false;v.show=null;v.ghost=null;v.spirit=null;v.st='idle';v.path=[]}
 // The Blacksmith's adventure takes EVERY Fighter neighbor who is at home and not in a scene (an idle activity is interrupted)
@@ -197,79 +193,67 @@ const recruitable=b=>[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(b.r+d[0],b.c+d[1])]
 // ---------- idle activities (odds in ODDS, data.js) ----------
 // quiet = don't mark it in the Compendium (e.g. the scroll's skeleton marks its own tile)
 function beginAct(u,a,quiet){if(!quiet)markSeen(a==='prac'?'prac:'+u.weapon:a);u.st='act';u.act=a;u.at=0;u.ev={};u.path=[];u.dur=a==='prac'?3.5+Math.random()*1.5:3;if(a==='prac'&&weaponOf(u)==='shield'&&u.id==='knight'){u.dur=7;squireEnter(u)}}
-function startAct(u){
- let r=Math.random();const id=idOf(u),wx=wxOf(u),home=cellX(u)===u.c&&cellY(u)===u.r;u.path=[];
- // the Druid's Rain on this space: 80% of idle time, a short story (10% of them reveal a secret)
- // Secret: someone the Monarch turned down, 1% of their idle activities (rolled first): they go to the throne room, wherever they are, and kill the Monarch
- const M=U.monarch;if(u.grudge&&!u.as&&!u.form&&M&&!M.dead&&freeU(M)&&!rf&&Math.random()<ODDS.regicide){visit(u,M,'regicide');return true}
- if(wx==='rain'&&home&&!isFarm(id)&&Math.random()<ODDS.rainStory){beginAct(u,'story');u.dur=5;return true}
- // the Druid's Blizzard on this space: the rarest idle activity is 30% more likely
- if(wx==='blizzard'&&RARE_IDLE[id]){const q=RARE_IDLE[id]();if(Math.random()<ODDS.blizzRare*(q[1]-q[0]))r=q[0]+Math.random()*(q[1]-q[0])}
- // Monarch: holding court on the throne
- if(id==='monarch'){beginAct(u,'court');u.dur=5;u.hx=u.c*CELL+34;return true}
- // Traveling Merchant: he only arranges the wares on his stand (no waving, no scenes)
- if(id==='traveler'){beginAct(u,'wares');u.dur=4.4;u.hx=u.c*CELL+24;return true}
- // 10% of idle time: just wave to a neighbor (any side)
- if(Math.random()<ODDS.wave){const o=[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filter(v=>v&&!v.dead);
-  if(o.length&&cellX(u)===u.c&&cellY(u)===u.r){const h=pick(o);if(h.c!==u.c)u.face=h.c>u.c?1:-1;beginAct(u,'wave');u.dur=2.2;u.waveTo=h.id;return true}}
- if(isFarm(id)){const a=Math.random()<.5?'hoe':'fork';beginAct(u,a);u.dur=a==='hoe'?4.5:5;
-  if(a==='fork'){const bx=u.c*CELL;u.hx=u.x-bx<48?bx+76:bx+20}return true} // fork: carries it across the field
- // Alchemist: brew at the table 60%, research formulas 10%, a solution goes wrong and fills the room with smoke 30%
- // Secret: the mad scientist (bottom-right space), 15%: turns into a beast-man and attacks a free neighbor
- if(madSci(u)&&!u.as&&Math.random()<ODDS.beast&&cellX(u)===u.c&&cellY(u)===u.r){const o=nbrs(u).filter(v=>!isFarm(v.id));if(o.length){beastOut(u,pick(o));return true}}
- // A Merchant next to the Alchemist, 10%: a promotional sale of the Alchemist's potions (a customer comes in)
- if((id==='merchant'||id==='apothecary')&&alcNext(u)&&Math.random()<ODDS.promo){beginAct(u,'promo');u.dur=7;customerEnter(u);return true}
- // Druid: tend the grove 40%, talk to deer and birds 40%, predict the weather 20%.
- // Secret: all four spaces around him open and empty, 20%: he communes with a nature spirit and learns a secret.
- if(id==='druid'){const sp=[[0,1],[0,-1],[1,0],[-1,0]].every(d=>{const rr=u.r+d[0],cc=u.c+d[1];return rr>=0&&rr<ROWS&&cc>=0&&cc<COLS&&isOpen(rr,cc)&&!at(rr,cc)});
-  if(sp&&Math.random()<ODDS.spirit){beginAct(u,'spirit');u.dur=6;return true}
-  const D=ODDS.druid,a=r<D.grove?'grove':r<D.grove+D.animals?'animals':'weather';beginAct(u,a);u.dur={grove:5,animals:6,weather:5}[a];u.hx=u.c*CELL+30;return true}
- // Blacksmith: hammering 40%, smelting armor or a sword 40%, coal 19%, pouring an ingot mold 1% (ODDS.smith).
- // Secret: next to the Alchemist, 15% (rolled first) they turn lead into gold.
- if(id==='blacksmith'){const bx=u.c*CELL;
-  if(alcNext(u)&&Math.random()<ODDS.leadgold){beginAct(u,'leadgold');u.dur=5;u.hx=bx+52;return true}
-  const Sm=ODDS.smith,a=r<Sm.forgework?'forgework':r<Sm.forgework+Sm.smelt?'smelt':r<Sm.forgework+Sm.smelt+Sm.coal?'coal':'pour';
-  beginAct(u,a);u.dur={forgework:5,smelt:6,coal:4.5,pour:5}[a];u.hx=a==='forgework'||a==='pour'?bx+52:bx+44;if(a==='smelt')u.smeltWhat=Math.random()<.5?'armor':'sword';return true}
- if(id==='alchemist'){const A=ODDS.alchemistIdle,a=r<A.alcbrew?'alcbrew':r<A.alcbrew+A.research?'research':'smoke';
-  beginAct(u,a);u.dur={alcbrew:4.6,research:5,smoke:5}[a];if(a==='alcbrew')u.hx=u.c*CELL+46;return true}
- // Rogue: daggers at a target 50%, smoke bomb 20%, disguise 5%, counting coins 25%. With the Mage tag: 0.2% he conjures an artifact.
- if(u.id==='rogue'&&!u.as){
-  if(u.mageTag&&Math.random()<ODDS.rogueArtifact){beginAct(u,'conjure');u.dur=3;return true}
-  const R=ODDS.rogue,a=r<R.daggers?'daggers':r<R.daggers+R.smokebomb?'smokebomb':r<R.daggers+R.smokebomb+R.disguise?'disguise':'count';
-  if(a==='disguise'){const o=Object.values(U).filter(v=>v!==u&&!v.dead&&!isFarm(v.id)&&v.id!=='rogue'&&!v.form);if(!o.length)return false;disguise(u,pick(o));return true}
-  beginAct(u,a);u.dur={daggers:5,smokebomb:4,count:4}[a];if(a==='daggers'){u.hx=u.c*CELL+30;}return true}
- if(id==='wizard'){
-  // next to a Merchant, 1% chance he spends BREW_COST coins brewing a potion
-  if(S.coins>=BREW_COST&&Object.values(U).some(v=>hasClass(v,'merchant')&&rel(v,u))&&Math.random()<ODDS.wizBrew){beginAct(u,'brew');u.dur=4.2;return true}
-  const W=ODDS.wizard;let a=r<W.read?'read':r<W.read+W.magic?'magic':'demon';
-  if(a!=='demon'&&wx==='sandstorm'&&Math.random()<W.demon*(ODDS.sandDeath-1))a='demon'; // Sandstorm: three times the chance of the deadly demon summoning
-  markSeen(a);u.st='act';u.act=a;u.at=0;u.ev={};u.dur=a==='read'?4+Math.random()*2:a==='magic'?3.5+Math.random()*1.5:3;
-  if(a==='demon'){const rc=u.c*CELL,dx=cl(u.x+(u.x<rc+48?30:-30),rc+16,rc+80);u.face=dx>u.x?1:-1;demons.push({x:dx,y:u.y,t:0,dir:dx>u.x?-1:1,owner:u.id})}
-  return true}
- if(id==='priest'){const P=ODDS.priest,a=r<P.pray?'pray1':r<P.pray+P.farmer?'farmer':r<P.pray+P.farmer+P.tithe?'tithe':'exorcise';
-  beginAct(u,a);u.dur={pray1:5,farmer:7.8,tithe:3,exorcise:8}[a];if(a==='farmer'||a==='exorcise')npcEnter(u,a==='exorcise');return true}
- if(id==='necromancer'){const N=ODDS.necromancer,a=r<N.spirits?'spirits':r<N.spirits+N.candles?'candles':r<N.spirits+N.candles+N.lightning?'lightning':'raise';
-  if(a==='raise'&&startRaise(u))return true;
-  const b=a==='raise'?'spirits':a;beginAct(u,b);u.dur={spirits:5,candles:5.5,lightning:4.5}[b];return true}
- if((id==='merchant'||id==='apothecary')&&r<ODDS[id].customer){beginAct(u,'customer');u.dur=7;customerEnter(u);return true} // 15%: a customer comes in
- if(id==='merchant'){const M=ODDS.merchant,o=nbrs(u),r2=r-M.customer;
-  if(r2>=M.advert&&r2<M.advert+M.sell&&o.length){visit(u,pick(o),'sell');return true}
-  if(r2>=M.advert+M.sell){beginAct(u,'mob');u.dur=7;mobEnter(u);return true}
-  beginAct(u,'advert');u.dur=4.5;return true}
- if(id==='apothecary'){const A=ODDS.apothecary,q=r-A.customer,a=q<A.trip?'trip':q<A.trip+A.tripbreak?'tripbreak':q<A.trip+A.tripbreak+A.abrew?'abrew':'herbs';
-  beginAct(u,a);u.dur={trip:3,tripbreak:3.4,abrew:4.4,herbs:5}[a];u.hx=u.c*CELL+64;return true}
- if(id!=='knight')return false;
- // Eldritch Knight only: a black cat wanders across the back of the Wizard's room
- if(u.form==='eknight'&&U.wizard&&Math.random()<ODDS.eknightCat){cats.push({t:0,dir:pick([1,-1])});markSeen('cat');u.st='idle';u.wait=3;return true}
- const K=ODDS.knight;
- if(r>=K.prac&&r<K.prac+K.orc){const o=nbrs(u);if(o.length){visit(u,pick(o),'orc');return true}}
- // Horse: needs open space to the right (no box in the next cell)
- if(r>=K.prac+K.orc&&!at(u.r,u.c+1)){markSeen('horse');u.st='act';u.act='horse';u.at=0;u.ev={};u.dur=6.3;u.hx=u.c*CELL+46;return true}
- // Weapon practice: first walk to the middle of the room so the swings stay inside it
- const mid=u.c*CELL+48;
- if(Math.abs(u.x-mid)>1){u.st='walk';u.path=[{k:'walk',x:mid,y:u.r*CELL+FY}];u.after='prac';return true}
- beginAct(u,'prac');return true;
-}
+// ---------- rarity: picking one event from a list (RARITY in data.js) ----------
+// list = [[key, tier], ...]; uncommon / rare / legendary have fixed chances, the commons share the rest. mult(entry) can raise a fixed chance.
+function listChances(list,mult){let fixed=0;const w=list.map(e=>{if(e[1]==='c')return 0;const v=RARITY[e[1]]*(mult?mult(e):1);fixed+=v;return v});
+ const nc=list.filter(e=>e[1]==='c').length,each=nc?Math.max(0,1-fixed)/nc:0;return list.map((e,i)=>e[1]==='c'?each:w[i])}
+function rollList(list,mult){const p=listChances(list,mult);let r=Math.random();for(let i=0;i<list.length;i++)if((r-=p[i])<0)return list[i][0];return null}
+// the rarest tier in a list (the Blizzard makes that one 30% more likely)
+const rarestTier=list=>['l','r','u'].find(t=>list.some(e=>e[1]===t))||null;
+// ---------- idle activities (IDLES in data.js) ----------
+const atHome=u=>cellX(u)===u.c&&cellY(u)===u.r;
+function idleOk(u,c){const M=U.monarch;
+ if(c==='nbr')return nbrs(u).length>0;
+ if(c==='noRight')return !at(u.r,u.c+1);
+ if(c==='eknight')return u.form==='eknight'&&!!U.wizard;
+ if(c==='brew')return (S.coins||0)>=BREW_COST&&Object.values(U).some(v=>hasClass(v,'merchant')&&rel(v,u));
+ if(c==='target')return Object.values(U).some(v=>v!==u&&freeU(v)&&atHome(v));
+ if(c==='alc')return alcNext(u);
+ if(c==='madsci')return madSci(u)&&!u.as&&atHome(u)&&nbrs(u).some(v=>!isFarm(v.id));
+ if(c==='others')return u.id==='rogue'&&!u.as&&Object.values(U).some(v=>v!==u&&!v.dead&&!isFarm(v.id)&&v.id!=='rogue'&&!v.form);
+ if(c==='mageTag')return u.id==='rogue'&&!u.as&&!!u.mageTag;
+ if(c==='spirit')return [[0,1],[0,-1],[1,0],[-1,0]].every(d=>{const rr=u.r+d[0],cc=u.c+d[1];return rr>=0&&rr<ROWS&&cc>=0&&cc<COLS&&isOpen(rr,cc)&&!at(rr,cc)});
+ if(c==='rain')return wxOf(u)==='rain'&&atHome(u)&&!isFarm(u.id);
+ if(c==='grudge')return !!u.grudge&&!u.as&&!u.form&&!!M&&!M.dead&&freeU(M)&&!rf;
+ return true}
+function idleList(u){const id=idOf(u);return [...(IDLES[isFarm(id)?'farmer':id]||[]),...IDLE_ANY].filter(e=>!e[2]||idleOk(u,e[2]))}
+// Blizzard: the rarest idle activity 30% more likely; Sandstorm: deadly ones three times as likely
+function idleMult(u,list){const wx=wxOf(u),rt=rarestTier(list);return e=>(wx==='blizzard'&&e[1]===rt?1+ODDS.blizzRare:1)*(wx==='sandstorm'&&DEADLY[e[0]]?ODDS.sandDeath:1)}
+function startAct(u){u.path=[];const list=idleList(u);if(!list.length)return false;const k=rollList(list,idleMult(u,list));return k?doIdle(u,k):false}
+// Start the idle activity k (returns false if it could not start: the character wanders instead)
+function doIdle(u,k){const bx=u.c*CELL,dur=(a,d)=>{beginAct(u,a);u.dur=d};
+ if(k==='regicide'){visit(u,U.monarch,'regicide');return true}
+ if(k==='story'){dur('story',5);return true}
+ if(k==='court'){dur('court',5);u.hx=bx+34;return true}
+ if(k==='wares'){dur('wares',4.4);u.hx=bx+24;return true}
+ if(k==='hoe'){dur('hoe',4.5);return true}
+ if(k==='fork'){dur('fork',5);u.hx=u.x-bx<48?bx+76:bx+20;return true} // carries it across the field
+ if(k==='beast'){beastOut(u,pick(nbrs(u).filter(v=>!isFarm(v.id))));return true}
+ if(k==='promo'){dur('promo',7);customerEnter(u);return true}
+ if(k==='spirit'){dur('spirit',6);return true}
+ if(k==='grove'||k==='animals'||k==='weather'){dur(k,{grove:5,animals:6,weather:5}[k]);u.hx=bx+30;return true}
+ if(k==='leadgold'){dur('leadgold',5);u.hx=bx+52;return true}
+ if(k==='forgework'||k==='smelt'||k==='coal'||k==='pour'){dur(k,{forgework:5,smelt:6,coal:4.5,pour:5}[k]);u.hx=k==='forgework'||k==='pour'?bx+52:bx+44;if(k==='smelt')u.smeltWhat=Math.random()<.5?'armor':'sword';return true}
+ if(k==='alcbrew'||k==='research'||k==='smoke'){dur(k,{alcbrew:4.6,research:5,smoke:5}[k]);if(k==='alcbrew')u.hx=bx+46;return true}
+ if(k==='conjure'){dur('conjure',3);return true}
+ if(k==='disguise'){disguise(u,pick(Object.values(U).filter(v=>v!==u&&!v.dead&&!isFarm(v.id)&&v.id!=='rogue'&&!v.form)));return true}
+ if(k==='daggers'||k==='smokebomb'||k==='count'){dur(k,{daggers:5,smokebomb:4,count:4}[k]);if(k==='daggers')u.hx=bx+30;return true}
+ if(k==='brew'){dur('brew',4.2);return true}
+ if(k==='read'||k==='magic'||k==='demon'){markSeen(k);u.st='act';u.act=k;u.at=0;u.ev={};u.dur=k==='read'?4+Math.random()*2:k==='magic'?3.5+Math.random()*1.5:3;
+  if(k==='demon'){const dx=cl(u.x+(u.x<bx+48?30:-30),bx+16,bx+80);u.face=dx>u.x?1:-1;demons.push({x:dx,y:u.y,t:0,dir:dx>u.x?-1:1,owner:u.id})}return true}
+ if(k==='pray1'||k==='farmer'||k==='tithe'||k==='exorcise'){dur(k,{pray1:5,farmer:7.8,tithe:3,exorcise:8}[k]);if(k==='farmer'||k==='exorcise')npcEnter(u,k==='exorcise');return true}
+ if(k==='raise'&&startRaise(u))return true;
+ if(k==='spirits'||k==='candles'||k==='lightning'||k==='raise'){const a=k==='raise'?'spirits':k;dur(a,{spirits:5,candles:5.5,lightning:4.5}[a]);return true}
+ if(k==='mcust'||k==='acust'){dur('customer',7);customerEnter(u);return true} // a customer comes in
+ if(k==='advert'){dur('advert',4.5);return true}
+ if(k==='sell'){visit(u,pick(nbrs(u)),'sell');return true}
+ if(k==='mob'){dur('mob',7);mobEnter(u);return true}
+ if(k==='trip'||k==='tripbreak'||k==='abrew'||k==='herbs'){dur(k,{trip:3,tripbreak:3.4,abrew:4.4,herbs:5}[k]);u.hx=bx+64;return true}
+ if(k==='cat'){cats.push({t:0,dir:pick([1,-1])});markSeen('cat');u.st='idle';u.wait=3;return true} // a black cat crosses the Wizard's room
+ if(k==='orc'){visit(u,pick(nbrs(u)),'orc');return true}
+ if(k==='horse'){markSeen('horse');u.st='act';u.act='horse';u.at=0;u.ev={};u.dur=6.3;u.hx=bx+46;return true}
+ if(k==='prac'){const mid=bx+48;if(Math.abs(u.x-mid)>1){u.st='walk';u.path=[{k:'walk',x:mid,y:u.r*CELL+FY}];u.after='prac';return true}beginAct(u,'prac');return true} // walk to the middle first so the swings stay inside
+ return false}
 function acting(u,dt){
  if(u.act==='demon'){
   if(u.at>=1.6&&!u.ev.b){u.ev.b=1;u.blink=.5;u.mood='hurt';u.mt=2}
@@ -396,9 +380,6 @@ function acting(u,dt){
  // ---- Necromancer's bats (Necromancer above the Apothecary) ----
  if(u.act==='bats'){const A=U[u.batTo];once('s',.2,()=>{say(u,'Fly, my pretties!');gest(u,'both',1.2)});
   once('a',2.3,()=>{if(A){A.mood='mad';A.mt=2.5;A.hop=.3;say(A,'Shoo! Get out of my herbs!');gest(A,'both',1.4)}});once('z',4,()=>{u.mood='happy';u.mt=1.2})}
- // ---- waving to a neighbor (any character); a free neighbor waves back ----
- if(u.act==='wave'){once('m',.2,()=>{u.mood='happy';u.mt=2});
-  once('b',.8,()=>{const h=U[u.waveTo];if(h&&freeU(h)&&h.st==='idle'){if(h.c!==u.c)h.face=u.c>h.c?1:-1;gest(h,'up',1.2);h.hop=.3;h.mood='happy';h.mt=1.4}})}
  // ---- Farmer idles: whistling while he hoes, or carrying a pitchfork across the field ----
  if(u.act==='hoe')for(let i=0;i<4;i++)once('n'+i,.4+i*1,()=>parts.push({k:'note',x:u.x+u.face*6,y:u.y-46,t:0,life:1.4}));
  if(u.act==='fork'){u.mv=false;if(Math.abs(u.hx-u.x)>.5){const d=u.hx-u.x,s=18*dt;u.face=d>0?1:-1;u.x+=Math.abs(d)<s?d:Math.sign(d)*s;u.mv=true;u.t+=dt}}
@@ -752,102 +733,88 @@ function route(u,r1,c1,r2,c2,fin){
   {k:'appear',x:X2,y:y2+Bx.ay,f:f2,m:inn},{k:'walk',x:X2,y:y2+FY,sp:34,close:f2},{k:'walk',x:fin.x,y:fin.y,off:f2}];
 }
 const isPair=(a,b)=>(a.id==='knight'&&b.id==='wizard')||(a.id==='wizard'&&b.id==='knight');
+// ---------- the decision roll (DECIDE, HANGOUT in data.js): idle activity, visit, or wander ----------
 function decide(u){
  if(u.form==='dknight'){followNecro(u);return} // the Death Knight only follows the Necromancer
  if(u.form==='monkey'){monkeyAbout(u);return} // a monkey just monkeys around
  if(u.form==='bear'){if(cellX(u)!==u.c||cellY(u)!==u.r){goHome(u);return}u.st='walk';u.path=[{k:'walk',x:u.c*CELL+14+Math.random()*68,y:u.r*CELL+FY,sp:52}];u.wait=.15;return} // a bear runs around his room
- // Priest with four free neighbors: 5% he calls them all to a great prayer
- if(idOf(u)==='priest'&&Math.random()<ODDS.massPrayer){const n4=[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]);if(n4.every(v=>v&&freeU(v))){startGather(u,n4);return}}
- // Secret: the Alchemist surrounded by four Mages, 10%: he gives one of them a potion (its usual effect)
- if(idOf(u)==='alchemist'&&!u.as&&!u.form&&Math.random()<ODDS.fourMage){const n4=[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]);
-  if(n4.every(v=>v&&hasClass(v,'mage'))){const f=n4.filter(v=>freeU(v)&&!v.as&&ITEM_FX.potion[v.id]);if(f.length){visit(u,pick(f),'fourmage');return}}}
- let P=(u.id==='knight'||u.id==='wizard')&&pairKind(U.wizard,U.knight)==='friend'?ODDS.visitFriend:ODDS.visit;
+ let P=(u.id==='knight'||u.id==='wizard')&&pairKind(U.wizard,U.knight)==='friend'?ODDS.visitFriend:DECIDE.visit; // Old Friends visit each other more
  if(idOf(u)==='knight'&&pairKind(U.priest,u)==='zeal')P*=1+ODDS.zeal; // Priest above the Knight: he visits 60% more
  if(idOf(u)!=='alchemist'&&hasClass(u,'mage')&&alcNext(u))P*=1+ODDS.alcMage; // a Mage next to the Alchemist visits 20% more
  if(wxOf(u)==='blizzard')P*=1-ODDS.blizzVisit; // the Druid's Blizzard: 30% fewer visits
  const rr=Math.random();
- if(rr>=P&&rr<P+ODDS.idle&&startAct(u))return;
- // The Druid never visits (he casts weather instead), except once to make his request of a Monarch next to him
- if(rr<P&&idOf(u)==='druid'&&!u.as&&!u.asked&&U.monarch&&rel(U.monarch,u)&&freeU(U.monarch)&&!(u.sickT>0)){visit(u,U.monarch,'request');return}
- // A greedy Monarch never visits anyone; the Traveling Merchant has no scenes at all: they just wander
- if(rr<P&&((idOf(u)==='monarch'&&u.trait==='greedy')||u.id==='traveler')){u.st='walk';u.path=[{k:'walk',x:u.c*CELL+16+Math.random()*64,y:u.r*CELL+FY}];return}
- if(rr<P&&idOf(u)==='druid'){if(!u.as&&startWeather(u))return;u.st='walk';u.path=[{k:'walk',x:u.c*CELL+16+Math.random()*64,y:u.r*CELL+FY}];return}
- if(rr<P&&!(u.sickT>0)){ // sick (poisoned wine): no neighbor scenes
-  // Blacksmith with two or more free Fighter neighbors: 20% of his visits become an adventure (they leave for ADVENTURE_TIME)
-  if(idOf(u)==='blacksmith'){const fs=recruitable(u);if(fs.length>=2&&Math.random()<ODDS.adventure){beginAct(u,'recruit');u.dur=3.4;u.recruits=fs.map(v=>v.id);fs.forEach(v=>{stopIdle(v);v.path=[];v.st='idle';v.wait=6});return}}
-  // Priest and Necromancer are neighbors (any side) while a Death Knight exists: the Priest goes to cleanse him
-  const DK=Object.values(U).find(v=>v.form==='dknight');
-  if(DK&&(u.id==='priest'||u.id==='necromancer')&&U.priest&&U.necromancer&&rel(U.priest,U.necromancer)&&freeU(U.priest)&&freeU(U.necromancer)){visit(U.priest,U.necromancer,'cleanse');return}
-  const opts=nbrs(u).filter(h=>pairKind(u,h)!=='none'); // 'none' pairs never visit each other
-  if(opts.length){
-   // Haste potions: a Fighter next to the Alchemist picks Mage neighbors 50% more often
-   const hasted=hasClass(u,'fighter')&&alcNext(u),h=hasted?pickW(opts,v=>hasClass(v,'mage')?1+ODDS.haste:1):pick(opts);let kd=pairKind(u,h);
-   if(hasted&&hasClass(h,'mage')){markSeen('haste');poof(u.x,u.y-34,'#7ae0ff')}
-   // Visiting the Monarch: the first visit is a request (once per character)
-   if(h.id==='monarch'&&reqOf(u)&&!u.asked){visit(u,h,'request');return}
-   // Necromancer on the bottom row visiting the Druid beside him: 30% he drains the Druid's life
-   if(idOf(u)==='necromancer'&&idOf(h)==='druid'&&u.r===ROWS-1&&h.r===u.r&&luck(doom(ODDS.drain,u,h),u,h)){visit(u,h,'drain');return}
-   // The Alchemist and any Mage (by tag): they talk about whether magic is useful
-   if(!kd){const al=idOf(u)==='alchemist'?u:idOf(h)==='alchemist'?h:null,o=al===u?h:u;if(al&&!al.form&&hasClass(o,'mage'))kd='magictalk'}
-   // Rogue + anyone, any side: 0.5% the Rogue turns assassin and kills them (not while disguised)
-   const rg=u.id==='rogue'&&!u.as?u:h.id==='rogue'&&!h.as?h:null;
-   if(rg&&luck(doom(ODDS.assassin,rg===u?h:u),u,h)){visit(rg,rg===u?h:u,'assassin');return}
-   // Wizard + Necromancer, any side: 1% they make a scroll or a potion together
-   if(((idOf(u)==='wizard'&&idOf(h)==='necromancer')||(idOf(u)==='necromancer'&&idOf(h)==='wizard'))&&luck(ODDS.forge,u,h)){visit(u,h,'forge');return}
-   // Priest + a Fighter, any side: 5% the Priest tells him "You're braver than I."
-   if(((idOf(u)==='priest'&&hasClass(h,'fighter'))||(idOf(h)==='priest'&&hasClass(u,'fighter')))&&luck(ODDS.braver,u,h)){visit(u,h,'braver');return}
-   // Priest above the Knight: 2% they go on a holy crusade
-   if(kd==='zeal'&&luck(ODDS.crusade,u,h)){visit(U.knight,U.priest,'crusade');return}
-   const N=U.necromancer,special=Math.random()>=ODDS.hangout;
-   // Necromancer left of the Knight: puts everyone to his right to sleep (cast from his own room)
-   if(kd==='sleep'&&special){if(freeU(N)){beginAct(N,'sleepc');N.dur=2.4}else u.wait=1;return}
-   // Necromancer below the Wizard: they swap rooms by magic
-   if(kd==='swap'&&special){if(freeU(N)&&freeU(U.wizard)){beginAct(N,'swapc');N.dur=2;N.swapWith='wizard';beginAct(U.wizard,'swapc');U.wizard.dur=2}else u.wait=1;return}
-   // Necromancer above the Knight: the Knight goes to him and becomes a Death Knight
-   if(kd==='dknight'&&special){if(freeU(N)&&freeU(U.knight))visit(U.knight,N,'dknight');else u.wait=1;return}
-   if(kd==='sleep'||kd==='swap'||kd==='dknight')kd=null; // the hangout case
-   if(kd==='aboveW')kd=Math.random()<.5?'duel':'craft'; // Necromancer above the Wizard: 50/50
-   if(kd==='appleshop')kd=Math.random()<ODDS.feast?'feast':'apple'; // Priest left of the Fruit Merchant: feast or apple (5% slip)
-   // Merchant above the Priest: 50% he throws fruit down (from his own room), 50% sells him starfruit
-   if(kd==='mabove'&&special){if(Math.random()<ODDS.fruitfall){const M=U.merchant,P=U.priest;if(freeU(M)&&freeU(P)){beginAct(M,'fruitdrop');M.dur=4;P.path=[];P.st='idle';P.wait=5}else u.wait=1;return}visit(u,h,'starfruit');return}
-   // Merchant below the Priest: the Priest curses his fruit (from his own room)
-   if(kd==='curse'&&special){const M=U.merchant,P=U.priest;if(freeU(M)&&freeU(P)&&!(M.rotT>0)){beginAct(P,'curse');P.dur=3;M.path=[];M.st='idle';M.wait=4}else u.wait=1;return}
-   if(kd==='mabove'||kd==='curse')kd=null;
-   // Necromancer above the Apothecary: his bats swarm out, some down into her shop (cast from his own room)
-   if(kd==='bats'&&special){const A=U.apothecary;if(freeU(N)&&freeU(A)){beginAct(N,'bats');N.dur=5;N.batTo='apothecary';A.path=[];A.st='idle';A.wait=6}else u.wait=1;return}
-   if(kd==='bats')kd=null;
-   // Necromancer above / below / left of the Fruit Merchant: blood sacrifice, loud chanting, rotten fruit (cast from his own room)
-   if((kd==='sacrifice'||kd==='chant'||kd==='nrot')&&special){const M=U.merchant;
-    if(freeU(N)&&freeU(M)&&!(kd==='nrot'&&M.rotT>0)&&!(kd==='chant'&&M.crowd)){
-     if(kd==='chant'){customerEnter(M);if(M.crowd)M.crowd[0].ttl=7}beginAct(N,kd);N.dur={sacrifice:4.2,chant:6,nrot:3}[kd];M.path=[];M.st='idle';M.wait=kd==='chant'?7:5}else u.wait=1;return}
-   if(kd==='sacrifice'||kd==='chant'||kd==='nrot')kd=null;
-   // Blacksmith scenes that depend on who is around
-   if(kd==='smithk'&&Math.random()>=ODDS.smithtalk)kd='reforge'; // 40%: a new weapon for the Knight
-   if(kd==='metal'){const Wz=idOf(u)==='wizard'?u:h,Bs=Wz===u?h:u,all4=[[0,1],[0,-1],[1,0],[-1,0]].every(d=>{const v=U[at(Bs.r+d[0],Bs.c+d[1])];return v&&hasClass(v,'mage')});kd=Wz.armor?'metaltalk':all4?'greenarmor':'metal'}
-   if(kd==='holyfire'){const Bs=idOf(u)==='blacksmith'?u:h,K=U.knight;if(K&&!K.paladin&&!K.form&&!K.as&&rel(K,Bs))kd='paladin'} // secret: the Knight next to the Blacksmith too
-   if(kd==='wabove')kd=Math.random()<ODDS.imp?'imp':'purplepot'; // Wizard above the Apothecary: 40% imp blood, 60% purple potion
-   if(kd==='mtrade'&&luck(ODDS.farm,u,h))kd='farm'; // Merchant left of the Apothecary: 1.5% a farm appears
-   if(kd==='zeal')markSeen('zeal');
-   if(isPair(u,h)&&luck(ODDS.spar,u,h)){visit(u,h,'spar');return} // any arrangement
-   const hang=Math.random()<ODDS.hangout;
-   if(!hang&&kd&&kd!=='zeal'){
-    if(kd==='bolt'){if(freeU(U.wizard)&&freeU(U.knight))cast(U.wizard,U.knight);else u.wait=1;return}
-    // Eldritch Awakening: always the Knight who goes to the Wizard's room to read
-    if(kd==='learn'){if(freeU(U.wizard)&&freeU(U.knight))visit(U.knight,U.wizard,'learn');else u.wait=1;return}
-    // Out of lemons / a thief: always in the Fruit Merchant's shop, so the Knight is the one who visits
-    if(kd==='lemons'||kd==='thief'){if(freeU(U.merchant)&&freeU(U.knight))visit(U.knight,U.merchant,kd);else u.wait=1;return}
-    // Rogue scenes: the Rogue is always the one who visits (snatching a potion, he sneaks in through the ceiling or floor)
-    if(ROGUE_SCENES.includes(kd)){const R=idOf(u)==='rogue'?u:h,o=R===u?h:u;if(freeU(R)&&freeU(o)){if(kd==='snatch')R.sneak=true;visit(R,o,kd)}else u.wait=1;return}
-    // A blood orange: always the Necromancer who goes shopping
-    if(kd==='bloodorange'){if(freeU(U.merchant)&&freeU(U.necromancer))visit(U.necromancer,U.merchant,kd);else u.wait=1;return}
-    // Priest left of Knight: sometimes tentacles attack the Priest and the Knight comes to help
-    if(kd==='sermon'&&luck(ODDS.tentacle,u,h)){if(freeU(U.priest)&&freeU(U.knight))visit(U.knight,U.priest,'tentacle');else u.wait=1;return}
-    visit(u,h,kd);return}
-   visit(u,h,null);return;
-  }
- }
+ if(rr<DECIDE.idle){if(startAct(u))return}
+ else if(rr<DECIDE.idle+Math.min(P,1-DECIDE.idle)){if(visitRoll(u))return}
  u.st='walk';u.path=[{k:'walk',x:u.c*CELL+16+Math.random()*64,y:u.r*CELL+FY}];
 }
+// Does entry e of VISIT_ANY ([first, second, key, tier]) fit u and h (either way round)?
+const anyIs=(v,w)=>w==='anyone'||(w.startsWith('tag:')?hasClass(v,w.slice(4)):idOf(v)===w);
+const anyFits=(e,u,h)=>(idOf(u)===e[0]&&anyIs(h,e[1]))||(idOf(h)===e[0]&&anyIs(u,e[1]));
+function anyOk(k,u,h){const rg=idOf(u)==='rogue'?u:h,al=idOf(u)==='alchemist'?u:h;
+ if(k==='assassin')return rg.id==='rogue'&&!rg.as;
+ if(k==='drain')return idOf(u)==='necromancer'&&u.r===ROWS-1&&h.r===u.r;
+ if(k==='magictalk')return !al.form;
+ return true}
+const four=u=>[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]);
+function groupOk(k,u){
+ if(k==='massprayer')return four(u).every(v=>v&&freeU(v));
+ if(k==='fourmage')return !u.as&&!u.form&&four(u).every(v=>v&&hasClass(v,'mage'))&&four(u).some(v=>freeU(v)&&!v.as&&ITEM_FX.potion[v.id]);
+ if(k==='adventure')return recruitable(u).length>=2;
+ return false}
+// Every scene that can happen when u visits h: the arrangement's scene(s), the any-side ones, and u's group scenes
+function visitList(u,h){const out=[],base=pairKind(u,h);
+ if(base&&base!=='none')out.push(...(VISIT_EXPAND[base]||[[base,'c']]));
+ VISIT_ANY.forEach(e=>{if(anyFits(e,u,h)&&anyOk(e[2],u,h)&&!(e[4]&&out.some(x=>x[1]==='c')))out.push([e[2],e[3]])});
+ VISIT_GROUP.forEach(e=>{if(idOf(u)===e[0]&&groupOk(e[1],u))out.push([e[1],e[2]])});
+ return out}
+// The visit part of the decision roll. Returns false when nothing happens (he wanders instead).
+function visitRoll(u){const id=idOf(u),M=U.monarch;
+ // The Druid never visits: he casts weather instead, except once to make his request of a Monarch next to him
+ if(id==='druid'){if(!u.as&&!u.asked&&M&&rel(M,u)&&freeU(M)&&!(u.sickT>0)){visit(u,M,'request');return true}return !u.as&&startWeather(u)}
+ // A greedy Monarch never visits; the Traveling Merchant has no scenes; sick (poisoned wine): no neighbor scenes
+ if((id==='monarch'&&u.trait==='greedy')||u.id==='traveler'||u.sickT>0)return false;
+ // Priest and Necromancer are neighbors (any side) while a Death Knight exists: the Priest goes to cleanse him
+ if(Object.values(U).some(v=>v.form==='dknight')&&(u.id==='priest'||u.id==='necromancer')&&U.priest&&U.necromancer&&rel(U.priest,U.necromancer)&&freeU(U.priest)&&freeU(U.necromancer)){visit(U.priest,U.necromancer,'cleanse');return true}
+ const opts=nbrs(u).filter(h=>pairKind(u,h)!=='none');if(!opts.length)return false; // 'none' pairs never visit each other
+ // Haste potions: a Fighter next to the Alchemist picks Mage neighbors 50% more often
+ const hasted=hasClass(u,'fighter')&&alcNext(u),h=hasted?pickW(opts,v=>hasClass(v,'mage')?1+ODDS.haste:1):pick(opts);
+ if(hasted&&hasClass(h,'mage')){markSeen('haste');poof(u.x,u.y-34,'#7ae0ff')}
+ if(h.id==='monarch'&&reqOf(u)&&!u.asked){visit(u,h,'request');return true} // the first visit to the Monarch is a request
+ if(pairKind(u,h)==='zeal')markSeen('zeal');
+ if(Math.random()<HANGOUT){visit(u,h,null);return true} // just hanging out
+ // the Alchemist's luck: rare and legendary scenes 30% more likely; a Sandstorm: deadly ones three times as likely
+ const list=visitList(u,h),lk=lucky(u)||lucky(h),sand=wxOf(u)==='sandstorm'||wxOf(h)==='sandstorm';
+ const kd=rollList(list,e=>(lk&&(e[1]==='r'||e[1]==='l')?1+ALC_LUCK:1)*(sand&&DEADLY[e[0]]?ODDS.sandDeath:1));
+ if(!kd){visit(u,h,null);return true}
+ playScene(u,h,kd);return true}
+// Start scene kd between u (the one who rolled) and h. Some scenes always have the same visitor, some are cast from a room.
+function playScene(u,h,kd){const N=U.necromancer,busy=()=>{u.wait=1};
+ if(kd==='massprayer'){startGather(u,four(u));return}
+ if(kd==='fourmage'){visit(u,pick(four(u).filter(v=>freeU(v)&&!v.as&&ITEM_FX.potion[v.id])),'fourmage');return}
+ if(kd==='adventure'){const fs=recruitable(u);beginAct(u,'recruit');u.dur=3.4;u.recruits=fs.map(v=>v.id);fs.forEach(v=>{stopIdle(v);v.path=[];v.st='idle';v.wait=6});return}
+ if(kd==='assassin'){const rg=idOf(u)==='rogue'?u:h;visit(rg,rg===u?h:u,'assassin');return} // the Rogue always visits
+ if(kd==='crusade'){if(freeU(U.knight)&&freeU(U.priest))visit(U.knight,U.priest,'crusade');else busy();return}
+ // cast from a room: the sleep spell, swapping rooms, fruit thrown down, the curse, bats, blood, chanting, rot
+ if(kd==='sleep'){if(freeU(N)){beginAct(N,'sleepc');N.dur=2.4}else busy();return}
+ if(kd==='swap'){if(freeU(N)&&freeU(U.wizard)){beginAct(N,'swapc');N.dur=2;N.swapWith='wizard';beginAct(U.wizard,'swapc');U.wizard.dur=2}else busy();return}
+ if(kd==='dknight'){if(freeU(N)&&freeU(U.knight))visit(U.knight,N,'dknight');else busy();return}
+ if(kd==='fruitfall'){const Mr=U.merchant,Pr=U.priest;if(freeU(Mr)&&freeU(Pr)){beginAct(Mr,'fruitdrop');Mr.dur=4;Pr.path=[];Pr.st='idle';Pr.wait=5}else busy();return}
+ if(kd==='curse'){const Mr=U.merchant,Pr=U.priest;if(freeU(Mr)&&freeU(Pr)&&!(Mr.rotT>0)){beginAct(Pr,'curse');Pr.dur=3;Mr.path=[];Mr.st='idle';Mr.wait=4}else busy();return}
+ if(kd==='bats'){const A=U.apothecary;if(freeU(N)&&freeU(A)){beginAct(N,'bats');N.dur=5;N.batTo='apothecary';A.path=[];A.st='idle';A.wait=6}else busy();return}
+ if(kd==='sacrifice'||kd==='chant'||kd==='nrot'){const Mr=U.merchant;
+  if(freeU(N)&&freeU(Mr)&&!(kd==='nrot'&&Mr.rotT>0)&&!(kd==='chant'&&Mr.crowd)){if(kd==='chant'){customerEnter(Mr);if(Mr.crowd)Mr.crowd[0].ttl=7}beginAct(N,kd);N.dur={sacrifice:4.2,chant:6,nrot:3}[kd];Mr.path=[];Mr.st='idle';Mr.wait=kd==='chant'?7:5}else busy();return}
+ // scenes that depend on who else is around
+ if(kd==='metal'){const Wz=idOf(u)==='wizard'?u:h,Bs=Wz===u?h:u,all4=four(Bs).every(v=>v&&hasClass(v,'mage'));kd=Wz.armor?'metaltalk':all4?'greenarmor':'metal'}
+ if(kd==='holyfire'){const Bs=idOf(u)==='blacksmith'?u:h,K=U.knight;if(K&&!K.paladin&&!K.form&&!K.as&&rel(K,Bs))kd='paladin'} // secret: the Knight next to the Blacksmith too
+ if(kd==='bolt'){if(freeU(U.wizard)&&freeU(U.knight))cast(U.wizard,U.knight);else busy();return}
+ // always the same visitor
+ if(kd==='learn'){if(freeU(U.wizard)&&freeU(U.knight))visit(U.knight,U.wizard,'learn');else busy();return}
+ if(kd==='lemons'||kd==='thief'){if(freeU(U.merchant)&&freeU(U.knight))visit(U.knight,U.merchant,kd);else busy();return}
+ if(ROGUE_SCENES.includes(kd)){const R=idOf(u)==='rogue'?u:h,o=R===u?h:u;if(freeU(R)&&freeU(o)){if(kd==='snatch')R.sneak=true;visit(R,o,kd)}else busy();return}
+ if(kd==='bloodorange'){if(freeU(U.merchant)&&freeU(U.necromancer))visit(U.necromancer,U.merchant,kd);else busy();return}
+ if(kd==='tentacle'){if(freeU(U.priest)&&freeU(U.knight))visit(U.knight,U.priest,'tentacle');else busy();return}
+ if(kd==='drain'){visit(idOf(u)==='necromancer'?u:h,idOf(u)==='necromancer'?h:u,'drain');return}
+ visit(u,h,kd)}
 // What a character can ask the Monarch for (REQ_ASK), or null. Only a Knight who is a Paladin has a request.
 function reqOf(u){if(!u||u.as||u.form)return null;if(u.id==='knight')return u.paladin?'paladin':null;return REQ_ASK[u.id]?u.id:null}
 // A granted request: what the Monarch gives (u = who asked, M = the Monarch)
@@ -1017,7 +984,7 @@ function talk(u,dt){
   once('d',2.4,()=>{K.form='dknight';K.glow=0;setLabel(K);poof(K.x,K.y-20,'#3ac85a');poof(K.x,K.y-34,'#1a1a22');N.act=null;N.mood='happy';N.mt=1.5;save()})}
  else if(k==='horde'){end=6.6;let dead=false;// waves of skeletons; 5% the Knight falls
   const mob=u.mobs&&u.mobs[0];if(mob&&K&&Math.abs(mob.x-K.x)>2)K.face=mob.x>K.x?1:-1;
-  once('r',.3,()=>{N.act='raise';N.at=0;u.mobs=[];u.doom=Math.random()<doom(.05,K)});
+  once('r',.3,()=>{N.act='raise';N.at=0;u.mobs=[];u.doom=Math.random()<doom(ODDS.horde,K)});
   for(let i=0;i<3;i++){const b=.6+i*1.7;
    once('m'+i,b,()=>{const s=K.x>N.x?1:-1,hx=h.c*CELL;let x=K.x+s*28;if(x<hx+14||x>hx+82)x=K.x-s*28;x=cl(x,hx+14,hx+82);u.mobs.push({id:'skeleton',x,y:h.r*CELL+FY,t:0,blink:0,face:x>K.x?-1:1})});
    once('f'+i,b+.5,()=>{K.act='prac';K.at=0});
@@ -1101,8 +1068,8 @@ function talk(u,dt){
   once('b',1.6,()=>{if(u.show)u.show.x=Wz.x+(Mr.x>Wz.x?8:-8)});
   once('c',2,()=>{u.show=null;merchantGain(DURIAN_GAIN,Mr.x,Mr.y-50)});
   once('d',2.4,()=>{Wz.mood='hurt';Wz.mt=1.6;say(Wz,'By the stars, what is that smell?!');for(let i=0;i<3;i++)poof(Wz.x-8+i*8,Wz.y-46,'#8aba5a')})}
- else if(k==='jokes'){const Mr=pp.merchant;let dead=false;// Merchant right of the Wizard: jokes and laughter (0.5%: a dark turn)
-  once('0',.1,()=>{u.dark2=luck(doom(ODDS.murder,Wz),u,h)});
+ else if(k==='jokes'||k==='murder'){const Mr=pp.merchant;let dead=false;// Merchant right of the Wizard: jokes and laughter (murder = the rare dark turn)
+  once('0',.1,()=>{u.dark2=k==='murder'});
   if(u.dark2){end=3.6;once('m1',.6,()=>{gest(Mr,'fwd',.6);flashes.push({x:h.c*CELL,y:h.r*CELL,t:0,col:'200,40,40'})});
    once('m2',.9,()=>{Wz.blink=.6;Wz.mood='hurt';Wz.mt=2;markSeen('murder')});once('m3',1.6,()=>{dead=true})}
   else{lines(u.sc2||(u.sc2=pick(JOKES)));once('ha',end-.9,()=>{say(Mr,'Ha ha ha ha!');Mr.hop=Wz.hop=.4;Mr.mood=Wz.mood='happy';Mr.mt=Wz.mt=1.5});once('hb',end-.5,()=>{Mr.hop=Wz.hop=.3})}
@@ -1752,15 +1719,61 @@ $('#reset').onclick=()=>{const b=$('#reset');
 const anim=[],tabRef=$('#tab-ref');
 // Description bubble for Compendium tiles: hover with a mouse, or tap (phones). Tap again or anywhere else to close.
 const tipEl=document.createElement('div');tipEl.id='tip';tipEl.hidden=true;document.body.append(tipEl);let tipOn=null;
+// ---------- Compendium: chances and descriptions, worked out from the rarity lists ----------
+// A tile's % = how likely it is when that kind of action happens: "of his idle activities", "of their visits" (hangouts included), "of the Druid's weather casts".
+const CNAME=id=>id==='anyone'?'anyone':TAG_NAMES[id]?TAG_NAMES[id].slice(2):((COMP_TABS.find(t=>t.id===id)||{}).name||(CH[id]&&CH[id].name)||id);
+const IDLE_COND={nbr:'with a free neighbor',noRight:'with no box to his right',eknight:'only as the Eldritch Knight, with a Wizard on the board',brew:'next to a Merchant, while you have 5 coins',
+ target:'with someone free on the board',alc:'next to the Alchemist',madsci:'the mad scientist (bottom-right space)',others:'with someone to copy',mageTag:'with the Mage tag',
+ spirit:'with all four spaces around him open and empty'};
+const fakeU=id=>({id,r:-9,c:-9});
+// Which character's idle list has key k, and its entry
+function idleEntry(k){if(k.startsWith('prac:'))k='prac';for(const id in IDLES){const e=IDLES[id].find(x=>x[0]===k);if(e)return[id,e]}const e=IDLE_ANY.find(x=>x[0]===k);return e?['anyone',e]:null}
+// % of an idle activity: rarer ones that need a special situation are left out of the commons' share (everyday conditions like a free neighbor count)
+function idlePct(k){const q=idleEntry(k);if(!q)return null;const[id,e]=q;if(e[1]!=='c')return RARITY[e[1]];if(id==='anyone')return null;
+ const base=(IDLES[id]||[]).filter(x=>x[1]==='c'||!x[2]||EVERYDAY[x[2]]);return listChances(base)[base.indexOf(e)]}
+const EVERYDAY={nbr:1,noRight:1,target:1,others:1};
+// Where a visit scene happens: [{a, b, rels}] from PAIRS (a is rel of b)
+function sceneWhere(k){const out=[];for(const p in PAIRS){const rels=Object.keys(PAIRS[p]).filter(r=>{const v=PAIRS[p][r];return v===k||(VISIT_EXPAND[v]||[]).some(e=>e[0]===k)});if(rels.length){const[a,b]=p.split('>');out.push({a,b,rels})}}return out}
+// The list a visit between a and b in that arrangement would roll from (no group scenes), and the % of key k in it
+function pairListIds(a,b,rel){const u=fakeU(a),h=fakeU(b),base=(PAIRS[a+'>'+b]||{})[rel],out=[];if(base&&base!=='none')out.push(...(VISIT_EXPAND[base]||[[base,'c']]));
+ VISIT_ANY.forEach(e=>{if(anyFits(e,u,h)&&e[2]!=='drain'&&!(e[4]&&out.some(x=>x[1]==='c')))out.push([e[2],e[3]])});return out}
+function visitPct(k){const g=VISIT_GROUP.find(e=>e[1]===k);if(g)return(1-HANGOUT)*RARITY[g[2]];const any=VISIT_ANY.find(e=>e[2]===k);
+ if(any&&any[3]!=='c')return(1-HANGOUT)*RARITY[any[3]];
+ if(any){const l=pairListIds(any[0],{'tag:mage':'wizard','tag:fighter':'knight','tag:merchant':'merchant'}[any[1]]||any[1],'none');return(1-HANGOUT)*listChances(l)[l.findIndex(e=>e[0]===k)]}
+ const w=sceneWhere(k)[0];if(!w)return null;const l=pairListIds(w.a,w.b,w.rels[0]),i=l.findIndex(e=>e[0]===k);return i<0?null:(1-HANGOUT)*listChances(l)[i]}
+const wxPct=k=>{const ks=Object.keys(WEATHER_TIERS),l=ks.map(x=>[x,WEATHER_TIERS[x]]);return listChances(l)[ks.indexOf(k)]};
+// The % shown on a tile (null = keep the tile's own label)
+function pctOf(k){if(k.startsWith('wx:'))return wxPct(k.slice(3));const ip=idlePct(k);if(ip!=null)return ip;return visitPct(k)}
+// "Necromancer right of the Knight", "Blacksmith and Druid, any side", ...
+function whereText(k){const g={massprayer:'A Priest whose four neighbors are all free',fourmage:'The Alchemist with Mages on all four sides',adventure:'The Blacksmith with 2 or more Fighter neighbors at home'}[k];if(g)return g;
+ if(k==='drain')return 'Necromancer on the bottom row, the Druid beside him';
+ const any=VISIT_ANY.find(e=>e[2]===k);if(any)return CNAME(any[0])+' and '+(any[1]==='anyone'?'any neighbor':any[1].startsWith('tag:')?'any '+CNAME(any[1]):'the '+CNAME(any[1]))+', any side';
+ const w=sceneWhere(k)[0];if(!w)return null;const rs=w.rels,ph=rs.length===4?'any side of':rs.length===2&&rs.includes('left')&&rs.includes('right')?'left or right of':rs.length===2&&rs.includes('above')&&rs.includes('below')?'above or below':rs.map(r=>r==='left'||r==='right'?r+' of':r).join(' or ');
+ return rs.length===4?CNAME(w.a)+' and the '+CNAME(w.b)+', any side':CNAME(w.a)+' '+ph+' the '+CNAME(w.b)}
+const ITEM_NAME={scroll:'Spell scroll',potion:'Potion',artifact:'Artifact',ingot:'Ingot'};
+const fmtPct=p=>{const v=p*100;return(v<10&&Math.abs(v-Math.round(v))>.05?v.toFixed(v<1?2:1).replace(/0$/,''):Math.round(v))+'%'};
+// The full description of a discovered (or revealed) tile: what kind of action, where, how likely, then the story
+function infoText(k){const fl=hintOf(k).replace(/^Not discovered yet\. /,''),note=NOTE[k]?' '+NOTE[k]:'',p=pctOf(k),pc=p!=null?fmtPct(p):'';
+ if(k.startsWith('wx:'))return "Weather: one of the Druid's casts (he casts instead of visiting), on a random open space, 30 s.\nChance: "+pc+' of his casts.'+note+'\n'+fl;
+ const ie=idleEntry(k);if(ie){const[id,e]=ie,who=k==='promo'?'A Fruit Merchant or Apothecary, next to the Alchemist':id==='anyone'?(e[2]==='rain'?"Anyone living in the Druid's Rain":'Anyone the Monarch refused'):'The '+CNAME(id)+(k.startsWith('prac:')?' with a '+({axe:'battle axe'}[k.slice(5)]||k.slice(5)):'')+(e[2]&&IDLE_COND[e[2]]?', '+IDLE_COND[e[2]]:'');
+  return 'Idle activity: '+who+'.\nChance: '+(pc?pc+' of '+(id==='anyone'||k==='promo'?'their':'his')+' idle activities':'one of the common ones')+(e[2]&&e[1]==='c'?' (when it can happen)':'')+'.'+note+'\n'+fl}
+ const wt=whereText(k),grp=VISIT_GROUP.some(e=>e[1]===k);if(wt&&p!=null)return 'Visit: '+wt+'.\nChance: '+pc+' of '+(grp?'his':'their')+' visits.'+note+'\n'+fl;
+ if(k==='stone')return 'Item: Artifact on the Alchemist.'+note+'\n'+fl;
+ for(const kind in ITEM_KEY)for(const c in ITEM_KEY[kind])if(ITEM_KEY[kind][c]===k)return 'Item: '+ITEM_NAME[kind]+' on '+(c==='*'?'anyone without the Fighter tag':'the '+CNAME(c))+'.'+note+'\n'+fl;
+ return (EGGS.includes(k)?'Secret. ':'')+(DESC[k]||NAMES[k]||'')+(note&&!(DESC[k]||'').includes(NOTE[k])?note:'')}
+// Top of each tab: how this character decides
+const DECIDE_NOTE={druid:'His visits are weather casts instead (and his one request to the Monarch).',monarch:'A greedy Monarch never visits.',traveler:'He never visits, and nobody visits him.',
+ farmer:'Farmers only hoe and carry pitchforks until the harvest.'};
+const decideText=id=>'Every 5-10 seconds: '+Math.round(DECIDE.idle*100)+'% an idle activity, '+Math.round(DECIDE.visit*100)+'% a visit to a neighbor ('+Math.round(HANGOUT*100)+'% of visits are just hanging out), '+Math.round((1-DECIDE.idle-DECIDE.visit)*100)+'% wandering. '+(DECIDE_NOTE[id]||'');
 // Hint for a tile not discovered yet: the description without where the characters must be, which item to use, or any chance (those show once discovered)
 // (leading sentences about placement or chance are dropped; later ones lose "30% more" style numbers, or are dropped if they still give a chance)
 const HINT_CUT=/\b(left of|right of|above|below|any side|next to|beside|bottom row|top row|bottom-right|top-left|four sides|all four|whenever|each time|checked first|idle activities|of their visits|of his visits|weather casts)\b|%/i,HINT_HEAD=/^\s*(spell scroll|potion|artifact|ingot|secret|tap|the druid never visits)/i;
-function hintOf(k){const t=(DESC[k]||'').replace(/(\d)\.(\d)/g,'$1․$2').replace(/\.\.\./g,'…'),ss=t.match(/[^.!?]+[.!?]+["')]*\s*/g)||[t];
+function hintOf(k){if(FLAVOR[k])return 'Not discovered yet. '+FLAVOR[k];const t=(DESC[k]||'').replace(/(\d)\.(\d)/g,'$1․$2').replace(/\.\.\./g,'…'),ss=t.match(/[^.!?]+[.!?]+["')]*\s*/g)||[t];
  let lead=true;const out=ss.map(s=>{const i=s.indexOf(':');if(i>0&&(HINT_CUT.test(s.slice(0,i))||HINT_HEAD.test(s.slice(0,i))))s=' '+s.slice(i+1).trim().replace(/^[a-z]/,c=>c.toUpperCase())+' ';
   if(lead&&HINT_CUT.test(s))return '';lead=false;s=s.replace(/\b\d+% (more|less|higher|fewer)\b/g,'$1');return s.includes('%')?'':s})
   .join('').replace(/․/g,'.').replace(/…/g,'...').replace(/\s+/g,' ').replace(/ ([;,.!?])/g,'$1').trim();
  return 'Not discovered yet. '+(out?out[0].toUpperCase()+out.slice(1):'Keep exploring!')}
-function showTip(tile,k,hint){tipEl.textContent=hint?hintOf(k):DESC[k]||NAMES[k]||'';tipEl.hidden=false;tipOn=tile;
+function showTip(tile,k,hint){tipEl.textContent=hint?hintOf(k):infoText(k);tipEl.hidden=false;tipOn=tile;
  const R=tile.getBoundingClientRect(),w=Math.min(260,innerWidth-16);tipEl.style.width=w+'px';
  tipEl.style.left=cl(R.left+R.width/2-w/2,8,innerWidth-w-8)+scrollX+'px';tipEl.style.top=R.bottom+scrollY+6+'px'}
 function hideTip(){tipEl.hidden=true;tipOn=null}
@@ -2185,7 +2198,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
   nscoff:[P('nscoff'),pv],smithk:[P('smithk'),pv*ODDS.smithtalk],reforge:[P('reforge'),pv*(1-ODDS.smithtalk)],metal:[P('metal'),pv],greenarmor:[P('greenarmor'),'4 Mages'],metaltalk:[P('metaltalk'),'armor'],
   awkjoke:[P('awkjoke'),pv],flirt:[P('flirt'),pv],childhood:[P('childhood'),pv],holyfire:[P('holyfire'),pv],rbuy:[P('rbuy'),pv],
   // Druid weather, familiars, Archdruid; the Monarch
-  metalitch:[P('metalitch'),pv],story:[I('story'),Math.round(ODDS.rainStory*100)+'% in rain'],wolfkill:[I('wolfkill'),ODDS.werewolf],archdruid:[I('archdruid')],ddiscount:[I('ddiscount'),'secret'],court:[I('court'),'100%']};
+  metalitch:[P('metalitch'),pv],story:[I('story'),'in rain'],wolfkill:[I('wolfkill'),ODDS.werewolf],archdruid:[I('archdruid')],ddiscount:[I('ddiscount'),'secret'],court:[I('court'),'100%']};
  for(const k in WX_NAMES)T['wx:'+k]=[I('wx:'+k),ODDS.visit*ODDS.weather[k]];
  // the Monarch's requests (granted: 80% generous / 10% greedy), the Traveling Merchant
  REQS.forEach(q=>T['rq:'+q]=[P('rq:'+q),'80% / 10%']);
@@ -2193,6 +2206,8 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
   wares:[I('wares'),'100%'],troad:[I('troad'),'5 min'],tshop:[I('tshop'),TRAVEL_ARTIFACT+' coins'],tscroll:[I('tscroll')],tpotion:[I('tpotion')],tingot:[I('tingot')]});
  ROGUE_SCENES.forEach(k=>{if(!T[k])T[k]=[P(k),pv]});
  WEAPONS.forEach(w=>T['prac:'+w]=[I('prac',w),K.prac]);
+ // every chance comes from the rarity lists (pctOf); tiles without one keep their own label
+ for(const k in T){const p=pctOf(k);if(p!=null)T[k][1]=p}
  // Tabs, one per character type, with "found / total" (hidden easter eggs count in the total)
  // Only characters you have unlocked get a tab, and neighbor scenes only show once both characters are unlocked
  const unl=compUnl,pairsOf=tabPairs,allOf=tabKeys;
@@ -2203,7 +2218,8 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  info.textContent='Discovered '+vis.filter(k=>S.seen[k]).length+' of '+vis.length+' so far (more appear as you unlock characters). Every '+DISCOVER_EVERY+' discoveries pay '+DISCOVER_REWARD+' coins ('+left+' more to the next reward).';
  // Tags: what this character's class tags are and what changes them
  const tn=document.createElement('p');tn.className='cinfo';tn.innerHTML='<b>Tags:</b> '+(TAG_NOTES[tab.id]||'').replace(/\{(\w+)\}/g,(m,c)=>tagOf(c));
- b.append(bar,info,tn);
+ const dn=document.createElement('p');dn.className='cinfo';dn.innerHTML='<b>Decisions:</b> '+decideText(tab.id); // how often this character idles, visits or wanders
+ b.append(bar,info,tn,dn);
  // A grid of tiles (easter eggs only once found)
  const grid=(keys,items)=>{const d=document.createElement('div');d.className='cg';
   // easter eggs show once found, or once revealed by the Priest's studies
