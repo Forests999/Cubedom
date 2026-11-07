@@ -1,6 +1,6 @@
 {
-  "name": "Cubedom",
-  "short_name": "Cubedom",
+  "name": "Squaredom",
+  "short_name": "Squaredom",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "any",

@@ -78,7 +78,8 @@ function relocate(id,r,c){
  if(oid){const o=U[oid];detach(o);o.r=u.r;o.c=u.c;toHome(o)}
  const cells=[[u.r,u.c],[r,c]];u.r=r;u.c=c;toHome(u);clearRooms(cells,[u,oid&&U[oid]].filter(Boolean));checkUnlocks();
 }
-function removeUnit(id,quiet){const u=U[id];detach(u);clearRooms([[u.r,u.c]],[u]);for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===id)demons.splice(i,1);if(!quiet)poof(u.c*CELL+48,u.r*CELL+48);dropBub(u);u.lb.remove();delete U[id];ui()}
+// (the Monarch leaving the board ends every grudge: no more revenge)
+function removeUnit(id,quiet){const u=U[id];if(id==='monarch')Object.values(U).forEach(v=>{v.grudge=false});detach(u);clearRooms([[u.r,u.c]],[u]);for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===id)demons.splice(i,1);if(!quiet)poof(u.c*CELL+48,u.r*CELL+48);dropBub(u);u.lb.remove();delete U[id];ui()}
 function poof(x,y,c){parts.push({x,y,t:0,life:.5,c:c||'#eadcb4'})}
 function hearts(u){parts.push({x:u.x,y:u.y-44,t:0,life:1.3,k:'h'})}
 // Speech bubbles: each character has their own, so several conversations can show at the same time
@@ -553,7 +554,8 @@ function stepAway(v,dt){v.awayT-=dt;if(v.awayT>0)return;toHome(v);v.al=1;
  // back from the Blacksmith's adventure: 10% did not make it; the others bring loot by their tags
  if(v.awayKind==='adventure'){v.awayKind=null;advDone(v);if(Math.random()<doom(ODDS.adventureDeath,v)){const nm=CH[idOf(v)].name;kill(v);toast('The '+nm+' did not come back from the adventure.');return}
   poof(v.x,v.y-24,'#f2d870');v.mood='happy';v.mt=2;v.hop=.5;const got=[];
-  if(hasClass(v,'fighter')){const n=1+Math.floor(Math.random()*10);addCoins(n,v.x,v.y-50);got.push(n+' coins')}
+  if(hasClass(v,'fighter')){const n=[0,0,0].reduce(s=>s+1+Math.floor(Math.random()*10),0); // 3d10 coins
+ addCoins(n,v.x,v.y-50);got.push(n+' coins')}
   if(hasClass(v,'mage')&&Math.random()<ODDS.advScroll){addItem('scroll',1,v.x+14,v.y-60);got.push('a scroll')}
   if(hasClass(v,'merchant')&&Math.random()<ODDS.advArtifact){addItem('artifact',1,v.x-14,v.y-60);got.push('an artifact')}
   say(v,'Back from the adventure!'+(got.length?' I found '+got.join(' and ')+'.':''));return}
@@ -626,7 +628,9 @@ const ITEM_KEY={scroll:{wizard:'fireball',knight:'glow',priest:'banish',necroman
  potion:{wizard:'teleport',knight:'flex',priest:'wings',necromancer:'sniff',merchant:'backwards',apothecary:'apcoins',alchemist:'alcpotion',rogue:'spook',druid:'dpotion'},artifact:{priest:'relic',alchemist:null},ingot:{'*':'reinforce'}};
 // the Traveling Merchant buys items; an ingot does nothing on the Monarch (no tags, ever)
 Object.assign(ITEM_FX.scroll,{traveler:(u)=>tSell(u,'scroll')});Object.assign(ITEM_FX.potion,{traveler:(u)=>tSell(u,'potion')});Object.assign(ITEM_FX.ingot,{traveler:(u)=>tSell(u,'ingot'),monarch:()=>false});
-ITEM_KEY.scroll.traveler='tscroll';ITEM_KEY.potion.traveler='tpotion';ITEM_KEY.ingot={'*':'reinforce',traveler:'tingot'};
+// the Druid refuses an ingot (metal is SO uncomfortable): you keep it
+ITEM_FX.ingot.druid=u=>{u.mood='roll';u.mt=1.5;gest(u,'fwd',1);say(u,pick(['Metal? On me? Absolutely not.','I would rather wear a beehive.','Take it back. It is cold and it clanks.']));return 'keep'};
+ITEM_KEY.scroll.traveler='tscroll';ITEM_KEY.potion.traveler='tpotion';ITEM_KEY.ingot={'*':'reinforce',traveler:'tingot',druid:'dingot'};
 ITEM_KEY.scroll.druid='dscroll';ITEM_KEY.artifact.druid='archdruid';ITEM_KEY.scroll.blacksmith='bscroll';ITEM_KEY.potion.blacksmith='bpotion';
 // ---- items on the Alchemist ----
 function alcLuck(u){u.luckT=ALC_LUCK_TIME;poof(u.x,u.y-24,'#f2c84a');u.hop=.5;u.mood='happy';u.mt=1.5;say(u,'Luck for my neighbors! For one minute.')}
@@ -653,8 +657,8 @@ function useItem(kind,r,c){
  // A spell scroll on the buried Druid's space revives him; nothing else works on him while he is buried
  if(u&&u.dead){if(kind!=='scroll'){no();return}S.inv.scroll--;showItems();revive(u);markSeen('drevive');save();return}
  const fx=u&&(ITEM_FX[kind][u.id]||ITEM_FX[kind]['*']); // '*' = works on anyone (the ingot)
- if(!home||!fx){no();return}
- u.act=null;u.path=[];u.after=null;u.mv=false;u.st='idle';u.wait=2;
+ if(!fx||!(home||(kind==='ingot'&&u&&!u.dead&&u.st!=='away'))){no();return} // an ingot works even when the owner is busy or out (not away from the board)
+ if(kind!=='ingot'){u.act=null;u.path=[];u.after=null;u.mv=false;u.st='idle';u.wait=2} // (an ingot works without interrupting whatever the character is doing)
  const res=fx(u);if(res===false){no();return}
  if(res!=='keep')S.inv[kind]--; // 'keep' = it happened, but you get the item back (the Blacksmith hands the potion back)
  showItems();markSeen(ITEM_KEY[kind][u.id]||ITEM_KEY[kind]['*']);save();
@@ -1678,8 +1682,9 @@ function buildShelf(){
  ALL_CHARS.forEach(id=>{if(S.un[id])S.ever[id]=1}); // remember every character ever unlocked (its Compendium tab stays)
  const have=ALL_CHARS.filter(id=>SHELF_CHARS.includes(id)||S.un[id]);
  tray.querySelector('.lbl').textContent='Shelf: drag a box up to the board ('+have.length+'/'+ALL_CHARS.length+' unlocked)';
- // (the Traveling Merchant is not on the shelf while he is on the road)
- have.filter(id=>!(id==='traveler'&&S.travelRoam)).forEach(id=>{
+ // every character in order: unlocked ones as boxes (dimmed while on the board, or the Traveling Merchant on the road); locked ones as a blank box with a clue (SHELF_CLUE)
+ ALL_CHARS.forEach(id=>{if(!have.includes(id)){const b=document.createElement('button');b.className='it locked';b.disabled=true;b.innerHTML='<canvas width="96" height="96"></canvas><span class="clue"></span>';b.lastChild.textContent=SHELF_CLUE[id]||'???';
+   const t=b.firstChild.getContext('2d');t.fillStyle='#221e3c';t.fillRect(0,0,96,96);t.font='34px '+GAME_FONT;t.fillStyle='#4a4470';t.textAlign='center';t.fillText('?',48,62);tray.appendChild(b);return}
   const b=document.createElement('button');b.className='it';b.dataset.id=id;b.innerHTML='<canvas width="96" height="96"></canvas>'+CH[id].name+tagImg(id);
   const t=b.firstChild.getContext('2d');t.imageSmoothingEnabled=false;box(t,id,0,0,'longsword');spr(t,id,'ok',48,FY,1,0);
   // placing costs coins for the Apothecary, and for every Monarch after the first one of the game
@@ -1687,8 +1692,9 @@ function buildShelf(){
    const nm=CH[id].name;if((S.coins||0)<cost){toast('Setting up the '+nm+' costs '+cost+' coins. You have '+(S.coins||0)+'.');return}
    ask('Set up the '+nm+' for '+cost+' coins?','Pay '+cost,()=>{if(at(r,c)||U[id]||S.coins<cost)return;spend(cost);showCoins();addUnit(id,r,c,false);parts.push({k:'txt',s:'-'+cost,x:c*CELL+48,y:r*CELL+30,t:0,life:1.4,icon:'coin'})})};
   const tap=()=>{const f=firstFree();if(f)place(f[0],f[1],id==='wizard'?pick(WIZ_RANDOM):null);else toast('No free space. Tap a locked space to buy more room.')};
-  draggable(b,()=>!U[id],(r,c)=>{if(!isOpen(r,c))toast('That space is locked. Tap it to buy it.');else if(!at(r,c))place(r,c)},tap);
-  b.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&!U[id]){e.preventDefault();tap()}};
+  const free=()=>!U[id]&&!(id==='traveler'&&S.travelRoam); // not on the board (the Traveling Merchant: not on the road either)
+  draggable(b,free,(r,c)=>{if(!isOpen(r,c))toast('That space is locked. Tap it to buy it.');else if(!at(r,c))place(r,c)},tap);
+  b.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&free()){e.preventDefault();tap()}};
   tray.appendChild(b);
  });
  ui();
@@ -1752,27 +1758,44 @@ function whereText(k){const g={massprayer:'A Priest whose four neighbors are all
  return rs.length===4?CNAME(w.a)+' and the '+CNAME(w.b)+', any side':CNAME(w.a)+' '+ph+' the '+CNAME(w.b)}
 const ITEM_NAME={scroll:'Spell scroll',potion:'Potion',artifact:'Artifact',ingot:'Ingot'};
 const fmtPct=p=>{const v=p*100;return(v<10&&Math.abs(v-Math.round(v))>.05?v.toFixed(v<1?2:1).replace(/0$/,''):Math.round(v))+'%'};
-// The full description of a discovered (or revealed) tile: what kind of action, where, how likely, then the story
-function infoText(k){const fl=hintOf(k).replace(/^Not discovered yet\. /,''),note=NOTE[k]?' '+NOTE[k]:'',p=pctOf(k),pc=p!=null?fmtPct(p):'';
- if(k.startsWith('wx:'))return "Weather: one of the Druid's casts (he casts instead of visiting), on a random open space, 30 s.\nChance: "+pc+' of his casts.'+note+'\n'+fl;
- const ie=idleEntry(k);if(ie){const[id,e]=ie,who=k==='promo'?'A Fruit Merchant or Apothecary, next to the Alchemist':id==='anyone'?(e[2]==='rain'?"Anyone living in the Druid's Rain":'Anyone the Monarch refused'):'The '+CNAME(id)+(k.startsWith('prac:')?' with a '+({axe:'battle axe'}[k.slice(5)]||k.slice(5)):'')+(e[2]&&IDLE_COND[e[2]]?', '+IDLE_COND[e[2]]:'');
-  return 'Idle activity: '+who+'.\nChance: '+(pc?pc+' of '+(id==='anyone'||k==='promo'?'their':'his')+' idle activities':'one of the common ones')+(e[2]&&e[1]==='c'?' (when it can happen)':'')+'.'+note+'\n'+fl}
- const wt=whereText(k),grp=VISIT_GROUP.some(e=>e[1]===k);if(wt&&p!=null)return 'Visit: '+wt+'.\nChance: '+pc+' of '+(grp?'his':'their')+' visits.'+note+'\n'+fl;
- if(k==='stone')return 'Item: Artifact on the Alchemist.'+note+'\n'+fl;
- for(const kind in ITEM_KEY)for(const c in ITEM_KEY[kind])if(ITEM_KEY[kind][c]===k)return 'Item: '+ITEM_NAME[kind]+' on '+(c==='*'?'anyone without the Fighter tag':'the '+CNAME(c))+'.'+note+'\n'+fl;
+// The description of a discovered (or revealed) tile: "Visit (64% chance): Priest left of the Knight. A short prayer..."
+function infoText(k){const fl=flavorOf(k),note=NOTE[k]?' '+NOTE[k]:'',p=pctOf(k),pc=p!=null?fmtPct(p):'';
+ if(k.startsWith('wx:'))return "Weather ("+pc+" of the Druid's casts): a random open space, for 30 s. "+fl+note;
+ const ie=idleEntry(k);if(ie){const[id,e]=ie,who=k==='promo'?'a Fruit Merchant or Apothecary, next to the Alchemist':id==='anyone'?(e[2]==='rain'?"anyone living in the Druid's Rain":'anyone the Monarch refused'):'the '+CNAME(id)+(k.startsWith('prac:')?' with a '+({axe:'battle axe'}[k.slice(5)]||k.slice(5)):'')+(e[2]&&IDLE_COND[e[2]]?', '+IDLE_COND[e[2]]:'');
+  return 'Idle ('+(pc?pc+' chance':'a common one')+'): '+who+'. '+fl+note}
+ const wt=whereText(k);if(wt&&p!=null)return 'Visit ('+pc+' chance): '+wt+'. '+fl+note;
+ if(k==='stone')return 'Item: artifact on the Alchemist. '+fl+note;
+ if(k.startsWith('rq:')){const q=k.slice(3);return 'Visit (his first visit to the Monarch; granted 80% by a generous one, 10% by a greedy one): '+(q==='paladin'?'a Paladin':'the '+CNAME(q))+' next to the Monarch, any side. '+fl}
+ for(const kind in ITEM_KEY)for(const c in ITEM_KEY[kind])if(ITEM_KEY[kind][c]===k)return 'Item: '+ITEM_NAME[kind].toLowerCase()+' on '+(c==='*'?'anyone without the Fighter tag':'the '+CNAME(c))+'. '+fl+note;
  return (EGGS.includes(k)?'Secret. ':'')+(DESC[k]||NAMES[k]||'')+(note&&!(DESC[k]||'').includes(NOTE[k])?note:'')}
+// A little nudge on how to make an undiscovered tile happen (shown in its clue). HINTS in data.js wins; otherwise it is made from the rules.
+const COMPASS={left:'west',right:'east',above:'north',below:'south'};
+const HINT_COND={nbr:' when a neighbor is around',noRight:' when there is open land to his east',eknight:' after a certain spellbook changes him',brew:' beside a shopkeeper, if your purse allows',
+ alc:' while the Alchemist lives next door',madsci:' in one particular corner',mageTag:' with a little magic of his own',spirit:' with nothing but open land around him'};
+function unlockHint(k){if(HINTS[k])return HINTS[k];const p=pctOf(k),how=p==null?'':p<.01?' Once in a blue moon.':p<.06?' A rare sight.':p<.2?' Not every time, though.':'';
+ if(k.startsWith('wx:'))return "One of the Druid's weather spells."+how;
+ const ie=idleEntry(k);if(ie){const[id,e]=ie;if(id==='anyone')return '';if(k.startsWith('prac:'))return 'The Knight practices with whatever hangs on his wall.';
+  return 'Something the '+CNAME(id)+' does at home'+(HINT_COND[e[2]]||'')+'.'+how}
+ const any=VISIT_ANY.find(e=>e[2]===k);if(any)return 'The '+CNAME(any[0])+' and '+(any[1]==='anyone'?'any neighbor':any[1].startsWith('tag:')?'any '+CNAME(any[1]):'the '+CNAME(any[1]))+', on any side.'+how;
+ const w=sceneWhere(k)[0];if(w){const A=CNAME(w.a),B=CNAME(w.b),rs=w.rels,i=[...k].reduce((s,ch)=>s+ch.charCodeAt(0),0)%4;
+  if(rs.length===4)return ['Any side works for the '+A+' and the '+B+'.','The '+A+' and the '+B+', side by side, any which way.','Put the '+A+' anywhere beside the '+B+'.','The '+A+' and the '+B+' just need to be neighbors.'][i]+how;
+  const d=rs.map(r=>COMPASS[r]).join(' or ');
+  return ['Rumor says the '+A+' must live '+d+' of the '+B+'.','Try the '+A+' just '+d+' of the '+B+'.','The '+A+', settled '+d+' of the '+B+', might see this.','Neighbors whisper: the '+A+' to the '+d+', the '+B+' close by.'][i]+how}
+ for(const kind in ITEM_KEY)for(const c in ITEM_KEY[kind])if(ITEM_KEY[kind][c]===k)return 'Try '+(kind==='ingot'||kind==='artifact'?'an ':'a ')+ITEM_NAME[kind].toLowerCase()+' on '+(c==='*'?'someone who is no Fighter':'the '+CNAME(c))+'.';
+ return ''}
+function hintOf(k){const f=flavorOf(k),h=unlockHint(k);return 'Not discovered yet. '+(f||'Keep exploring!')+(h?' '+h:'')}
 // Top of each tab: how this character decides
 const DECIDE_NOTE={druid:'His visits are weather casts instead (and his one request to the Monarch).',monarch:'A greedy Monarch never visits.',traveler:'He never visits, and nobody visits him.',
  farmer:'Farmers only hoe and carry pitchforks until the harvest.'};
-const decideText=id=>'Every 5-10 seconds: '+Math.round(DECIDE.idle*100)+'% an idle activity, '+Math.round(DECIDE.visit*100)+'% a visit to a neighbor ('+Math.round(HANGOUT*100)+'% of visits are just hanging out), '+Math.round((1-DECIDE.idle-DECIDE.visit)*100)+'% wandering. '+(DECIDE_NOTE[id]||'');
+const decideText=id=>'Every 5-10 seconds a character does an activity: Idle ('+Math.round(DECIDE.idle*100)+'% chance), Visit a neighbor ('+Math.round(DECIDE.visit*100)+'% chance) or Wanders their room ('+Math.round((1-DECIDE.idle-DECIDE.visit)*100)+'% chance).'+(DECIDE_NOTE[id]?' '+DECIDE_NOTE[id]:'');
 // Hint for a tile not discovered yet: the description without where the characters must be, which item to use, or any chance (those show once discovered)
 // (leading sentences about placement or chance are dropped; later ones lose "30% more" style numbers, or are dropped if they still give a chance)
 const HINT_CUT=/\b(left of|right of|above|below|any side|next to|beside|bottom row|top row|bottom-right|top-left|four sides|all four|whenever|each time|checked first|idle activities|of their visits|of his visits|weather casts)\b|%/i,HINT_HEAD=/^\s*(spell scroll|potion|artifact|ingot|secret|tap|the druid never visits)/i;
-function hintOf(k){if(FLAVOR[k])return 'Not discovered yet. '+FLAVOR[k];const t=(DESC[k]||'').replace(/(\d)\.(\d)/g,'$1․$2').replace(/\.\.\./g,'…'),ss=t.match(/[^.!?]+[.!?]+["')]*\s*/g)||[t];
+function flavorOf(k){if(FLAVOR[k])return FLAVOR[k];const t=(DESC[k]||'').replace(/(\d)\.(\d)/g,'$1․$2').replace(/\.\.\./g,'…'),ss=t.match(/[^.!?]+[.!?]+["')]*\s*/g)||[t];
  let lead=true;const out=ss.map(s=>{const i=s.indexOf(':');if(i>0&&(HINT_CUT.test(s.slice(0,i))||HINT_HEAD.test(s.slice(0,i))))s=' '+s.slice(i+1).trim().replace(/^[a-z]/,c=>c.toUpperCase())+' ';
   if(lead&&HINT_CUT.test(s))return '';lead=false;s=s.replace(/\b\d+% (more|less|higher|fewer)\b/g,'$1');return s.includes('%')?'':s})
   .join('').replace(/․/g,'.').replace(/…/g,'...').replace(/\s+/g,' ').replace(/ ([;,.!?])/g,'$1').trim();
- return 'Not discovered yet. '+(out?out[0].toUpperCase()+out.slice(1):'Keep exploring!')}
+ return out?out[0].toUpperCase()+out.slice(1):''}
 function showTip(tile,k,hint){tipEl.textContent=hint?hintOf(k):infoText(k);tipEl.hidden=false;tipOn=tile;
  const R=tile.getBoundingClientRect(),w=Math.min(260,innerWidth-16);tipEl.style.width=w+'px';
  tipEl.style.left=cl(R.left+R.width/2-w/2,8,innerWidth-w-8)+scrollX+'px';tipEl.style.top=R.bottom+scrollY+6+'px'}
@@ -2110,6 +2133,7 @@ function idleTile(kind,wp){
   else if(kind==='tshop'){const tt=t%4;box(x,'traveler',0,0);spr(x,'traveler_f',tt>1&&tt<2.4?'happy':'ok',40,FY,1,0,1,1,tt>.8&&tt<2?'fwd':'none');if(tt>1&&tt<2.6)drawItem(x,'artifact',56,Math.round(FY-40-(tt-1)*8),2);drawShopCoin(x,0,0)}
   else if(kind==='tscroll'||kind==='tpotion'||kind==='tingot'){const tt=t%4,it=kind==='tscroll'?'scroll':kind==='tpotion'?'potion':'ingot';box(x,'traveler',0,0);spr(x,'traveler_m',tt>1?'happy':'ok',48,FY,1,tt>1&&tt<1.5?-4:0,1,1,tt>1&&tt<2?'fwd':'none');
    if(tt<1)drawItem(x,it,48,Math.round(10+tt*30),2);else if(tt<2.6)drawItem(x,'coin',62,Math.round(FY-40-(tt-1)*8),2)}
+  else if(kind==='dingot'){const tt=t%4;box(x,'druid',0,1);spr(x,'druid',tt>1&&tt<3?'roll':'ok',48,FY,Math.floor(tt*4)%2&&tt>1&&tt<2.2?-1:1,0,1,1,tt>1&&tt<2.4?'fwd':'none');if(tt<1)drawItem(x,'ingot',48,Math.round(10+tt*30),2);else if(tt<2.6)drawItem(x,'ingot',Math.round(62+(tt-1)*14),Math.round(FY-30-Math.sin((tt-1)*2)*14),2)}
   else if(kind==='court'){const tt=t%5;box(x,'monarch',0,0);drawRoomLife(x,'monarch',0,0,t);spr(x,Math.floor(t/5)%2?'monarch_f':'monarch_m','ok',36,FY,1,0,1,1,poseOf('court',tt))}
   // ---- Blacksmith ----
   else if(kind==='forgework'||kind==='smelt'||kind==='coal'||kind==='pour'||kind==='leadgold'){const tt=t%5,hx=kind==='smelt'||kind==='coal'?44:52,u={act:kind,at:1+tt*.9,x:hx,y:FY,face:-1,smeltWhat:Math.floor(t/5)%2?'sword':'armor'};box(x,'blacksmith',0,0);drawRoomLife(x,'blacksmith',0,0,t);
@@ -2147,7 +2171,7 @@ function idleTile(kind,wp){
 // Things a scene gives you, shown as small icons in the bottom-left of its Compendium tile
 const GAINS={tshop:['artifact'],tscroll:['coin'],tpotion:['coin'],tingot:['coin'],royalpatron:['artifact'],'rq:alchemist':['potion'],'rq:druid':['coin'],pour:['ingot'],leadgold:['coin'],adventure:['coin','scroll','artifact'],ingotshop:['ingot'],nefarious:['coin'],poisons:['coin'],wine:['coin'],promo:['coin'],twopot:['potion'],dungeon:['coin','artifact','scroll','potion'],bloodorange:['coin'],ntrade:['potion'],heal:['coin'],roguemage:['artifact'],stone:['coin'],greenapple:['coin'],cobrew:['potion'],mcust:['coin'],acust:['coin'],farm:['coin'],apcoins:['coin'],appotion:['potion'],starfruit:['coin'],durian:['coin'],advertW:['coin'],tithe:['coin'],crusade:['coin','artifact'],craft:['scroll'],forge:['scroll','potion'],brew:['potion'],sell:['coin'],apple:['coin'],apoth:['potion'],desk:['scroll']};
 const ICONURL={};function iconURL(k){if(!ICONURL[k]){const c=document.createElement('canvas');c.width=16;c.height=16;const x=c.getContext('2d');drawItem(x,k,8,9,1);ICONURL[k]=c.toDataURL()}return ICONURL[k]}
-const ITEMLBL={tscroll:'scroll',tpotion:'potion',tingot:'ingot',archdruid:'artifact',bpotion:'potion',bscroll:'scroll',dpotion:'potion',dscroll:'scroll',drevive:'scroll',reinforce:'ingot',nscroll:'scroll',alcpotion:'potion',alcscroll:'scroll',stone:'artifact 80%',elixir:'artifact 20%',spook:'potion',roguemage:'scroll',apcoins:'potion',appotion:'scroll',monkey:'scroll',backwards:'potion',fireball:'scroll',glow:'scroll',banish:'scroll',raise:'scroll',teleport:'potion',flex:'potion',wings:'potion',sniff:'potion',relic:'artifact'};
+const ITEMLBL={dingot:'ingot',tscroll:'scroll',tpotion:'potion',tingot:'ingot',archdruid:'artifact',bpotion:'potion',bscroll:'scroll',dpotion:'potion',dscroll:'scroll',drevive:'scroll',reinforce:'ingot',nscroll:'scroll',alcpotion:'potion',alcscroll:'scroll',stone:'artifact 80%',elixir:'artifact 20%',spook:'potion',roguemage:'scroll',apcoins:'potion',appotion:'scroll',monkey:'scroll',backwards:'potion',fireball:'scroll',glow:'scroll',banish:'scroll',raise:'scroll',teleport:'potion',flex:'potion',wings:'potion',sniff:'potion',relic:'artifact'};
 function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  const b=$('#refs');b.innerHTML='';
  // % chance (or a short label) in the top right corner
@@ -2202,7 +2226,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  for(const k in WX_NAMES)T['wx:'+k]=[I('wx:'+k),ODDS.visit*ODDS.weather[k]];
  // the Monarch's requests (granted: 80% generous / 10% greedy), the Traveling Merchant
  REQS.forEach(q=>T['rq:'+q]=[P('rq:'+q),'80% / 10%']);
- Object.assign(T,{rqdeny:[P('rqdeny'),'20% / 90%'],drain:[P('drain'),pv*ODDS.drain],royalfuneral:[I('royalfuneral'),'on death'],regicide:[I('regicide'),'secret'],royalpatron:[I('royalpatron'),'secret'],
+ Object.assign(T,{dingot:[I('dingot')],rqdeny:[P('rqdeny'),'20% / 90%'],drain:[P('drain'),pv*ODDS.drain],royalfuneral:[I('royalfuneral'),'on death'],regicide:[I('regicide'),'secret'],royalpatron:[I('royalpatron'),'secret'],
   wares:[I('wares'),'100%'],troad:[I('troad'),'5 min'],tshop:[I('tshop'),TRAVEL_ARTIFACT+' coins'],tscroll:[I('tscroll')],tpotion:[I('tpotion')],tingot:[I('tingot')]});
  ROGUE_SCENES.forEach(k=>{if(!T[k])T[k]=[P(k),pv]});
  WEAPONS.forEach(w=>T['prac:'+w]=[I('prac',w),K.prac]);
@@ -2215,11 +2239,11 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  tabs.forEach(t=>{const all=allOf(t),btn=document.createElement('button');btn.className='ctab'+(t===tab?' on':'');
   btn.innerHTML=t.name+tagImg(t.id)+' <small>'+all.filter(k=>S.seen[k]).length+'/'+all.length+'</small>';btn.onclick=()=>buildRef(t.id);bar.append(btn)});
  const vis=[...new Set(tabs.flatMap(allOf))],n=foundCount(),left=DISCOVER_EVERY-n%DISCOVER_EVERY,info=document.createElement('p');info.className='cinfo';
- info.textContent='Discovered '+vis.filter(k=>S.seen[k]).length+' of '+vis.length+' so far (more appear as you unlock characters). Every '+DISCOVER_EVERY+' discoveries pay '+DISCOVER_REWARD+' coins ('+left+' more to the next reward).';
+ info.textContent='Discovered '+n+' of '+ALL_KEYS.length+'. Every '+DISCOVER_EVERY+' discoveries pay '+DISCOVER_REWARD+' coins ('+left+' more to the next reward).'; // out of everything in the game, unlocked or not
  // Tags: what this character's class tags are and what changes them
  const tn=document.createElement('p');tn.className='cinfo';tn.innerHTML='<b>Tags:</b> '+(TAG_NOTES[tab.id]||'').replace(/\{(\w+)\}/g,(m,c)=>tagOf(c));
- const dn=document.createElement('p');dn.className='cinfo';dn.innerHTML='<b>Decisions:</b> '+decideText(tab.id); // how often this character idles, visits or wanders
- b.append(bar,info,tn,dn);
+ const dn=document.createElement('p');dn.className='cinfo';dn.innerHTML='<b>Decisions.</b> '+decideText(tab.id); // how often this character idles, visits or wanders
+ b.append(bar,info,dn,tn);
  // A grid of tiles (easter eggs only once found)
  const grid=(keys,items)=>{const d=document.createElement('div');d.className='cg';
   // easter eggs show once found, or once revealed by the Priest's studies
@@ -2255,7 +2279,7 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
  if(b.dataset.t==='ref')buildRef(compTab);else{hideTip();fitLabels()}});
 
 // ---------- state ----------
-function ui(){document.querySelectorAll('.it[data-id]').forEach(b=>b.classList.toggle('used',!!U[b.dataset.id]))}
+function ui(){document.querySelectorAll('.it[data-id]').forEach(b=>b.classList.toggle('used',!!U[b.dataset.id]||(b.dataset.id==='traveler'&&!!S.travelRoam)))} // dimmed: on the board, or on the road
 function save(){if(resetting)return;try{const b={};for(const i in U)if(!isFarm(i))b[i]=[U[i].r,U[i].c,U[i].weapon,TEMP_FORM[U[i].form]?null:U[i].form,U[i].color,U[i].backwards?1:0,U[i].skin||0,U[i].mageTag?1:0,U[i].dead?1:0,U[i].reinforced?1:0,U[i].paladin?1:0,U[i].armor?1:0,U[i].fam||0,U[i].arch?1:0,U[i].trait||0,extras(U[i])];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,spent:S.spent||0,inv:S.inv,seen:S.seen,rewarded:S.rewarded||0,cells:S.cells,bought:S.bought||0,revealed:S.revealed,goldCells:S.goldCells,ever:S.ever,tabDone:S.tabDone||{},bigRewarded:S.bigRewarded||0,monarchs:S.monarchs||0,travelRoam:!!S.travelRoam}))}catch(e){}}
 // [15] in a saved box: everything newer, by name (royal colors, requests made, grudges, the Monarch's gifts, the Traveling Merchant's time left)
 const EXTRA_KEYS=['pal','asked','grudge','sir','helper','staff','barrel','sacks','pine','minions','travelT'];

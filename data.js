@@ -926,3 +926,34 @@ const FLAVOR={zeal:'The Knight is so fired up he visits everyone more often.',cr
  spar:'Sword versus magic shield. Nobody wins, everybody sweats.',braver:'The Priest admits the Fighter is braver. The Fighter pretends not to blush.',
  forge:'They conjure a free scroll or potion out of thin air.',drain:'Black lightning drains the Druid\'s life, and he dies.',
  regicide:'Someone the Monarch refused comes for revenge, from anywhere on the board.',royalpatron:'The generous ruler rewards the adventurers with an artifact.'};
+// The Druid refuses an ingot (you keep it)
+NAMES.dingot='Ingot on Druid: refused';DESC.dingot='Ingot on the Druid: he refuses to wear metal and hands it straight back. You keep the ingot.';FLAVOR.dingot='He refuses to wear metal and hands it straight back.';
+COMP_TABS.find(t=>t.id==='druid').items.splice(3,0,'dingot');
+// ---------- clues ----------
+// Shelf: a locked character shows a blank box with this cryptic clue (no name)
+const SHELF_CLUE={necromancer:'When a holy one falls, something dark may stir.',merchant:'A heavy purse draws the trade.',apothecary:'Let commerce sit beside the arcane.',
+ alchemist:'A wizard brewing beside a healer, the healer to his west...',rogue:'Learn fifty of the realm\'s stories.',druid:'Claim every corner of the land.',
+ blacksmith:'Spend freely. The forge hears coins jingle.',monarch:'A kingdom needs ten households at once.',traveler:'Four traders, shoulder to shoulder, in a square.'};
+// Compendium: unlock hints written by hand (the rest are made from the rules, unlockHint in game.js)
+const HINTS={};
+Object.assign(HINTS,{cleanse:'A Death Knight on the board, and a Priest beside the Necromancer, might set things right.',
+ haste:'Fighters living beside the Alchemist seem to be in an awful hurry.',adventure:'The Blacksmith with two or more Fighters for neighbors gets restless.',
+ greenarmor:'A Blacksmith surrounded by magic on every side can work wonders for a Wizard.',metaltalk:'Once the Wizard wears the green armor, he will not stop talking about it.',
+ desk:'A Wizard with a shopkeeper and a fellow spellcaster next door sets up a desk.',slip:'Apples on the floor of the Fruit Merchant\'s shop, a Priest to the west... watch your step.',
+ massprayer:'A Priest with all four neighbors at home might call them in.',funeral:'When a Fighter beside the Priest falls, he will honor them.',
+ apoth:'Look for a gold coin in a certain shop.',ingotshop:'The forge has a gold coin in the corner too.',tshop:'The wagon\'s stand takes coins as well.',
+ stone:'Hand the Alchemist something truly ancient.',elixir:'Not every ancient thing the Alchemist touches becomes gold...',
+ twopot:'Buying potions with the Alchemist next door to the Apothecary can be a bargain.',fourmage:'Surround the Alchemist with magic on all four sides.',
+ madsci:'The Alchemist in the far south-east corner gets... ideas.',tiny:'A Rogue with a little magic of his own might fit a shrinking potion.',
+ graveyard:'A Rogue beside the Necromancer, both down on the bottom row.',dburied:'Even Druids are not forever.',drevive:'A buried Druid\'s sapling answers to a spell scroll.',
+ ddiscount:'The Druid\'s herbs make the Apothecary\'s prices friendlier, side by side.',story:'Let the Druid\'s rain fall on someone at home.',
+ wolfkill:'Moonlight on an occupied room is a dangerous thing.',bronze:'Some Knights simply shine differently. Keep placing them.',
+ paladin:'Holy fire at the forge, with the Knight right next door.',blackwiz:'A brand new Wizard in the far north-west corner dresses darker.',
+ skulls:'The Necromancer feels at home deep down, on the bottom row.',royalpatron:'A generous ruler beside the forge rewards brave adventurers.',
+ royalfuneral:'Kings and Queens fall too.',regicide:'A refused request is never forgotten.',rqdeny:'Not every ruler says yes.',
+ troad:'Wait for the Traveling Merchant to move on, and he will be back someday.'});
+['paladin','blacksmith','wizard','priest','alchemist','rogue','merchant','apothecary','necromancer','druid'].forEach(q=>{HINTS['rq:'+q]=(q==='paladin'?'A Paladin':'The '+(NAMES[q]||q[0].toUpperCase()+q.slice(1)))+' living next to the Monarch may ask for a favor.'});
+Object.assign(FLAVOR,{beast:'The formula works! He turns into a beast-man and goes after a neighbor.',spirit:'He communes with a nature spirit, who whispers him a secret.',
+ 'prac:shield':'A squire comes to spar with a wooden sword while the Knight blocks.','prac:spear':'Poke, poke, poke. Very serious poking.','prac:glaive':'Big sweeping swings. Stand back.',
+ 'prac:longsword':'Classic swordplay against an invisible foe.','prac:axe':'Big, heavy chops. Firewood for a week.'});
+HINTS.promo='A shopkeeper with the Alchemist next door sometimes sells his potions.';
