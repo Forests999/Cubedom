@@ -967,3 +967,20 @@ COMP_TABS.push({id:'super',name:'Super Secrets',pairs:[],idle:[],items:['ss:gold
 Object.assign(NAMES,{'ss:gold':'Super secret: a golden kingdom','ss:alltags':'Super secret: one of everything'});
 Object.assign(DESC,{'ss:gold':'Super secret: every space on the board turned golden by philosopher\'s stones. A kingdom of gold!',
  'ss:alltags':'Super secret: one character with every tag at once: Fighter, Mage, Merchant and Monstrous.'});
+// Shelf clues, as the owner wrote them
+Object.assign(SHELF_CLUE,{necromancer:'When death befalls a holy follower, a new worshipper arrives.',blacksmith:'When the economy is booming, a new business arrives.',
+ apothecary:'When commerce has access to magic...',rogue:'After 50 tales, he sneaks in...',druid:'Explore every mile of land.',merchant:'The sound of a heavy purse draws him in.',
+ monarch:'A large kingdom needs a leader.',traveler:'A market square brings new wares.',alchemist:'A maker of potions: wizardry and ingredients, side by side.'});
+// ---------- group events: checked every GROUP_EVERY seconds, ODDS.group chance one happens (if the board allows), lasting GROUP_TIME ----------
+// market = four Merchant-tagged characters in a 2x2 square (2d10 coins at the end); feast = any three characters side by side in a row
+const GROUP_EVERY=300,GROUP_TIME=60;ODDS.group=.2;
+const MARKET_SHOUT=['Fresh goods! Best prices in the square!','Step right up, step right up!','Two for one! Today only!','Finest wares in the kingdom!','Haggling welcome! Mostly.'];
+const FEAST_SAY=['Pass the roast, please!','A toast! To good neighbors!','Is there more pie?','Mmm. Delicious.','I could get used to this.','Who made the gravy? Marvelous!'];
+COMP_TABS.push({id:'group',name:'Group Events',pairs:[],idle:['grp:market','grp:feast'],items:[]});
+Object.assign(NAMES,{'grp:market':'Market day','grp:feast':'A grand feast'});
+Object.assign(DESC,{'grp:market':'Four Merchants in a 2x2 square put up big tents for a market day. A crowd comes to buy for 1 minute (nobody else visits them), then you get 2d10 coins.',
+ 'grp:feast':'Three characters side by side in a row: their rooms become one feast hall and they dine together at a long table for 1 minute. Nobody else joins.'});
+Object.assign(FLAVOR,{'grp:market':'Tents go up, a crowd pours in, and the merchants shout about their wares. The coins roll in at closing time.',
+ 'grp:feast':'Three rooms become one great hall, and three neighbors share a long table piled with food.'});
+Object.assign(HINTS,{'grp:market':'Four shopkeepers in a tidy square might throw a market day.','grp:feast':'Three neighbors in a row might share one long table.'});
+NOTE['grp:market']='2d10 coins at the end.';

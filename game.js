@@ -144,6 +144,36 @@ function buyArtifact(t){if(mourning()){toast('The kingdom is in mourning. No sho
   parts.push({k:'txt',s:'-'+TRAVEL_ARTIFACT,x:t.x-14,y:t.y-56,t:0,life:1.4,icon:'coin'});addItem('artifact',1,t.x+14,t.y-40);t.hop=.5;t.mood='happy';t.mt=1.2;gest(t,'fwd',.8);say(t,'A fine choice. Genuine! Mostly.');markSeen('tshop')})}
 // Items on the Traveling Merchant: he buys scrolls and potions (TRAVEL_BUY coins) and ingots (no Fighter tag for him)
 function tSell(u,kind){if(mourning())return false;addCoins(TRAVEL_BUY[kind],u.x,u.y-50);u.hop=.4;u.mood='happy';u.mt=1.2;gest(u,'fwd',.8);say(u,kind==='ingot'?'Good steel! It will sell well up north.':'I will take that off your hands.')}
+// ---- group events (GROUP_EVERY, ODDS.group, GROUP_TIME in data.js): a market day or a feast, separate from everyone's own decisions ----
+// While one runs its characters are busy (st 'grp'): nobody visits them and they stay in their rooms. Not saved.
+let grp=null,grpClock=0;
+function groupOptions(){const ok=(r,c)=>{const v=U[at(r,c)];return v&&freeU(v)&&atHome(v)&&!isFarm(v.id)?v:null},out=[];
+ for(let r=0;r<ROWS-1;r++)for(let c=0;c<COLS-1;c++){const q=[[r,c],[r,c+1],[r+1,c],[r+1,c+1]].map(p=>ok(p[0],p[1]));if(q.every(v=>v&&hasClass(v,'merchant')))out.push({kind:'market',us:q})} // four Merchants in a 2x2 square
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS-2;c++){const q=[0,1,2].map(d=>ok(r,c+d));if(q.every(Boolean))out.push({kind:'feast',us:q})} // three side by side in a row
+ return out}
+function startGroup(o){const rs=o.us.map(v=>v.r),cs=o.us.map(v=>v.c);
+ grp={kind:o.kind,ids:o.us.map(v=>v.id),pos:o.us.map(v=>[v.r,v.c]),t:0,box:[Math.min(...rs),Math.min(...cs),Math.max(...rs)-Math.min(...rs)+1,Math.max(...cs)-Math.min(...cs)+1]};
+ o.us.forEach((v,i)=>{stopIdle(v);v.path=[];v.act=null;v.gx=null;v.st='grp';v.gwait=.5+Math.random()*2;v.mood='happy';v.mt=2;
+  if(o.kind==='feast'){v.x=v.c*CELL+48;v.y=v.r*CELL+FY;v.face=i===0?1:i===2?-1:pick([1,-1])}});
+ markSeen('grp:'+o.kind);toast(o.kind==='market'?'Market day! The merchants put up their tents and a crowd pours in.':'A feast! Three neighbors sit down at one long table.')}
+function endGroup(done){if(!grp)return;const g0=grp;grp=null;g0.ids.forEach(id=>{const v=U[id];if(v&&v.st==='grp'){v.st='idle';v.wait=1+Math.random()*2;v.mv=false;v.gx=null}});
+ if(done&&g0.kind==='market'){const n=1+Math.floor(Math.random()*10)+1+Math.floor(Math.random()*10),M=U[g0.ids[0]];addCoins(n,M?M.x:null,M?M.y-50:null);toast('The market closes. Sales brought in '+n+' coins!')} // 2d10 coins
+ if(done&&g0.kind==='feast')toast('The feast is over. Everyone heads home happy and full.')}
+function stepGroup(dt){grpClock+=dt;
+ if(grpClock>=GROUP_EVERY){grpClock-=GROUP_EVERY;if(!grp&&!rf&&Math.random()<ODDS.group){const o=groupOptions();if(o.length)startGroup(pick(o))}}
+ if(!grp)return;grp.t+=dt;
+ // it stops early if a character is gone, moved, or pulled away (a funeral, for example)
+ if(grp.ids.some((id,i)=>{const v=U[id];return !v||v.st!=='grp'||v.r!==grp.pos[i][0]||v.c!==grp.pos[i][1]})){endGroup(false);return}
+ if(grp.t>=GROUP_TIME)endGroup(true)}
+// A character in a group event: Merchants stroll their stall and shout; diners stay seated, chat and toast
+function stepGrpUnit(u,dt){const bx=u.c*CELL;u.mv=false;
+ if((u.gwait-=dt)<=0){u.gwait=2.5+Math.random()*3;
+  if(grp&&grp.kind==='market'){u.gx=bx+18+Math.random()*60;if(Math.random()<.55){say(u,pick(MARKET_SHOUT));gest(u,'up',1)}}
+  else if(Math.random()<.55){say(u,pick(FEAST_SAY));u.hop=.3;gest(u,'fwd',.8)}}
+ if(u.gx!=null&&Math.abs(u.gx-u.x)>.5){const d=u.gx-u.x,s=22*dt;u.face=d>0?1:-1;u.x+=Math.abs(d)<s?d:Math.sign(d)*s;u.mv=true;u.t+=dt}}
+const grpRect=()=>{const[r,c,h,w]=grp.box;return[c*CELL,r*CELL,w*CELL,h*CELL]};
+function drawGroupBack(c,t){const[x,y,w,h]=grpRect();if(grp.kind==='market'){drawMarketBack(c,x,y,w,h);drawMarketCrowd(c,x,y,w,h,t)}else drawFeastBack(c,x,y,w,t);
+ c.strokeStyle='#000';c.lineWidth=4;c.strokeRect(x+2,y+2,w-4,h-4)} // one big room with one frame
 function mkBolt(s,t){const sx=s.x,sy=s.y-40,ex=t.x,ey=t.y-26,n=Math.max(3,Math.round((ey-sy)/10)),p=[[sx,sy]];
  for(let i=1;i<n;i++)p.push([sx+(ex-sx)*i/n+Math.random()*14-7,sy+(ey-sy)*i/n]);p.push([ex,ey]);
  return{p,t:0,cells:[[s.c*CELL,s.r*CELL],[t.c*CELL,t.r*CELL]]}}
@@ -523,7 +553,7 @@ function markSeen(k){k=SEEN_ALIAS[k]||k;if(!k||S.seen[k])return;S.seen[k]=1;save
 const ALL_KEYS=[...new Set(COMP_TABS.flatMap(t=>[...t.pairs,...t.idle,...t.items]))];
 const foundCount=()=>ALL_KEYS.filter(k=>S.seen[k]).length;
 // Which characters have a Compendium tab (once unlocked, always; 'anyone' and tags count as unlocked), and the tiles a tab shows
-const compUnl=id=>id==='anyone'||id==='super'||!!TAG_NAMES[id]||SHELF_CHARS.includes(id)||!!S.un[id]||!!(S.ever&&S.ever[id]);
+const compUnl=id=>id==='anyone'||id==='super'||id==='group'||!!TAG_NAMES[id]||SHELF_CHARS.includes(id)||!!S.un[id]||!!(S.ever&&S.ever[id]);
 const tabPairs=t=>t.pairs.filter(k=>(PAIR_WITH[k]||[]).every(compUnl)),tabKeys=t=>[...tabPairs(t),...t.idle,...t.items];
 function checkDiscoveries(){const n=foundCount(),due=Math.floor(n/DISCOVER_EVERY);
  // a character's whole tab discovered (secrets too): +1 artifact, once per tab
@@ -1465,7 +1495,7 @@ function step(dt){
  bubs.forEach(u=>{if((!u.talker&&(!U[u.id]||U[u.id]!==u))||(u.bubT-=dt)<=0)dropBub(u)}); // talker = a creature that speaks (the demon whispering to the Rogue)
  refreshTags();
  rains.forEach(q=>q.t+=dt);rains=rains.filter(q=>q.t<6);
- stepWeather(dt);stepRoyal(dt);stepTraveler(dt);
+ stepWeather(dt);stepRoyal(dt);stepTraveler(dt);stepGroup(dt);
  for(const id in U){const u=U[id];
   if(u.dead)continue; // a buried Druid does nothing at all
   if(u.id==='druid'&&!u.pet)u.pet={kind:u.fam||'bear',x:u.x,y:u.y,face:1}; // his animal: grizzly bear, eagle or wolf
@@ -1490,6 +1520,7 @@ function step(dt){
   if(u.made)u.made.t+=dt;if(u.beam){u.beam.t+=dt;if(u.beam.t>.5)u.beam=null}
   if(u.st==='sleep'){stepSleep(u,dt);continue}
   if(u.st==='away'){stepAway(u,dt);continue} // on crusade
+  if(u.st==='grp'){stepGrpUnit(u,dt);continue} // in a group event (market day, feast)
   // the Traveling Merchant moves on when his time is up (once he is not in the middle of something)
   if(u.id==='traveler'&&(u.travelT-=dt)<=0&&(u.st==='idle'||u.st==='walk'||u.st==='act')&&!u.hosting&&!u.target){travelerLeave(u);continue}
   if(u.disguiseT>0)u.disguiseT-=dt;if(u.as&&u.disguiseT<=0&&!u.target&&!u.hosting&&(u.st==='idle'||u.st==='walk'))undisguise(u); // the Rogue's disguise wears off
@@ -1538,6 +1569,7 @@ function render(){
   if(id==='rogue'&&id!==dm&&graveyardOn(u))drawGraveyard(g,x,y,T); // secret: next to the Necromancer on the bottom row
   if(id!==dm)drawRoomLife(g,id,x,y,T)} // candle flames, clouds
  (S.goldCells||[]).forEach(q=>{if(isOpen(q[0],q[1]))drawGoldCell(g,q[1]*CELL,q[0]*CELL,T)}); // philosopher's stones: golden spaces
+ if(grp)drawGroupBack(g,T); // a group event turns its rooms into one market square or feast hall
  Object.values(U).forEach(u=>u.fxs.forEach(f=>drawFx(f)));
  live.forEach(u=>{if(u.act==='funeral')drawGrave(g,u.c*CELL,u.r*CELL)});
  live.forEach(u=>{const a=u.appr;if(u.helper&&a&&u.id!==dm)spr(g,'apprentice','ok',a.x,u.r*CELL+FY-3,a.face,a.walk?Math.sin(a.t*14):0,1,.8,'none',a.walk?stepOf(a.t):0)}); // the Blacksmith's apprentice // the Priest's funeral
@@ -1576,6 +1608,7 @@ function render(){
   spr(g,...args);
   if(u.glow>0){g.globalCompositeOperation='lighter';args[6]=u.al*bl*(.25+.15*Math.sin(T*4));spr(g,...args);g.globalCompositeOperation='source-over';glowSparkles(g,u.x,u.y,T)}
   if(low>0)g.restore()});
+ if(grp&&grp.kind==='feast'){const[x,y,w]=grpRect();drawFeastFront(g,x,y,w)} // the long table, in front of the diners
  live.forEach(u=>{
   if(u.orc){const o=u.orc,hit=o.blink>0,ob=hit&&Math.floor(o.blink*14)%2?.2:1;spr(g,'orc',hit?'hurt':'mad',o.x,o.y,u.x>o.x?1:-1,0,ob,1)}
   if(u.und){const d=u.und,rise=cl(d.t/.9,0,1),hit=d.blink>0;if(d.t<1.4)drawGreenCircle(g,d.x,d.y,cl(d.t/.4,0,1),T);
@@ -1768,6 +1801,7 @@ function infoText(k){const fl=flavorOf(k),note=NOTE[k]?' '+NOTE[k]:'',p=pctOf(k)
   return 'Idle ('+(pc?pc+' chance':'a common one')+'): '+who+'. '+fl+note}
  const wt=whereText(k);if(wt&&p!=null)return 'Visit ('+pc+' chance): '+wt+'. '+fl+note;
  if(k==='stone')return 'Item: artifact on the Alchemist. '+fl+note;
+ if(k.startsWith('grp:'))return 'Group event (20% chance every 5 minutes): '+(k==='grp:market'?'four Merchants in a 2x2 square, at home and free':'any three characters side by side in a row, at home and free')+', for 1 minute. '+fl+note;
  if(k.startsWith('rq:')){const q=k.slice(3);return 'Visit (his first visit to the Monarch; granted 80% by a generous one, 10% by a greedy one): '+(q==='paladin'?'a Paladin':'the '+CNAME(q))+' next to the Monarch, any side. '+fl}
  for(const kind in ITEM_KEY)for(const c in ITEM_KEY[kind])if(ITEM_KEY[kind][c]===k)return 'Item: '+ITEM_NAME[kind].toLowerCase()+' on '+(c==='*'?'anyone without the Fighter tag':'the '+CNAME(c))+'. '+fl+note;
  return (EGGS.includes(k)?'Secret. ':'')+(DESC[k]||NAMES[k]||'')+(note&&!(DESC[k]||'').includes(NOTE[k])?note:'')}
@@ -1799,7 +1833,10 @@ function flavorOf(k){if(FLAVOR[k])return FLAVOR[k];const t=(DESC[k]||'').replace
   if(lead&&HINT_CUT.test(s))return '';lead=false;s=s.replace(/\b\d+% (more|less|higher|fewer)\b/g,'$1');return s.includes('%')?'':s})
   .join('').replace(/․/g,'.').replace(/…/g,'...').replace(/\s+/g,' ').replace(/ ([;,.!?])/g,'$1').trim();
  return out?out[0].toUpperCase()+out.slice(1):''}
-function showTip(tile,k,hint){tipEl.textContent=hint?hintOf(k):infoText(k);tipEl.hidden=false;tipOn=tile;
+// Every description starts with the entry's title in bold (from NAMES, without any chance in brackets or a "Secret:" label)
+const escH=s=>String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+const titleOf=k=>(NAMES[k]||k).replace(/\s*\([^)]*%[^)]*\)/g,'').replace(/^(Super secret|Secret): /i,'').replace(/[.!?]$/,'');
+function showTip(tile,k,hint){tipEl.innerHTML='<b>'+escH(titleOf(k))+'.</b> '+escH(hint?hintOf(k):infoText(k));tipEl.hidden=false;tipOn=tile;
  const R=tile.getBoundingClientRect(),w=Math.min(260,innerWidth-16);tipEl.style.width=w+'px';
  tipEl.style.left=cl(R.left+R.width/2-w/2,8,innerWidth-w-8)+scrollX+'px';tipEl.style.top=R.bottom+scrollY+6+'px'}
 function hideTip(){tipEl.hidden=true;tipOn=null}
@@ -1984,7 +2021,7 @@ function pairDiagram(k){
 function poofTile(c,x,y,k,col){const s=Math.max(1,7*(1-k));c.fillStyle=col||'#6a9a3a';for(let i=0;i<8;i++){const a=i*Math.PI/4;c.fillRect(x+Math.cos(a)*k*28-s/2,y+Math.sin(a)*k*28-s/2,s,s)}}
 const flash=(on,tt)=>on&&Math.floor(tt*14)%2?.2:1;
 function idleTile(kind,wp){
- const wide=kind==='fireball'||kind==='raise'||kind==='nscroll'||kind==='wave'||kind==='alcpotion',[c,x]=mkc(wide?192:96,96,NAMES[kind]+(wp?' ('+wp+')':''));
+ const wide=kind==='grp:market'||kind==='grp:feast'||kind==='fireball'||kind==='raise'||kind==='nscroll'||kind==='wave'||kind==='alcpotion',[c,x]=mkc(wide?192:96,96,NAMES[kind]+(wp?' ('+wp+')':''));
  anim.push(t=>{x.clearRect(0,0,wide?192:96,96);
   if(kind==='read'||kind==='magic'){box(x,'wizard',0,0);spr(x,'wizard','ok',48,FY,1,0,1,1,poseOf(kind,t));drawAct(x,{act:kind,at:t,x:48,y:FY,face:1})}
   else if(kind==='demon'){const tt=t%4.6,sk=sinkOf(tt);box(x,'wizard',0,0);
@@ -2136,6 +2173,8 @@ function idleTile(kind,wp){
   else if(kind==='tshop'){const tt=t%4;box(x,'traveler',0,0);spr(x,'traveler_f',tt>1&&tt<2.4?'happy':'ok',40,FY,1,0,1,1,tt>.8&&tt<2?'fwd':'none');if(tt>1&&tt<2.6)drawItem(x,'artifact',56,Math.round(FY-40-(tt-1)*8),2);drawShopCoin(x,0,0)}
   else if(kind==='tscroll'||kind==='tpotion'||kind==='tingot'){const tt=t%4,it=kind==='tscroll'?'scroll':kind==='tpotion'?'potion':'ingot';box(x,'traveler',0,0);spr(x,'traveler_m',tt>1?'happy':'ok',48,FY,1,tt>1&&tt<1.5?-4:0,1,1,tt>1&&tt<2?'fwd':'none');
    if(tt<1)drawItem(x,it,48,Math.round(10+tt*30),2);else if(tt<2.6)drawItem(x,'coin',62,Math.round(FY-40-(tt-1)*8),2)}
+  else if(kind==='grp:market'){drawMarketBack(x,0,0,192,96);drawMarketCrowd(x,0,0,192,96,t);spr(x,'merchant','happy',40,FY,1,0,1,1,Math.floor(t)%3===0?'up':'none');spr(x,'apothecary','happy',136,FY,-1,0,1,1,Math.floor(t+1.5)%3===0?'up':'none')}
+  else if(kind==='grp:feast'){drawFeastBack(x,0,0,192,t);spr(x,'knight','happy',48,FY,1,Math.floor(t*2)%5===0?-3:0);spr(x,'wizard','happy',144,FY,-1,Math.floor(t*2+2)%5===0?-3:0,1,1,Math.floor(t)%4===0?'fwd':'none');drawFeastFront(x,0,0,192)}
   else if(kind==='ss:gold'){x.fillStyle='#1a1733';x.fillRect(0,0,96,96);for(let r=0;r<4;r++)for(let c=0;c<5;c++){x.fillStyle='#c8962a';x.fillRect(4+c*18,12+r*18,16,16);x.fillStyle='#f2c84a';x.fillRect(5+c*18,13+r*18,14,14);x.fillStyle='#fff0a8';x.fillRect(6+c*18,14+r*18,4,2);if(Math.floor(t*3+r+c*2)%7===0){x.fillStyle='#ffffff';x.fillRect(12+c*18,18+r*18,2,2)}}}
   else if(kind==='ss:alltags'){box(x,'alchemist',0,0);spr(x,'alchemist_mad','happy',48,FY,1,0,1,1,'both');['fighter','mage','merchant','monstrous'].forEach((g2,i)=>{TAG_ICON[g2].forEach(r=>{x.fillStyle=r[4];x.fillRect(6+r[0]*2,8+i*17+r[1]*2,r[2]*2,r[3]*2)})})}
   else if(kind==='dingot'){const tt=t%4;box(x,'druid',0,1);spr(x,'druid',tt>1&&tt<3?'roll':'ok',48,FY,Math.floor(tt*4)%2&&tt>1&&tt<2.2?-1:1,0,1,1,tt>1&&tt<2.4?'fwd':'none');if(tt<1)drawItem(x,'ingot',48,Math.round(10+tt*30),2);else if(tt<2.6)drawItem(x,'ingot',Math.round(62+(tt-1)*14),Math.round(FY-30-Math.sin((tt-1)*2)*14),2)}
@@ -2231,7 +2270,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  for(const k in WX_NAMES)T['wx:'+k]=[I('wx:'+k),ODDS.visit*ODDS.weather[k]];
  // the Monarch's requests (granted: 80% generous / 10% greedy), the Traveling Merchant
  REQS.forEach(q=>T['rq:'+q]=[P('rq:'+q),'80% / 10%']);
- Object.assign(T,{'ss:gold':[I('ss:gold'),'super secret'],'ss:alltags':[I('ss:alltags'),'super secret'],dingot:[I('dingot')],rqdeny:[P('rqdeny'),'20% / 90%'],drain:[P('drain'),pv*ODDS.drain],royalfuneral:[I('royalfuneral'),'on death'],regicide:[I('regicide'),'secret'],royalpatron:[I('royalpatron'),'secret'],
+ Object.assign(T,{'grp:market':[I('grp:market'),'20% / 5 min'],'grp:feast':[I('grp:feast'),'20% / 5 min'],'ss:gold':[I('ss:gold'),'super secret'],'ss:alltags':[I('ss:alltags'),'super secret'],dingot:[I('dingot')],rqdeny:[P('rqdeny'),'20% / 90%'],drain:[P('drain'),pv*ODDS.drain],royalfuneral:[I('royalfuneral'),'on death'],regicide:[I('regicide'),'secret'],royalpatron:[I('royalpatron'),'secret'],
   wares:[I('wares'),'100%'],troad:[I('troad'),'5 min'],tshop:[I('tshop'),TRAVEL_ARTIFACT+' coins'],tscroll:[I('tscroll')],tpotion:[I('tpotion')],tingot:[I('tingot')]});
  ROGUE_SCENES.forEach(k=>{if(!T[k])T[k]=[P(k),pv]});
  WEAPONS.forEach(w=>T['prac:'+w]=[I('prac',w),K.prac]);
@@ -2248,7 +2287,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  // Tags: what this character's class tags are and what changes them
  const tn=document.createElement('p');tn.className='cinfo';tn.innerHTML='<b>Tags:</b> '+(TAG_NOTES[tab.id]||'').replace(/\{(\w+)\}/g,(m,c)=>tagOf(c));
  const dn=document.createElement('p');dn.className='cinfo';dn.innerHTML='<b>Decisions.</b> '+decideText(tab.id); // how often this character idles, visits or wanders
- if(tab.id==='super'){const sp=document.createElement('p');sp.className='cinfo';sp.textContent='Super Secrets belong to no character and have no hints or clues. They come from simply playing around. Good luck!';b.append(bar,info,sp)}else b.append(bar,info,dn,tn);
+ if(tab.id==='super'||tab.id==='group'){const sp=document.createElement('p');sp.className='cinfo';sp.textContent=tab.id==='super'?'Super Secrets belong to no character and have no hints or clues. They come from simply playing around. Good luck!':'Group events are separate from what each character decides on their own. Every 5 minutes there is a 20% chance one happens, if the board has the right characters in the right shape. It lasts 1 minute.';b.append(bar,info,sp)}else b.append(bar,info,dn,tn);
  // A grid of tiles (easter eggs only once found)
  const grid=(keys,items)=>{const d=document.createElement('div');d.className='cg';
   // easter eggs show once found, or once revealed by the Priest's studies
@@ -2272,7 +2311,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  [...new Set(pairs.map(other))].sort((a,c)=>nameOf(a).localeCompare(nameOf(c))).forEach(id=>{const keys=pairs.filter(k=>other(k)===id),h=document.createElement('h3');
   h.className='sub';h.innerHTML='with '+(id==='anyone'?'anyone':TAG_NAMES[id]?TAG_NAMES[id]+tagOf(id.slice(4)):'the '+nameOf(id)+tagImg(id))+' <small>'+count(keys)+'</small>';b.append(h,grid(keys))});
  const items=tab.items.filter(k=>!EGGS.includes(k)),eggs=tab.items.filter(k=>EGGS.includes(k));
- if(tab.idle.length)b.append(head('Idle activities',tab.idle),grid(tab.idle));if(items.length)b.append(head('Items and shops',items),grid(items,1)); // (empty groups are left out)
+ if(tab.idle.length)b.append(head(tab.id==='group'?'Events':'Idle activities',tab.idle),grid(tab.idle));if(items.length)b.append(head('Items and shops',items),grid(items,1)); // (empty groups are left out)
  // Secrets: their own group at the bottom; hidden until found but counted
  if(eggs.length){b.append(head('Secrets',eggs));if(eggs.some(k=>S.seen[k]||S.revealed[k]))b.append(grid(eggs,1));
   else{const q=document.createElement('p');q.className='cinfo';q.textContent='Not found yet. Keep exploring!';b.append(q)}}

@@ -848,3 +848,34 @@ function outFront(c,id,w){const k=outKey(id,w);if(!OUTDOOR[k])return;
   if(k==='druid1'||k==='druid0'){c.fillStyle=k==='druid0'?'#24402a':'#3a7a34';[[28,64],[66,68],[88,62]].forEach(q=>{c.fillRect(q[0],q[1],5,2);c.fillRect(q[0]+1,q[1]-2,1,2);c.fillRect(q[0]+3,q[1]-3,1,3)})}} // ferns
  if(k==='farmer'){const gr=c.createLinearGradient(0,0,0,40);gr.addColorStop(0,'rgba(255,240,180,.18)');gr.addColorStop(1,'rgba(255,240,180,0)');c.fillStyle=gr;c.fillRect(48,0,48,40)} // sunshine
  const gr=c.createRadialGradient(48,50,40,48,50,74);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,'+(k==='druid0'?.4:.18)+')');c.fillStyle=gr;c.fillRect(0,0,96,96)}
+
+// ---------- group events: the market square (2x2 rooms) and the feast hall (3 rooms in a row) ----------
+const MARKET_TENTS=[['#c04040','#f0e8d8'],['#3a6ad0','#f2c84a'],['#3a8a4a','#f0e8d8'],['#8a4ac0','#f2c84a']];
+const MARKET_GOODS=[['apple','orange','banana'],['potion','purplepotion','poison'],['ingot','star','coin'],['wine','ale','bloodorange']];
+function drawMarketBack(c,x0,y0,w,h){c.save();c.beginPath();c.rect(x0,y0,w,h);c.clip();
+ for(let row=0;row*96<h;row++){const y=y0+row*96,gr=c.createLinearGradient(0,y,0,y+66);gr.addColorStop(0,'#5a9ad8');gr.addColorStop(1,'#cfe8f4');c.fillStyle=gr;c.fillRect(x0,y,w,66);
+  for(let i=0;i<w;i+=24){const hh=10+Math.floor(rnd(i+row*7)*10);c.fillStyle=['#c8b898','#b8a888','#d0c0a0'][(i/24+row)%3];c.fillRect(x0+i,y+44-hh,22,hh+22);c.fillStyle='#8a4a3a';c.beginPath();c.moveTo(x0+i-2,y+44-hh);c.lineTo(x0+i+11,y+35-hh);c.lineTo(x0+i+24,y+44-hh);c.closePath();c.fill();c.fillStyle='#4a5a7a';c.fillRect(x0+i+8,y+50-hh,5,5)} // the town behind
+  c.fillStyle='#9a8a74';c.fillRect(x0,y+66,w,30);for(let r2=0;r2<4;r2++)for(let i=-(r2%2)*4;i<w;i+=8){c.fillStyle=shade('#9a8a74',(rnd(i*3+r2*11+row*5)-.5)*.25);c.fillRect(x0+i+1,y+67+r2*7,7,6)} // cobbles
+  for(let col=0;col*96<w;col++){const tx=x0+col*96,n=(row*2+col)%4,tc=MARKET_TENTS[n];
+   c.fillStyle='#5a3a20';c.fillRect(tx+14,y+36,3,30);c.fillRect(tx+79,y+36,3,30); // tent posts
+   for(let s=0;s<8;s++){c.fillStyle=s%2?tc[1]:tc[0];c.beginPath();c.moveTo(tx+48,y+16);c.lineTo(tx+10+s*9.5,y+36);c.lineTo(tx+10+(s+1)*9.5,y+36);c.closePath();c.fill();c.fillRect(Math.round(tx+10+s*9.5),y+36,10,4)} // striped canopy
+   c.fillStyle='#f2c84a';c.fillRect(tx+47,y+12,2,4);c.fillStyle=tc[0];c.fillRect(tx+49,y+12,5,3); // a little flag on top
+   c.fillStyle='#8a5a2a';c.fillRect(tx+18,y+52,60,14);c.fillStyle='#a8784a';c.fillRect(tx+18,y+52,60,2);MARKET_GOODS[n].forEach((gd,i)=>drawItem(c,gd,tx+30+i*18,y+48,1))}} // counter and wares
+ c.restore()}
+// Shoppers strolling across the square, a row of them on each floor
+function drawMarketCrowd(c,x0,y0,w,h,t){c.save();c.beginPath();c.rect(x0,y0,w,h);c.clip();const who=['commoner','noble1','noble2','farmer','squire','commoner'];
+ for(let row=0;row*96<h;row++)for(let i=0;i<4;i++){const sp=12+i*4,dir=i%2?-1:1,span=w+40,p=((t*sp+i*53+row*31)%span),x=dir>0?x0-20+p:x0+w+20-p;
+  spr(c,who[(i+row)%who.length],'happy',x,y0+row*96+FY-5,dir,Math.sin(t*9+i)*.6,1,.85,i===1?'fwd':'none',stepOf(t+i))}
+ c.restore()}
+// The feast hall behind the diners (stone wall, banners, torches, plank floor)
+function drawFeastBack(c,x0,y0,w,t){c.save();c.beginPath();c.rect(x0,y0,w,96);c.clip();c.fillStyle='#5a4a48';c.fillRect(x0,y0,w,66);
+ for(let row=0,y=y0;y<y0+66;row++,y+=11)for(let x=x0-(row%2)*10,i=0;x<x0+w;x+=20,i++){c.fillStyle=shade('#5a4a48',(rnd(row*7+i*3)-.5)*.16);c.fillRect(x+1,y+1,19,10)}
+ c.fillStyle='#4a3020';c.fillRect(x0,y0+66,w,30);for(let y=y0+66;y<y0+96;y+=5){c.fillStyle='#3a2416';c.fillRect(x0,y+4,w,1)}
+ for(let i=1;i<w/96;i++){const bx=x0+i*96-8;c.fillStyle='#8a1a2a';c.fillRect(bx,y0+22,16,26);c.fillStyle='#f2c84a';c.fillRect(bx,y0+22,16,2);c.fillRect(bx+5,y0+30,6,8);c.fillStyle='#8a1a2a';c.fillRect(bx,y0+48,5,3);c.fillRect(bx+11,y0+48,5,3)} // banners between the diners
+ for(let i=0;i<w/96;i++){const bx=x0+i*96;
+  [18,72].forEach((tx,j)=>{c.fillStyle='#3a3a40';c.fillRect(bx+tx,y0+36,3,8);const h2=3+Math.floor(t*8+i+j)%3;c.fillStyle='#f08a20';c.fillRect(bx+tx,y0+36-h2,3,h2);c.fillStyle='#ffd040';c.fillRect(bx+tx+1,y0+37-h2,1,h2-1)})} // torches
+ const gr=c.createLinearGradient(0,y0,0,y0+24);gr.addColorStop(0,'rgba(0,0,0,.35)');gr.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=gr;c.fillRect(x0,y0,w,24);c.restore()}
+// The long table in front of the diners (drawn after them, so they sit behind it)
+function drawFeastFront(c,x0,y0,w){const y=y0+FY-16;c.fillStyle=O;c.fillRect(x0+6,y-1,w-12,24);c.fillStyle='#f0e8d8';c.fillRect(x0+7,y,w-14,5);c.fillStyle='#8a2434';c.fillRect(x0+7,y+5,w-14,16);c.fillStyle='#d8b860';c.fillRect(x0+7,y+5,w-14,1);
+ c.fillStyle='#5a3a20';c.fillRect(x0+12,y+21,4,6);c.fillRect(x0+w-16,y+21,4,6);
+ const food=['apple','ale','orange','wine','banana','bloodorange','goldapple','ale','starfruit'];for(let i=0,x=x0+18;x<x0+w-14;i++,x+=22){if(i%3===1){c.fillStyle=O;c.fillRect(x-7,y-6,14,7);c.fillStyle='#a8603a';c.fillRect(x-6,y-5,12,5);c.fillStyle='#d8904a';c.fillRect(x-4,y-5,6,2)}else drawItem(c,food[i%food.length],x,y-3,1)}} // a roast now and then

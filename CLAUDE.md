@@ -170,6 +170,11 @@ Plain scripts, no modules, loaded in this order and sharing global variables (th
 - Necromancer: **prisoners**: back home three prisoners come in and a ritual turns them into skeletons that follow him (`u.thenPrison`, act `prisoners`, `u.minions`).
 - Druid: **land for nature**: up to 3 Farmers on the nearest free spaces (`DRUID_FARMS`).
 
+### Group events (`grp`, `stepGroup`; their own Compendium tab `group`)
+- Separate from everyone's own decisions: every 5 minutes (`GROUP_EVERY`) there is a 20% chance (`ODDS.group`) that one happens, picked at random among the shapes on the board (`groupOptions`; characters at home and free, no Farmers). It lasts 1 minute (`GROUP_TIME`). Its characters are busy (`st 'grp'`, `stepGrpUnit`): nobody visits them, they stay in their rooms. It ends early (no reward) if one of them is moved, removed or pulled away. Not saved.
+- **Market day:** four Merchant-tagged characters in a 2x2 square. The four rooms become one market square (`drawMarketBack`: town, striped tents, wares, cobbles; `drawMarketCrowd`: shoppers strolling); the merchants stroll their stalls and shout (`MARKET_SHOUT`). At the end +2d10 coins.
+- **A grand feast:** any three characters side by side in a row. The rooms become one feast hall (`drawFeastBack`) and they sit behind a long table of food (`drawFeastFront`, drawn after them), chatting and toasting (`FEAST_SAY`).
+
 ### Gatherings
 - **Great prayer:** a Priest with four free neighbors, 5% of his rolls: all kneel in his room for 20 s.
 - **Funeral:** a Fighter next to the Priest dies: 1.5 s later the Priest interrupts any idle activity (or waits up to 30 s if busy) and every free neighbor kneels at a gravestone for 12 s (`u.funeral`, `startGather`).
@@ -231,6 +236,7 @@ Tiers: C common, U uncommon (15%), R rare (5%), L legendary (0.75%); commons sha
 - Under the tabs: the "Discovered" line and a **Tags** line (`TAG_NOTES`) saying the character's tags and what changes them.
 - Groups: With neighbors (one sub-section per neighbor, alphabetical: "with the Knight", "with a Mage", "with anyone"), Idle activities, Items and shops, Secrets (at the bottom; "Not found yet" until one is found or revealed).
 - A tab's top lines: "Discovered X of Y" (Y = everything in the game, `ALL_KEYS`), **Decisions.** (`decideText`, `DECIDE_NOTE` exceptions), then **Tags** (`TAG_NOTES`).
+- Every description (clue or found) starts with the entry's title in bold and a period (`titleOf`: `NAMES` without a chance in brackets or a "Secret:" label; `showTip`).
 - Tile chances come from the rarity lists (`pctOf`: `idlePct`, `visitPct`, weather): the % when that kind of action happens, "of his idle activities" or "of their visits" (hangouts included). An idle's common share counts the character's whole list. Percents are rounded DOWN (`fmtPct`) so one list never adds up past 100%. Request tiles show "80% / 10%" (granted by a generous / greedy Monarch).
 - A discovered (or revealed) tile's description (`infoText`): "Visit (64% chance): Priest left of the Knight. <story> <outcome note>" (also Idle, Weather, Item; `whereText` from `PAIRS`, `IDLE_COND`, `NOTE`). The story (`flavorOf`: `DESC` without its rules, or `FLAVOR`) is the same as in the clue. Other tiles (shops, special secrets, passives) show their `DESC`.
 - The clue of an undiscovered tile (`hintOf`) = the story plus a playful unlock hint (`unlockHint`: hand-written `HINTS`, else made from the rules with compass words: west = left, east = right, north = above, south = below; "A rare sight." / "Once in a blue moon." for rare chances).
@@ -252,6 +258,6 @@ Tiers: C common, U uncommon (15%), R rare (5%), L legendary (0.75%); commons sha
 More Monarch scenes, achievements, more characters, customizable dialogue, more interactions, real pixel art assets.
 
 ## Editing the Compendium text
-- `compendium-text.txt` (project folder, not committed) lists every Compendium entry tab by tab: `[key]`, Name (`NAMES`), Story (`flavorOf`: `FLAVOR`, else `DESC` without its rules), Hint (`HINTS`, or "(auto)" from `unlockHint`), Note (`NOTE`), and the full text once found (reference only), plus the shelf clues (`SHELF_CLUE`).
+- `tools/compendium-export.html` makes a text file of every Compendium entry tab by tab (it is not kept in the project; make it again when needed): `[key]`, Name (`NAMES`), Story (`flavorOf`: `FLAVOR`, else `DESC` without its rules), Hint (`HINTS`, or "(auto)" from `unlockHint`), Note (`NOTE`), and the full text once found (reference only), plus the shelf clues (`SHELF_CLUE`).
 - To make it again: run `tools/compendium-export.html` in headless Edge (`msedge --headless=new --allow-file-access-from-files --dump-dom file:///.../tools/compendium-export.html`), take the text of `<pre id="out">` and unescape `&lt; &gt; &quot; &#39; &amp;`.
 - When edits come back: a changed Story becomes a `FLAVOR` entry, a changed Hint a `HINTS` entry, Name a `NAMES` entry, Note a `NOTE` entry (all in data.js).
