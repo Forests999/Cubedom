@@ -154,7 +154,7 @@ const grpReady=v=>v&&!v.dead&&atHome(v)&&!isFarm(v.id)&&!isStruct(v)&&(freeU(v)|
 function groupOptions(){const ok=(r,c)=>{const v=U[at(r,c)];return grpReady(v)?v:null},out=[];
  for(let r=0;r<ROWS-1;r++)for(let c=0;c<COLS-1;c++){const q=[[r,c],[r,c+1],[r+1,c],[r+1,c+1]].map(p=>ok(p[0],p[1]));if(q.every(v=>v&&hasClass(v,'merchant')))out.push({kind:'market',us:q})} // four Merchants in a 2x2 square
  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS-2;c++){const q=[0,1,2].map(d=>ok(r,c+d));if(q.every(Boolean))out.push({kind:'feast',us:q})} // three side by side in a row
- return out}
+ return [...out,...travelOptions()]} // (plus the travelling ones: the Well, the Tavern)
 function startGroup(o){const rs=o.us.map(v=>v.r),cs=o.us.map(v=>v.c);
  grp={kind:o.kind,ids:o.us.map(v=>v.id),pos:o.us.map(v=>[v.r,v.c]),t:0,box:[Math.min(...rs),Math.min(...cs),Math.max(...rs)-Math.min(...rs)+1,Math.max(...cs)-Math.min(...cs)+1]};
  o.us.forEach((v,i)=>{stopIdle(v);v.path=[];v.act=null;v.gx=null;v.st='grp';v.gwait=.5+Math.random()*2;v.mood='happy';v.mt=2;
@@ -164,8 +164,8 @@ function endGroup(done){if(!grp)return;const g0=grp;grp=null;g0.ids.forEach(id=>
  if(done&&g0.kind==='market'){const n=1+Math.floor(Math.random()*10)+1+Math.floor(Math.random()*10),M=U[g0.ids[0]];addCoins(n,M?M.x:null,M?M.y-50:null);toast('The market closes. Sales brought in '+n+' coins!')} // 2d10 coins
  if(done&&g0.kind==='feast')toast('The feast is over. Everyone heads home happy and full.')}
 function stepGroup(dt){grpClock+=dt;
- if(grpClock>=GROUP_EVERY){grpClock-=GROUP_EVERY;if(!grp&&!rf&&Math.random()<ODDS.group){const o=groupOptions();if(o.length)startGroup(pick(o))}}
- if(!grp)return;grp.t+=dt;
+ if(grpClock>=GROUP_EVERY){grpClock-=GROUP_EVERY;if(!grp&&!rf&&Math.random()<ODDS.group){const o=groupOptions();if(o.length){const p=pick(o);if(p.host)startTravelGroup(p);else startGroup(p)}}}
+ if(!grp)return;grp.t+=dt;if(TRAVEL_GRP[grp.kind]){stepTravelGroup(dt);return}
  // it stops early if a character is gone, moved, or pulled away (a funeral, for example)
  if(grp.ids.some((id,i)=>{const v=U[id];return !v||v.st!=='grp'||v.r!==grp.pos[i][0]||v.c!==grp.pos[i][1]})){endGroup(false);return}
  if(grp.t>=GROUP_TIME)endGroup(true)}
@@ -175,8 +175,28 @@ function stepGrpUnit(u,dt){const bx=u.c*CELL;u.mv=false;
   if(grp&&grp.kind==='market'){u.gx=bx+18+Math.random()*60;if(Math.random()<.55){say(u,pick(MARKET_SHOUT));gest(u,'up',1)}}
   else if(Math.random()<.55){say(u,pick(FEAST_SAY));u.hop=.3;gest(u,'fwd',.8)}}
  if(u.gx!=null&&Math.abs(u.gx-u.x)>.5){const d=u.gx-u.x,s=22*dt;u.face=d>0?1:-1;u.x+=Math.abs(d)<s?d:Math.sign(d)*s;u.mv=true;u.t+=dt}}
+// ---- travelling group events: everyone walks to a structure (the Well's small talk, the Tavern's Classic Adventurers) ----
+const TRAVEL_GRP={wellchat:{spots:[[14,FY],[26,FY-3],[70,FY-3],[82,FY]],talk:WEATHER_TALK},classic:{spots:[[14,FY],[30,FY-2],[44,FY],[58,FY-2]],talk:CLASSIC_TALK,mug:1}};
+// A path from room (r,c1) to (r,c2) in the same row, room by room through the side doors (or a normal route when next door)
+function routeAlong(v,r1,c1,r2,c2,spot){if(r1!==r2||Math.abs(c2-c1)<=1)return r1===r2&&c1===c2?[{k:'walk',x:spot.x,y:spot.y}]:route(v,r1,c1,r2,c2,spot);
+ const out=[],d=Math.sign(c2-c1);for(let c=c1;c!==c2;c+=d){const n=c+d;out.push(...route(v,r1,c,r1,n,n===c2?spot:{x:n*CELL+48-d*20,y:r1*CELL+FY}))}return out}
+function travelOptions(){const out=[];Object.values(U).forEach(s=>{if(!isStruct(s)||s.hosting||s.gather)return;
+ if(s.id==='well'){const n4=four(s);if(n4.every(v=>grpReady(v)))out.push({kind:'wellchat',us:n4,host:s})}
+ if(s.id==='tavern'){const q=['priest','knight','wizard','rogue'].map(id=>U[id]);if(q.every(v=>v&&!v.as&&v.r===s.r&&grpReady(v)))out.push({kind:'classic',us:q,host:s})}});
+ return out}
+function startTravelGroup(o){const H=o.host,T2=TRAVEL_GRP[o.kind];grp={kind:o.kind,ids:o.us.map(v=>v.id),pos:o.us.map(v=>[v.r,v.c]),t:0,host:H.id,hpos:[H.r,H.c],talkT:3};H.gather={grp:1};H.x=H.c*CELL+48;
+ o.us.forEach((v,i)=>{stopIdle(v);detach(v);v.act=null;v.fxs=[];v.gatherOf=H.id;v.st='gather';const sp={x:H.c*CELL+T2.spots[i][0],y:H.r*CELL+T2.spots[i][1]};v.path=routeAlong(v,cellY(v),cellX(v),H.r,H.c,sp)});
+ markSeen('grp:'+o.kind);toast(o.kind==='wellchat'?'The neighbors meet at the well for a chat.':'The old party heads to the Tavern. Classic Adventurers!')}
+function endTravelGroup(g0){const H=U[g0.host];if(H)H.gather=null;g0.ids.forEach(id=>{const v=U[id];if(v&&v.gatherOf===g0.host){v.gatherOf=null;v.show=null;goHome(v)}});
+ toast(g0.kind==='wellchat'?'The chat at the well breaks up. Same weather tomorrow, probably.':'Last call! The adventurers head home.')}
+function stepTravelGroup(dt){const H=U[grp.host],T2=TRAVEL_GRP[grp.kind];
+ if(!H||H.r!==grp.hpos[0]||H.c!==grp.hpos[1]||grp.ids.some((id,i)=>{const v=U[id];return !v||v.gatherOf!==grp.host||(v.st!=='gather'&&v.st!=='gathered')||v.r!==grp.pos[i][0]||v.c!==grp.pos[i][1]})){const g0=grp;grp=null;endTravelGroup(g0);return}
+ const here=grp.ids.map(id=>U[id]).filter(v=>v.st==='gathered');
+ if(T2.mug)here.forEach(v=>{v.show={icon:'ale',x:v.x+v.face*9,y:v.y-24}});
+ if((grp.talkT-=dt)<=0&&here.length){grp.talkT=2.6+Math.random()*1.6;const v=pick(here);say(v,pick(T2.talk));gest(v,T2.mug?'up':'fwd',1);v.hop=.3;v.mood='happy';v.mt=2}
+ if(grp.t>=GROUP_TIME){const g0=grp;grp=null;endTravelGroup(g0)}}
 const grpRect=()=>{const[r,c,h,w]=grp.box;return[c*CELL,r*CELL,w*CELL,h*CELL]};
-function drawGroupBack(c,t){const[x,y,w,h]=grpRect();if(grp.kind==='market'){drawMarketBack(c,x,y,w,h);drawMarketCrowd(c,x,y,w,h,t)}else drawFeastBack(c,x,y,w,t);
+function drawGroupBack(c,t){if(TRAVEL_GRP[grp.kind])return;const[x,y,w,h]=grpRect();if(grp.kind==='market'){drawMarketBack(c,x,y,w,h);drawMarketCrowd(c,x,y,w,h,t)}else drawFeastBack(c,x,y,w,t);
  c.strokeStyle='#000';c.lineWidth=4;c.strokeRect(x+2,y+2,w-4,h-4)} // one big room with one frame
 function mkBolt(s,t){const sx=s.x,sy=s.y-40,ex=t.x,ey=t.y-26,n=Math.max(3,Math.round((ey-sy)/10)),p=[[sx,sy]];
  for(let i=1;i<n;i++)p.push([sx+(ex-sx)*i/n+Math.random()*14-7,sy+(ey-sy)*i/n]);p.push([ex,ey]);
@@ -255,8 +275,8 @@ function idleList(u){const id=idOf(u);return [...(IDLES[isFarm(id)?'farmer':id]|
 // Blizzard: the rarest idle activity 30% more likely; Sandstorm: deadly ones three times as likely
 function idleMult(u,list){const wx=wxOf(u),rt=rarestTier(list);return e=>(wx==='blizzard'&&e[1]===rt?1+ODDS.blizzRare:1)*(wx==='sandstorm'&&DEADLY[e[0]]?ODDS.sandDeath:1)}
 // A structure next door (the Well): STRUCT_IDLE of idle rolls go to one of its activities, chosen by one of the character's tags (at random if several)
-function structIdle(u){if(!atHome(u)||u.as||u.form||Math.random()>=STRUCT_IDLE)return false;const s=[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filter(v=>isStruct(v)&&!v.hosting);if(!s.length)return false;
- const w=pick(s),tags=Object.keys(WELL_ACTS).filter(t=>hasClass(u,t));if(!tags.length)return false;const acts=WELL_ACTS[pick(tags)],k=acts.length>1?(Math.random()<WELL_SPLASH?acts[1]:acts[0]):acts[0];visit(u,w,k);return true}
+function structIdle(u){if(!atHome(u)||u.as||u.form||Math.random()>=STRUCT_IDLE)return false;const s=[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filter(v=>isStruct(v)&&STRUCT_ACTS[v.id]&&!v.hosting&&!v.gather);if(!s.length)return false;
+ const w=pick(s),SA=STRUCT_ACTS[w.id],tags=Object.keys(SA).filter(t=>hasClass(u,t));if(!tags.length)return false;const acts=SA[pick(tags)],k=acts.length>1?(Math.random()<WELL_SPLASH?acts[1]:acts[0]):acts[0];visit(u,w,k);return true}
 function startAct(u){u.path=[];if(structIdle(u))return true;const list=idleList(u);if(!list.length)return false;const k=rollList(list,idleMult(u,list));return k?doIdle(u,k):false}
 // Start the idle activity k (returns false if it could not start: the character wanders instead)
 function doIdle(u,k){const bx=u.c*CELL,dur=(a,d)=>{beginAct(u,a);u.dur=d};
@@ -547,6 +567,8 @@ function checkUnlocks(){checkEggs();
  // the Druid: every board space bought; the Blacksmith: SMITH_UNLOCK coins spent in total
  if(!S.un.druid&&S.cells&&Array.from({length:ROWS*COLS},(_,i)=>isOpen(Math.floor(i/COLS),i%COLS)).every(Boolean)){S.un.druid=true;buildShelf();save();toast('Every space is open... a Druid steps out of the woods. A Druid box has appeared on the shelf!')}
  if(!S.un.monarch&&Object.values(U).filter(v=>!isFarm(v.id)&&!isStruct(v)).length>=MONARCH_UNLOCK){S.un.monarch=true;buildShelf();save();toast('Ten boxes on the board... a kingdom! A Monarch box has appeared on the shelf.')} // the Monarch: MONARCH_UNLOCK boxes on the board
+ // the Tavern: the Priest, Wizard, Knight and Rogue all on the board
+ if(!S.un.tavern&&['priest','wizard','knight','rogue'].every(id=>U[id])){S.un.tavern=true;buildShelf();save();toast('The old party is all here... a Tavern box has appeared on the shelf!')}
  // the Traveling Merchant: four Merchants (by tag) in a 2x2 square
  if(!S.un.traveler){const mr=(r,c)=>hasClass(U[at(r,c)],'merchant');for(let r=0;r<ROWS-1;r++)for(let c=0;c<COLS-1;c++)if(!S.un.traveler&&mr(r,c)&&mr(r,c+1)&&mr(r+1,c)&&mr(r+1,c+1)){S.un.traveler=true;buildShelf();save();toast('Four Merchants side by side... word spreads along the roads. A Traveling Merchant box has appeared on the shelf!')}}
  if(!S.un.blacksmith&&(S.spent||0)>=SMITH_UNLOCK){S.un.blacksmith=true;buildShelf();save();toast('All that spending caught the eye of a Blacksmith. A Blacksmith box has appeared on the shelf!')}if(!S.un.merchant&&(S.coins||0)>=MERCHANT_COINS){S.un.merchant=true;buildShelf();toast('Business is booming! A Fruit Merchant box has appeared on the shelf.')}
@@ -1732,6 +1754,7 @@ cv.onpointerup=e=>{if(!drag){const p=pt(e);if(lockTap&&p.inb){const[r,c]=cellOf(
 // Dragging a box back onto the shelf costs REMOVE_COST coins (asks first)
 function sendToShelf(id){const u=U[id];if(!u)return;
  if(isFarm(id)){toast('The Farmer is only here for the harvest. Farmers cannot go on the shelf.');return}
+ if(isStruct(u)){removeUnit(id);buildShelf();save();return} // structures go back to the shelf for free
  if((S.coins||0)<REMOVE_COST){toast('Moving a box back to the shelf costs '+REMOVE_COST+' coins. You have '+(S.coins||0)+'.');return}
  ask('Move the '+CH[u.id].name+' back to the shelf for '+REMOVE_COST+' coins?','Pay '+REMOVE_COST,()=>{if(!U[id]||S.coins<REMOVE_COST)return;spend(REMOVE_COST);showCoins();removeUnit(id);if(id==='traveler')S.travelRoam=false;buildShelf();save()})}
 cv.onpointercancel=()=>{drag=null;hover=null;tray.classList.remove('over')};
@@ -1838,7 +1861,7 @@ function infoText(k){const fl=flavorOf(k),note=NOTE[k]?' '+NOTE[k]:'',p=pctOf(k)
  const wt=whereText(k);if(wt&&p!=null)return 'Visit ('+pc+' chance): '+wt+'. '+fl+note;
  if(k==='stone')return 'Item: artifact on the Alchemist. '+fl+note;
  if(WELL_PCT[k]){const tg={welllook:'Mage',wellsplash:'Mage',welljump:'Fighter',wellwish:'Merchant',welldive:'Monstrous character'}[k];return 'Idle ('+WELL_PCT[k]+' chance): a '+tg+' next to the Well ('+Math.round(STRUCT_IDLE*100)+'% of their idle activities use the Well; with several tags, one is picked at random'+(k==='welllook'||k==='wellsplash'?'; Mages are splashed 10% of the time':'')+'). '+fl+note}
- if(k.startsWith('grp:'))return 'Group event (20% chance every 5 minutes): '+(k==='grp:market'?'four Merchants in a 2x2 square, at home and free':'any three characters side by side in a row, at home and free')+', for 1 minute. '+fl+note;
+ if(k.startsWith('grp:'))return 'Group event (20% chance every 5 minutes): '+({'grp:market':'four Merchants in a 2x2 square','grp:feast':'any three characters side by side in a row','grp:wellchat':'characters on all four sides of the Well','grp:classic':'the Priest, Knight, Wizard and Rogue in the same row as the Tavern'}[k])+', at home and free'+', for 1 minute. '+fl+note;
  if(k.startsWith('rq:')){const q=k.slice(3);return 'Visit (his first visit to the Monarch; granted 80% by a generous one, 10% by a greedy one): '+(q==='paladin'?'a Paladin':'the '+CNAME(q))+' next to the Monarch, any side. '+fl}
  for(const kind in ITEM_KEY)for(const c in ITEM_KEY[kind])if(ITEM_KEY[kind][c]===k)return 'Item: '+ITEM_NAME[kind].toLowerCase()+' on '+(c==='*'?'anyone without the Fighter tag':'the '+CNAME(c))+'. '+fl+note;
  return (EGGS.includes(k)?'Secret. ':'')+(DESC[k]||NAMES[k]||'')+(note&&!(DESC[k]||'').includes(NOTE[k])?note:'')}
@@ -2210,6 +2233,8 @@ function idleTile(kind,wp){
   else if(kind==='tshop'){const tt=t%4;box(x,'traveler',0,0);spr(x,'traveler_f',tt>1&&tt<2.4?'happy':'ok',40,FY,1,0,1,1,tt>.8&&tt<2?'fwd':'none');if(tt>1&&tt<2.6)drawItem(x,'artifact',56,Math.round(FY-40-(tt-1)*8),2);drawShopCoin(x,0,0)}
   else if(kind==='tscroll'||kind==='tpotion'||kind==='tingot'){const tt=t%4,it=kind==='tscroll'?'scroll':kind==='tpotion'?'potion':'ingot';box(x,'traveler',0,0);spr(x,'traveler_m',tt>1?'happy':'ok',48,FY,1,tt>1&&tt<1.5?-4:0,1,1,tt>1&&tt<2?'fwd':'none');
    if(tt<1)drawItem(x,it,48,Math.round(10+tt*30),2);else if(tt<2.6)drawItem(x,'coin',62,Math.round(FY-40-(tt-1)*8),2)}
+  else if(kind==='grp:wellchat'){box(x,'well',0,0);[['knight',14,FY,1],['wizard_blue',26,FY-3,1],['merchant',70,FY-3,-1],['priest',82,FY,-1]].forEach((q,i)=>spr(x,q[0],'happy',q[1],q[2],q[3],Math.floor(t*2+i)%4===0?-2:0,1,.9,Math.floor(t+i)%3===0?'fwd':'none'))}
+  else if(kind==='grp:classic'){box(x,'tavern',0,0);drawRoomLife(x,'tavern',0,0,t);[['priest',14,FY,1],['knight',30,FY-2,1],['wizard_purple',44,FY,-1],['rogue_ninja',58,FY-2,-1]].forEach((q,i)=>{const up=Math.floor(t*1.5+i)%4===0;spr(x,q[0],'happy',q[1],q[2],q[3],0,1,.9,up?'up':'none');drawItem(x,'ale',q[1]+q[3]*8,q[2]-(up?36:22),1)})}
   else if(kind==='welllook'){const tt=t%4;box(x,'well',0,0);spr(x,'wizard_blue','ok',20,FY,1,0,1,1,tt>.6&&tt<2.6?'fwd':'none');if(tt>1.6&&tt<2.4)poofTile(x,48,57,(tt-1.6)/.8,'#c890ff')}
   else if(kind==='wellsplash'){const tt=t%6,m=tt<1.4?0:tt<2.2?(tt-1.4)/.8:tt<4?1:tt<4.8?1-(tt-4)/.8:0;box(x,'well',0,0);if(m>0)drawPuddle(x,20,FY,m);spr(x,'wizard_purple',m>0?'shock':'ok',20,FY,1,0,1,1-.85*m);if(tt<2.4)spr(x,'farmer','happy',62,FY,-1,0,1,1,tt>1&&tt<1.6?'fwd':'none');if(tt>1&&tt<1.5)for(let i=0;i<5;i++){x.fillStyle='#8fd0ff';x.fillRect(Math.round(lerp(56,24,(tt-1)/.5))+i*2,FY-28+i*2,2,3)}}
   else if(kind==='welljump'){const tt=t%4,q=cl((tt-.6)/1.4,0,1),jx=lerp(14,82,q),jy=Math.sin(Math.PI*q)*28;box(x,'well',0,0);spr(x,'knight',q>=1?'happy':'ok',jx,FY-jy,q>0&&q<1?1:q>=1?-1:1,0,1,1,q>=1?'both':'none',q>0&&q<1?1:0)}
@@ -2313,7 +2338,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  // the Monarch's requests (granted: 80% generous / 10% greedy), the Traveling Merchant
  REQS.forEach(q=>T['rq:'+q]=[P('rq:'+q),'80% / 10%']);
  for(const wk in WELL_PCT)T[wk]=[I(wk),WELL_PCT[wk]]; // the Well's activities (labels: share of a neighbor's idle activities)
- Object.assign(T,{'grp:market':[I('grp:market'),'20% / 5 min'],'grp:feast':[I('grp:feast'),'20% / 5 min'],'ss:gold':[I('ss:gold'),'super secret'],'ss:alltags':[I('ss:alltags'),'super secret'],dingot:[I('dingot')],rqdeny:[P('rqdeny'),'20% / 90%'],drain:[P('drain'),pv*ODDS.drain],royalfuneral:[I('royalfuneral'),'on death'],regicide:[I('regicide'),'secret'],royalpatron:[I('royalpatron'),'secret'],
+ Object.assign(T,{'grp:wellchat':[I('grp:wellchat'),'secret'],'grp:classic':[I('grp:classic'),'secret'],'grp:market':[I('grp:market'),'20% / 5 min'],'grp:feast':[I('grp:feast'),'20% / 5 min'],'ss:gold':[I('ss:gold'),'super secret'],'ss:alltags':[I('ss:alltags'),'super secret'],dingot:[I('dingot')],rqdeny:[P('rqdeny'),'20% / 90%'],drain:[P('drain'),pv*ODDS.drain],royalfuneral:[I('royalfuneral'),'on death'],regicide:[I('regicide'),'secret'],royalpatron:[I('royalpatron'),'secret'],
   wares:[I('wares'),'100%'],troad:[I('troad'),'5 min'],tshop:[I('tshop'),TRAVEL_ARTIFACT+' coins'],tscroll:[I('tscroll')],tpotion:[I('tpotion')],tingot:[I('tingot')]});
  ROGUE_SCENES.forEach(k=>{if(!T[k])T[k]=[P(k),pv]});
  WEAPONS.forEach(w=>T['prac:'+w]=[I('prac',w),K.prac]);
@@ -2322,7 +2347,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  // Tabs, one per character type, with "found / total" (hidden easter eggs count in the total)
  // Only characters you have unlocked get a tab, and neighbor scenes only show once both characters are unlocked
  const unl=compUnl,pairsOf=tabPairs,allOf=tabKeys;
- const tabs=COMP_TABS.filter(t=>unl(t.id)),tab=tabs.find(t=>t.id===compTab)||tabs[0],pairs=pairsOf(tab),bar=document.createElement('div');bar.className='ctabs';
+ const tabs=COMP_TABS.filter(t=>unl(t.id)).sort((a,b)=>a.name.localeCompare(b.name)),tab=tabs.find(t=>t.id===compTab)||tabs[0],pairs=pairsOf(tab),bar=document.createElement('div');bar.className='ctabs';
  tabs.forEach(t=>{const all=allOf(t),btn=document.createElement('button');btn.className='ctab'+(t===tab?' on':'');
   btn.innerHTML=t.name+tagImg(t.id)+' <small>'+all.filter(k=>S.seen[k]).length+'/'+all.length+'</small>';btn.onclick=()=>buildRef(t.id);bar.append(btn)});
  const vis=[...new Set(tabs.flatMap(allOf))],n=foundCount(),left=DISCOVER_EVERY-n%DISCOVER_EVERY,info=document.createElement('p');info.className='cinfo';
@@ -2330,7 +2355,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  // Tags: what this character's class tags are and what changes them
  const tn=document.createElement('p');tn.className='cinfo';tn.innerHTML='<b>Tags:</b> '+(TAG_NOTES[tab.id]||'').replace(/\{(\w+)\}/g,(m,c)=>tagOf(c));
  const dn=document.createElement('p');dn.className='cinfo';dn.innerHTML='<b>Decisions.</b> '+decideText(tab.id); // how often this character idles, visits or wanders
- if(tab.id==='super'||tab.id==='group'||CLASS[tab.id]==='structure'){const sp=document.createElement('p');sp.className='cinfo';sp.textContent=CLASS[tab.id]==='structure'?'Structures have nobody living in them. They give their neighbors new idle activities ('+Math.round(STRUCT_IDLE*100)+'% of their idle rolls), are never visited otherwise, do not count for group events, and items do nothing on them.':tab.id==='super'?'Super Secrets belong to no character and have no hints or clues. They come from simply playing around. Good luck!':'Group events are separate from what each character decides on their own. Every 5 minutes there is a 20% chance one happens, if the board has the right characters in the right shape. It lasts 1 minute.';b.append(bar,info,sp)}else b.append(bar,info,dn,tn);
+ if(tab.id==='super'||tab.id==='group'||CLASS[tab.id]==='structure'){const sp=document.createElement('p');sp.className='cinfo';sp.textContent=CLASS[tab.id]==='structure'?'Structures have nobody living in them. They give their neighbors new idle activities ('+Math.round(STRUCT_IDLE*100)+'% of their idle rolls), are never visited otherwise, do not count toward the shapes group events need, and items do nothing on them.':tab.id==='super'?'Super Secrets belong to no character and have no hints or clues. They come from simply playing around. Good luck!':'Group events are separate from what each character decides on their own. Every 5 minutes there is a 20% chance one happens, if the board has the right characters in the right shape. It lasts 1 minute.';b.append(bar,info,sp)}else b.append(bar,info,dn,tn);
  // A grid of tiles (easter eggs only once found)
  const grid=(keys,items)=>{const d=document.createElement('div');d.className='cg';
   // easter eggs show once found, or once revealed by the Priest's studies

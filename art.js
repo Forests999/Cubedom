@@ -51,6 +51,7 @@ function bg(id,w){
   [24,60,2,6,'#e0d8c4'],[21,57,8,3,'#c04a6a'],[36,62,2,4,'#e0d8c4'],[34,60,6,2,'#9a60d0'],[66,62,2,4,'#e0d8c4'],[64,60,6,2,'#e07a40'],[16,76,2,4,'#e0d8c4'],[14,74,6,2,'#c04a6a'],[44,84,2,4,'#e0d8c4'],[42,82,6,2,'#7ae0c0'],[76,80,2,4,'#e0d8c4'],[74,78,6,2,'#9a60d0']];
  // Traveling Merchant: a dirt road through the meadow, a tree, flowers, a covered wagon with a mule, and a stand covered in striped cloth for the wares
  if(id==='well')return wellRects(); // the Well (a structure: nobody lives here)
+ if(id==='tavern')return tavernRects(); // the Tavern (a structure)
  if(id==='traveler')return [[0,50,96,16,'#7ab05a'],[0,56,30,10,'#6aa04a'],[60,56,36,10,'#6aa04a'],
   [82,26,5,40,'#6a4424'],[83,30,1,30,'#4e3018'],[70,10,26,18,'#3a8a3a'],[74,6,18,6,'#4aa04a'],[68,24,28,8,'#2e7a30'],[76,9,6,3,'#6aba5a'],[88,14,4,3,'#6aba5a'], // a big tree
   [6,40,3,22,'#6a4424'],[0,30,16,12,'#3a8a3a'],[2,27,10,4,'#4aa04a'],[0,40,16,4,'#2e7a30'],[4,29,4,2,'#6aba5a'], // a small tree (below the name label)
@@ -437,6 +438,7 @@ function drawGold(c,bx,by,t){c.fillStyle='#f2c84a';[[11,42,4,4],[16,41,4,4],[21,
 function drawRoomLife(c,id,bx,by,t){const fl=(k)=>Math.floor(t*8+k)%3;
  if(id==='knight'){const h=3+fl(1);c.fillStyle='#f08a20';c.fillRect(bx+88,by+34-h,3,h);c.fillStyle='#ffd040';c.fillRect(bx+89,by+35-h,1,h-1)} // the torch flame
  if(id==='wizard'){[[13,22],[41,22]].forEach((q,i)=>{const h=1+fl(i*2);c.fillStyle='#ffd060';c.fillRect(bx+q[0],by+q[1]-h,1,h)})} // candle flames on the bookshelf
+ if(id==='tavern')drawTavernLife(c,bx,by,t); // the barkeep and a patron now and then
  if(id==='traveler'){const s=Math.floor(t*2.2)%5===0?1:0;c.fillStyle='#5a4a3a';c.fillRect(bx+68-s,by+47,2,1);c.fillRect(bx+67-s,by+48,1,7)} // the mule swishes its tail
  if(id==='priest'){const h=2+fl(0);c.fillStyle='#4a4458';c.fillRect(bx+48,by+44,4,6);c.fillStyle='#ffd060';c.fillRect(bx+49,by+50-h,2,h);c.fillStyle='#fff6c0';c.fillRect(bx+49,by+49,1,1)}
  if(id==='necromancer'){[[40,23],[16,41]].forEach((q,i)=>{const h=2+fl(i*2);c.fillStyle='#26262c';c.fillRect(bx+q[0],by+q[1]-2,3,3);c.fillStyle='#7aff7a';c.fillRect(bx+q[0],by+q[1]+3-h,3,h)})}
@@ -845,7 +847,7 @@ function outBack(c,id,w){const k=outKey(id,w),o=OUTDOOR[k];if(!o)return false;co
 function outFront(c,id,w){const k=outKey(id,w);if(!OUTDOOR[k])return;
  // grass tufts and little plants on the ground
  const tuft=k==='druid0'?'#1e3a20':k==='druid2'?'#8a8a3a':k==='druid3'?'#4a3a5a':'#4a8a3a';
- for(let i=0;i<26;i++){const x=Math.floor(rnd(i*7+3)*92),y=68+Math.floor(rnd(i*11+5)*26);if(k==='traveler'&&x>28&&x<68)continue;c.fillStyle=tuft;c.fillRect(x,y,1,2);c.fillRect(x+2,y-1,1,3);c.fillStyle=shade(tuft,.25);c.fillRect(x+1,y,1,2)}
+ for(let i=0;i<26;i++){const x=Math.floor(rnd(i*7+3)*92),y=68+Math.floor(rnd(i*11+5)*26);if((k==='traveler'&&x>28&&x<68)||k==='well')continue;c.fillStyle=tuft;c.fillRect(x,y,1,2);c.fillRect(x+2,y-1,1,3);c.fillStyle=shade(tuft,.25);c.fillRect(x+1,y,1,2)} // (no grass tufts on the Well's cobbles)
  if(k.startsWith('druid')){const trunks=k==='druid3'?[8,50,80]:[6,46,80],bark=k==='druid3'?'#b8b09c':k==='druid0'?'#1e160c':'#3a2414';
   trunks.forEach((x,i)=>{c.fillStyle=bark;for(let y=34;y<64;y+=5)c.fillRect(x+1+((y/5+i)%3),y,1,3);c.fillStyle=shade(bark,.3);c.fillRect(x+6,30,1,34)}); // bark lines and a lit edge
   if(k==='druid3')[[20,74],[60,80],[36,88],[82,70],[12,60],[70,50]].forEach((q,i)=>{c.fillStyle=['#7ae0c0','#c890ff','#f2e060'][i%3];c.fillRect(q[0],q[1],1,1)}); // glowing specks
@@ -911,15 +913,41 @@ const detailOf=id=>{const b=id.replace(/~\d+$/,'');let best=null;for(const k in 
 // ---------- the Well: a village green with a stone well (roof, crank, rope and bucket) ----------
 WALL.well=['#8ac0e8','#7a9a5a'];OUTDOOR.well={sky:['#5a9ad8','#cfe8f4']};
 function wellRects(){const R=[],p=(x,y,w,h,c)=>R.push([x,y,w,h,c]);
- p(0,60,96,6,'#6aa04a');for(let i=0;i<96;i+=16){p(i,44,14,20,['#c8b898','#b8a888','#d0c0a0'][i/16%3]);p(i-1,40,16,4,'#8a4a3a');p(i+5,50,4,5,'#4a5a7a')} // cottages behind
- p(0,58,96,8,'#6aa04a');
- p(31,34,3,24,'#6a4424');p(62,34,3,24,'#6a4424');p(32,34,1,24,'#8a5a30');p(63,34,1,24,'#8a5a30'); // posts
- p(24,30,48,4,'#8a3a2a');p(28,26,40,4,'#9a4a32');p(32,22,32,4,'#8a3a2a');p(37,19,22,3,'#9a4a32');p(24,33,48,1,'#5a2418'); // roof
- p(33,38,30,2,'#5a3a20');p(64,37,4,2,'#5a3a20');p(67,37,1,5,'#5a3a20');p(47,40,1,12,'#c8a878');p(44,52,8,5,'#7a5030');p(44,53,8,1,'#5a5a64'); // crank, rope, bucket
- p(29,56,38,4,'#b8b8c4');p(32,57,32,2,'#1a2a3a');p(34,57,10,1,'#3a6a9a'); // rim and dark water
- for(let row=0;row<5;row++)for(let x=30-(row%2)*4,i=0;x<66;x+=9,i++){const xx=Math.max(30,x),ww=Math.min(66,x+8)-xx;if(ww>0)p(xx,60+row*4,ww,3,['#8a8a96','#7a7a86','#9a9aa6'][(row+i)%3])} // stone base
- p(30,79,36,2,'#5a5a64');
- [[10,74,'#f080a0'],[20,86,'#f2e060'],[78,76,'#c890ff'],[86,88,'#f080a0'],[70,90,'#f2e060'],[8,92,'#c890ff']].forEach(q=>p(q[0],q[1],2,2,q[2])); // flowers
+ p(0,56,96,8,'#6aa04a');p(0,56,96,1,'#7ab858'); // a strip of grass
+ p(0,62,96,34,'#9a8a74');for(let row=0;row<5;row++)for(let x=-(row%2)*5,i=0;x<96;x+=10,i++)p(x+1,63+row*7,9,6,['#a8987e','#968670','#a09078'][(row+i*2)%3]); // cobbled square
+ p(24,77,48,4,'#6a5e50'); // the well's shadow
+ for(let row=0;row<5;row++)for(let x=29-(row%2)*4,i=0;x<67;x+=9,i++){const xx=Math.max(29,x),ww=Math.min(67,x+8)-xx;if(ww>0)p(xx,59+row*4,ww,3,['#8a8a96','#7a7a86','#9a9aa6'][(row+i)%3])} // stone base
+ p(29,59,38,1,'#a8a8b4');p(66,59,1,20,'#6a6a76');
+ p(27,54,42,5,'#a8a8b4');p(27,54,42,1,'#d0d0dc');p(68,54,1,5,'#7a7a86'); // the rim
+ p(30,55,36,3,'#14202e');p(33,56,9,1,'#3a6a9a');p(52,56,4,1,'#2a4a6a'); // dark water with a glint
+ p(31,28,3,26,'#6a4424');p(62,28,3,26,'#6a4424');p(31,28,1,26,'#8a5a30');p(62,28,1,26,'#8a5a30'); // wooden posts
+ p(28,26,40,3,'#5a3a20');p(28,26,40,1,'#8a5a30');p(65,32,6,2,'#5a3a20');p(70,32,1,6,'#5a3a20');p(69,37,3,2,'#3a2a1a'); // crossbeam and crank
+ p(47,29,1,16,'#c8a878');p(43,44,9,7,'#7a5030');p(43,44,9,1,'#9a6a40');p(43,46,9,1,'#5a5a64');p(43,49,9,1,'#5a5a64');p(44,45,7,1,'#8fd0ff'); // rope and bucket
+ p(85,30,3,36,'#3a3a40');p(86,30,1,36,'#5a5a64');p(82,24,9,7,'#2a2a30');p(83,25,7,5,'#f2d070');p(84,26,2,2,'#fff6c0');p(81,23,11,1,'#3a3a40');p(83,65,7,2,'#3a3a40'); // a lamppost
+ p(6,57,10,8,'#a8603a');p(6,57,10,1,'#c87a4a');p(7,53,2,4,'#3a8a3a');p(10,52,2,5,'#4aa04a');p(13,54,2,3,'#3a8a3a');p(7,52,2,2,'#f080a0');p(10,51,2,2,'#f2e060');p(13,53,2,2,'#f080a0'); // a flower pot
  return R}
 // A puddle under a melting character (the Well's splash)
 function drawPuddle(c,x,y,k){c.save();c.globalAlpha=.85;c.fillStyle='#6a8ad0';c.beginPath();c.ellipse(x,y-1,4+12*k,2+2*k,0,0,Math.PI*2);c.fill();c.fillStyle='#a8c8f0';c.fillRect(Math.round(x-3*k),Math.round(y-2),Math.max(1,Math.round(4*k)),1);c.restore()}
+
+// ---------- the Tavern: a bar with bottles, a barkeep pacing behind it, two tables, a lantern, the back door on the left ----------
+WALL.tavern=['#5a3e2a','#4a3220'];ROOM_STYLE.tavern={wall:'plank',floor:'plank'};
+DOOR_STYLE.tavern={wood:'#6a4426',dark:'#4a2e18',band:'#3a3a40',rivet:'#8a8a96',knob:'#f2c84a',frame:'#2a1a10',deco:'sign'};
+const TAVERN_BAR=[[50,50,46,3,'#9a6a40'],[50,52,46,14,'#6a4426'],[50,52,46,1,'#4a2e18'],[50,58,46,1,'#4a2e18'],[56,53,1,13,'#4a2e18'],[72,53,1,13,'#4a2e18'],[88,53,1,13,'#4a2e18']]; // the counter (also drawn over the barkeep)
+function tavernRects(){const R=[...backDoor('tavern',1)],p=(x,y,w,h,c)=>R.push([x,y,w,h,c]);
+ p(54,24,40,2,'#4a2e18');p(54,36,40,2,'#4a2e18'); // shelves behind the bar
+ [[56,'#3a8a4a'],[61,'#8a2a3a'],[66,'#d8b860'],[71,'#3a6aa8'],[77,'#8a2a3a'],[82,'#3a8a4a'],[87,'#c87a40']].forEach((q,i)=>{p(q[0],17+(i%2),3,7-(i%2),q[1]);p(q[0]+1,15+(i%2),1,2,q[1])}); // bottles
+ [[57,'#c8a060'],[63,'#c8a060'],[69,'#8a5a30'],[75,'#c8a060'],[81,'#8a5a30'],[87,'#c8a060']].forEach(q=>{p(q[0],30,4,6,q[1]);p(q[0]+4,31,1,3,q[1])}); // mugs
+ p(40,40,10,26,'#6a4426');p(40,40,10,2,'#8a5a30');p(40,48,10,1,'#3a3a40');p(40,58,10,1,'#3a3a40');p(43,44,4,3,'#2a1a10'); // a barrel with a tap
+ R.push(...TAVERN_BAR);
+ p(8,72,18,3,'#8a5a30');p(8,72,18,1,'#a8784a');p(16,75,2,9,'#5a3a20');p(5,80,5,2,'#6a4426');p(25,80,5,2,'#6a4426'); // table and stools
+ p(32,74,18,3,'#8a5a30');p(32,74,18,1,'#a8784a');p(40,77,2,9,'#5a3a20');p(29,82,5,2,'#6a4426');p(49,82,5,2,'#6a4426');
+ p(12,70,4,3,'#c8a060');p(42,72,4,3,'#c8a060'); // mugs on the tables
+ return R}
+// The barkeep pacing behind the bar, and now and then a patron who comes in, drinks and leaves
+function drawTavernLife(c,bx,by,t){const k=(Math.sin(t*.5)+1)/2,dir=Math.cos(t*.5)>=0?1:-1,x=bx+60+k*26;
+ spr(c,'barkeep','ok',x,by+64,dir,0,1,.95,Math.floor(t*.7)%5===0?'fwd':'none',Math.abs(Math.cos(t*.5))>.15?stepOf(t):0);
+ TAVERN_BAR.forEach(r=>{c.fillStyle=r[4];c.fillRect(bx+r[0],by+r[1],r[2],r[3])}); // the bar in front of him
+ const n=Math.floor(t/40),ph=t%40,who=['commoner','farmer','noble2','squire'][n%4];if(ph>=26)return;
+ const door=bx+24,seat=bx+20,a=ph<.8?ph/.8:ph>25.2?(26-ph)/.8:1,px=ph<3?lerp(door,seat,cl((ph-.5)/2.5,0,1)):ph>22?lerp(seat,door,cl((ph-22)/2.8,0,1)):seat;
+ const walking=(ph>.5&&ph<3)||(ph>22&&ph<24.8),drink=!walking&&Math.floor(ph*.6)%3===0;
+ spr(c,who,'happy',px,by+FY-2,ph>22?-1:1,0,a,.95,drink?'up':'none',walking?stepOf(ph):0);if(!walking&&ph>3)drawItem(c,'ale',Math.round(px+8),Math.round(by+FY-2-(drink?36:22)),1)}

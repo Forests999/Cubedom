@@ -1045,3 +1045,26 @@ Object.assign(FLAVOR,{welllook:'They peer into the dark water and wonder how dee
 Object.assign(HINTS,{welllook:'Mages love a quiet well next door.',wellsplash:'Mages and water do not always mix... rarely, anyway.',welljump:'Fighters living by the well like to show off.',
  wellwish:'Shopkeepers by the well are a superstitious lot.',welldive:'Something monstrous living by the well might take a dip.'});
 const WELL_PCT={welllook:'27%',wellsplash:'3%',welljump:'30%',wellwish:'30%',welldive:'30%'}; // 30% of idles x (90% / 10% for Mages); with several tags it is shared
+SHELF_CLUE.necromancer='When death befalls a holy follower, a new worshipper may arrive.';
+TAG_ICON.structure=[[2,1,3,2,'#c0603a'],[2,1,3,1,'#e08a5a'],[0,4,3,2,'#c0603a'],[0,4,3,1,'#e08a5a'],[4,4,3,2,'#a84e2e'],[4,4,3,1,'#d07a4a']]; // a little stack of bricks: two below, one on top
+
+// ---------- travelling group events: everyone walks to a structure (a secret each) ----------
+// wellchat = all four spaces around the Well hold characters: they meet at the well for small talk about the weather
+// classic = Priest, Knight, Wizard and Rogue in the same row as the Tavern: they go drink and reminisce (Classic Adventurers)
+const WEATHER_TALK=['Looks like rain later.','Lovely weather we are having.','Bit chilly this morning, eh?','My knee says a storm is coming.','Is it just me, or is it windy?','Nice day for it.','Did you see that cloud? Shaped like a sheep.'];
+const CLASSIC_TALK=['Remember the dragon in the Ashfell caves?','To the old party!','You still owe me for that potion.','I miss the dungeon smell. Sort of.','Another round! On the Rogue!','Who lost the map that time?','We should do one more quest. A small one.'];
+// The Tavern (structure): a bar with a barkeep, a few tables, a back door on the left; now and then a patron drops in for a drink
+CH.tavern={name:'Tavern',eye:O,p:[]};CLASS.tavern='structure';TR.tavern={up:'backdoorL',down:'backdoorL'};ALL_CHARS.push('tavern');NAMES.tavern='Tavern';
+const BKC={body:'#e8dcc0',bodyD:'#c8bca0',pants:'#4a3a2a',boot:'#2a1a10',belt:'#8a5a2a'};
+CH.barkeep={name:'Barkeep',eye:O,a:arms(BKC),p:[...B(BKC),[5,11,6,7,'#6a4a2a'],[5,7,6,2,'#6a4a2a'],[5,1,6,2,'#3a2a1a'],[6,9,4,1,'#8a2a2a']]}; // apron, mustache
+TAG_NOTES.tavern='{structure} Structure. Nobody lives here, but the barkeep never seems to leave.';
+SHELF_CLUE.tavern='When the old party is back together, they will need a drink.';
+COMP_TABS.push({id:'tavern',name:'Tavern',pairs:[],idle:[],items:['grp:classic']});
+COMP_TABS.find(t=>t.id==='well').items.push('grp:wellchat');COMP_TABS.find(t=>t.id==='group').items.push('grp:wellchat','grp:classic');EGGS.push('grp:wellchat','grp:classic');
+Object.assign(NAMES,{'grp:wellchat':'Small talk at the well','grp:classic':'Classic Adventurers'});
+Object.assign(TITLES,{'grp:wellchat':'Small Talk','grp:classic':'Classic Adventurers'});
+Object.assign(DESC,{'grp:wellchat':'Secret group event: with characters on all four sides of the Well, they meet at the well for 1 minute and make small talk about the weather.',
+ 'grp:classic':'Secret group event: the Priest, Knight, Wizard and Rogue all in the same row as the Tavern head over for 1 minute of drinks and old adventure stories.'});
+Object.assign(FLAVOR,{'grp:wellchat':'The neighbors meet at the well and talk about the only thing everyone agrees on: the weather.',
+ 'grp:classic':'The old party, together again: drinks all round and stories that get taller with every telling.'});
+const STRUCT_ACTS={well:WELL_ACTS}; // each structure's activities for its neighbors, by tag (the Tavern has none yet)
