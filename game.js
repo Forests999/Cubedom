@@ -947,7 +947,6 @@ function arrive(u){u.inv=false;
  u.st='idle';u.wait=u.form==='dknight'?.3:2+Math.random()*3;
 }
 const fin=u=>{u.path.shift();if(!u.path.length)arrive(u)};
-const DOORISH={door:1,backdoor:1,backdoorL:1,royaldoor:1,shelf:1,trapdoor:1}; // exits that make door sounds
 const FIXED={backdoor:1,backdoorL:1,royaldoor:1,shelf:1,rope:1,trapdoor:1}; // exits that are part of the room: they close instead of disappearing
 function run(u,dt){
  const s=u.path[0];
@@ -1582,8 +1581,6 @@ function step(dt){
  refreshTags();
  rains.forEach(q=>q.t+=dt);rains=rains.filter(q=>q.t<6);
  stepWeather(dt);stepRoyal(dt);stepTraveler(dt);stepGroup(dt);
- // sounds (audio.js): a creak when a door opens, a thud when it closes; soft footsteps
- if(typeof sfx==='function'){for(const u of Object.values(U))u.fxs.forEach(f=>{if(!DOORISH[f.type])return;const w=f.want>0?1:0;if(f._w==null)f._w=0;if(w!==f._w){f._w=w;sfx(w?'open':'close')}});stepSounds(dt)}
  for(const id in U){const u=U[id];
   if(u.dead||isStruct(u))continue; // a buried Druid does nothing at all; nor does a structure
   if(u.id==='druid'&&!u.pet)u.pet={kind:u.fam||'bear',x:u.x,y:u.y,face:1}; // his animal: grizzly bear, eagle or wolf
