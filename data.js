@@ -110,7 +110,7 @@ const ODDS={visit:.2,visitFriend:.45,spar:.02,hangout:.25,idle:.4,zeal:.6,tentac
 const COIN_EVERY=30,TITHE=5;
 // Wizard brewing next to a Merchant costs BREW_COST coins; a crusade lasts CRUSADE_TIME seconds; holding MERCHANT_COINS coins at once unlocks the Fruit Merchant.
 const BREW_COST=5,CRUSADE_TIME=120,CRUSADE_GOLD=10,MERCHANT_COINS=30;
-Object.assign(ODDS,{wizBrew:.01,forge:.01,crusade:.02,crusadeGold:.7,bronze:.01});
+Object.assign(ODDS,{wizBrew:.01,forge:.01,crusade:.02,crusadeGold:.7});
 const $=s=>document.querySelector(s),pick=a=>a[Math.floor(Math.random()*a.length)],cl=(v,a,b)=>Math.min(b,Math.max(a,v));
 
 const TALK=[
@@ -176,7 +176,7 @@ Object.assign(ODDS,{merchant:{advert:.7,sell:.29,mob:.01},slip:.05,feast:.5});
 const APOTH_COST=30,DESK_COST=50,DESK_COST_BLACK=30,SELL_GAIN=2,APPLE_GAIN=1,SECTION_REWARD=10;
 const MERCH_ADS=['Fresh apples! Crisp and sweet!','Oranges from the south! Two for a coin!','Bananas! Ripe bananas!','Fruit! Get your fruit here!'];
 Object.assign(NAMES,{apothecary:'Apothecary',advert:'Calling out to customers',sell:'Selling apples next door (+2 coins)',mob:'An angry fruit mob',
- apple:'Priest buys an apple (+1 coin)',slip:'Priest slips on an apple',feast:'A feast with the nobles',apoth:'Tap the Apothecary: potion for 30 coins',desk:'Writing desk (Merchant + Mage next to the Wizard): scroll for 50 coins'});
+ apple:'Priest buys an apple (+1 coin)',slip:'Priest slips on an apple',feast:'A feast with the nobles'});
 
 // ---------- more Fruit Merchant, monkey, big prayer ----------
 ODDS.hangout=.15; // plain hangouts are rarer, so arrangement scenes happen more
@@ -365,7 +365,7 @@ PAIRS['wizard>apothecary']={right:'cobrew',left:'boom',below:'wdate',above:'wabo
 PAIRS['necromancer>apothecary']={above:'bats'};
 // dragon = share of rumors that are about a dragon (else goblins); kdate/wdate = chance the date goes well;
 // alchemist = brewing together unlocks the Alchemist (or, once unlocked, makes a potion); boomDeath = the explosion kills both; imp = share of wabove that is the imp
-Object.assign(ODDS,{dragon:.1,kdate:.8,wdate:.4,alchemist:.2,boomDeath:.02,imp:.4});
+Object.assign(ODDS,{kdate:.8,wdate:.4,imp:.4});
 const BEAR_TIME=30,KDATE_TIME=60,WDATE_TIME=30,BEES_TIME=7,REMOVE_COST=10;
 const LEMONS=[['knight','Two lemons, please. For polishing my armor.'],['merchant','Lemons? All out, I am afraid.'],['knight','A fruit shop... with no lemons?'],['merchant','Life gave me no lemons. Try next week!']];
 const RUMOR_GOBLIN=[['merchant','Psst. Goblins were spotted by the old mill.'],['knight','Goblins? Let them come.'],['merchant','They stole three cabbages already!'],['knight','I will slay any threat that dares come here!']];
@@ -395,7 +395,7 @@ Object.assign(DESC,{
  rumors:'Fruit Merchant below the Knight. Rumors of goblins (90%) or a dragon (10%). The Knight vows to slay them all.',
  bear:'Knight above the Apothecary. One sip of her potion and he is a grizzly bear for 30 seconds. Rawr.',
  kgossip:'Knight below the Apothecary. They gossip about whichever Mage lives nearby.',
- kdate:'Knight right of the Apothecary. They leave for a 1 minute date. 80% it goes well, 20%... less so.',
+ 
  bees:'Knight left of the Apothecary. A bee swarm! Both flee to the other room until the bees buzz off.',
  wdate:'Wizard below the Apothecary. A 30 second date. Only 40% go well. Wizards are hard to date.',
  bats:'Necromancer above the Apothecary. His bats flap around, and a few swoop down into her shop. She is not pleased.'});
@@ -412,7 +412,7 @@ const ROGUE_UNLOCK=50,ROGUE_DISGUISE_TIME=120;
 // Rogue idles; assassin = any neighbor visit with the Rogue; rogueArtifact = idle chance to conjure an artifact while he has the Mage tag
 // Alchemist idles; ALC_LUCK = how much his potion raises his neighbors' rarest scene chances, for ALC_LUCK_TIME seconds
 Object.assign(ODDS,{rogue:{daggers:.5,smokebomb:.2,disguise:.05,count:.25},assassin:.005,rogueArtifact:.002,
- alchemistIdle:{alcbrew:.6,research:.1,smoke:.3},stone:.8,bloodorange:.3,ntradePotion:.2,reveal:.05,healFarm:.02});
+ alchemistIdle:{alcbrew:.6,research:.1,smoke:.3},bloodorange:.3,reveal:.05});
 const ALC_LUCK=.3,ALC_LUCK_TIME=60,PSLEEP_TIME=30,RITUAL_TIME=15,FUNERAL_TIME=12,BLOODORANGE_GAIN=3;
 // Priest relative to the Apothecary; Necromancer relative to the Fruit Merchant / Apothecary
 PAIRS['priest>apothecary']={left:'plant',right:'pstudy',above:'psleep',below:'heal'};
@@ -463,7 +463,7 @@ const TAG_NAMES={'tag:mage':'a Mage','tag:merchant':'a Merchant','tag:fighter':'
 // alcMage = extra visit chance for a Mage next to the Alchemist; promo = Merchant idle share next to him; haste = how much more a Fighter
 // next to him picks Mage neighbors; twopot = buying a potion next to him gives two; beast = mad scientist idle; fourMage = gift a potion
 // tempt = the demon talks the Rogue into it; betray = the Necromancer's sacrifice works; sickDeath = poisoned wine kills when it wears off
-Object.assign(ODDS,{alcMage:.2,promo:.1,haste:.5,twopot:.2,beast:.15,fourMage:.1,tempt:.05,betray:.2,sickDeath:.05,
+Object.assign(ODDS,{alcMage:.2,promo:.1,haste:.5,beast:.15,fourMage:.1,tempt:.05,sickDeath:.05,
  dungeon:{coins:.2,artifact:.1,scrolls:.25,potions:.25,secret:.2}});
 const SICK_TIME=60,TINY_TIME=120,DUNGEON_TIME=180,DUNGEON_GOLD=50,ROGUE_BUY=5,STEAL_SHARE=.05;
 // Rogue relative to each character. The Rogue is always the one who visits.
@@ -576,7 +576,7 @@ ITEMS.push('ingot');
 const INGOT_COST=100,SMITH_UNLOCK=100,ADVENTURE_TIME=180;
 // druid = his idle activities; spirit = idle chance to commune with a nature spirit (all 4 spaces around him open and empty)
 // adventure = the Blacksmith recruits his Fighter neighbors (needs 2+); adventureDeath = each one's risk; smithtalk = share of Knight visits about smithing (else reforging)
-Object.assign(ODDS,{druid:{grove:.4,animals:.4,weather:.2},spirit:.2,adventure:.2,adventureDeath:.1,advScroll:.2,advArtifact:.05,smithtalk:.6,rogueOutfit:{ninja:.4,bandit:.4,con:.2}});
+Object.assign(ODDS,{druid:{grove:.4,animals:.4,weather:.2},spirit:.2,adventure:.2,advArtifact:.05,smithtalk:.6,rogueOutfit:{ninja:.4,bandit:.4,con:.2}});
 // Blacksmith relative to each character (any side = the same scene)
 const SIDES=k=>({left:k,right:k,above:k,below:k});
 PAIRS['blacksmith>necromancer']=SIDES('nscoff');PAIRS['blacksmith>knight']=SIDES('smithk');PAIRS['blacksmith>wizard']=SIDES('metal');PAIRS['blacksmith>merchant']=SIDES('awkjoke');
@@ -646,7 +646,7 @@ const WEATHER_TIME=30,WEATHER_MAX=2,ARCH_SKIP=['moonlight','decay','infest'];
 // sunMerchant / sunFarmer = more coins in sunshine; rainStory = idle chance of reading a story in the rain, storySecret = it reveals a secret;
 // werewolf = chance a werewolf kills the one in the moonlight, when it starts and when it ends; familiar = the Druid's animal
 Object.assign(ODDS,{weather:{blizzard:.1,sandstorm:.1,sunshine:.15,rain:.15,overgrowth:.15,moonlight:.15,decay:.15,infest:.05},
- blizzVisit:.3,blizzRare:.3,sandDeath:3,sunMerchant:.2,sunFarmer:.5,rainStory:.8,storySecret:.1,werewolf:.3,familiar:{bear:1/3,eagle:1/3,wolf:1/3}});
+ blizzVisit:.3,blizzRare:.3,sandDeath:3,sunMerchant:.2,sunFarmer:.5,rainStory:.8,werewolf:.3,familiar:{bear:1/3,eagle:1/3,wolf:1/3}});
 const DRUID_DISCOUNT=5; // secret: coins off an Apothecary potion while the Druid is next to her
 const WX_NAMES={blizzard:'Blizzard',sandstorm:'Sandstorm',sunshine:'Sunshine',rain:'Rain',overgrowth:'Overgrowth',moonlight:'Moonlight',decay:'Decay',infest:'Infest'};
 const WX_SAY={blizzard:'Winds of the north, come!',sandstorm:'Sands of the far desert, rise!',sunshine:'Let the sun shine warm!',rain:'Clouds, gather and pour!',
@@ -674,13 +674,13 @@ Object.assign(DESC,{metalitch:'Blacksmith and Druid, any side. The Druid explain
  archdruid:'Artifact on the Druid: he becomes the Archdruid, with a glowing living staff. He never casts Moonlight, Decay or Infest again.',
  ddiscount:'Secret: with the Druid next to the Apothecary, her potions cost 5 coins less (herbs from his grove).',
  wolfkill:'Moonlight: when it starts and when it ends, 30% a werewolf leaps out and kills whoever is in that space.',
- 'wx:blizzard':'The Druid\'s weather instead of a visit, 10%. 30 s of snow on a random space: its character visits 30% less, but their rarest idle activity is 30% more likely.',
- 'wx:sandstorm':'The Druid\'s weather instead of a visit, 10%. 30 s of sand on a random space: every chance of dying there is tripled.',
- 'wx:sunshine':'The Druid\'s weather instead of a visit, 15%. 30 s of sun on a random space: a Merchant there earns 20% more coins, a Farmer 50% more.',
- 'wx:rain':'The Druid\'s weather instead of a visit, 15%. 30 s of rain on a random space: whoever lives there reads short stories (10% reveal a secret).',
- 'wx:overgrowth':'The Druid\'s weather instead of a visit, 15%. For 30 s, leaves and flowers grow all around the border of a random space. Lovely.',
- 'wx:moonlight':'The Druid\'s weather instead of a visit, 15%. 30 s of darkness and soft pink moonlight. When it starts and ends, 30% a werewolf attacks.',
- 'wx:decay':'The Druid\'s weather instead of a visit, 15%. 30 s of worms and flies on a random space: tags its character was not born with are gone while it lasts (an ingot\'s Fighter tag, the Rogue\'s Mage tag).',
+ 
+ 
+ 
+ 
+ 
+ 
+ 
  'wx:infest':'The Druid\'s weather instead of a visit, 5%. 30 s of locusts on a random space: nobody visits it.'});
 
 // ---------- the Monarch (no tags) ----------
@@ -863,7 +863,6 @@ ODDS.revealScene=.7; // a clue reveals an undiscovered interaction 70%, a secret
 // (The player never sees the tier names; the Compendium shows the resulting percentages.)
 const DECIDE={idle:.5,visit:.2},HANGOUT=.2;
 const RARITY={u:.15,r:.05,l:.0075};
-const TIER_NAME={c:'common',u:'uncommon',r:'rare',l:'legendary'};
 // Idle activities per character: [key, tier, condition]. A condition (checked in game.js, idleOk) must hold or the activity is left out.
 // Conditions: nbr = a free neighbor; noRight = no box to his right; eknight = Eldritch Knight with a Wizard on the board; brew = next to a Merchant
 // with 5 coins; target = someone free to haunt; alc = next to the Alchemist; madsci = mad scientist with a free neighbor; others = someone to copy;
@@ -931,9 +930,7 @@ NAMES.dingot='Ingot on Druid: refused';DESC.dingot='Ingot on the Druid: he refus
 COMP_TABS.find(t=>t.id==='druid').items.splice(3,0,'dingot');
 // ---------- clues ----------
 // Shelf: a locked character shows a blank box with this cryptic clue (no name)
-const SHELF_CLUE={necromancer:'When a holy one falls, something dark may stir.',merchant:'A heavy purse draws the trade.',apothecary:'Let commerce sit beside the arcane.',
- alchemist:'A wizard brewing beside a healer, the healer to his west...',rogue:'Learn fifty of the realm\'s stories.',druid:'Claim every corner of the land.',
- blacksmith:'Spend freely. The forge hears coins jingle.',monarch:'A kingdom needs ten households at once.',traveler:'Four traders, shoulder to shoulder, in a square.'};
+const SHELF_CLUE={}; // (the clues are filled in further down)
 // Compendium: unlock hints written by hand (the rest are made from the rules, unlockHint in game.js)
 const HINTS={};
 Object.assign(HINTS,{cleanse:'A Death Knight on the board, and a Priest beside the Necromancer, might set things right.',
@@ -968,7 +965,7 @@ Object.assign(NAMES,{'ss:gold':'Super secret: a golden kingdom','ss:alltags':'Su
 Object.assign(DESC,{'ss:gold':'Super secret: every space on the board turned golden by philosopher\'s stones. A kingdom of gold!',
  'ss:alltags':'Super secret: one character with every tag at once: Fighter, Mage, Merchant and Monstrous.'});
 // Shelf clues, as the owner wrote them
-Object.assign(SHELF_CLUE,{necromancer:'When death befalls a holy follower, a new worshipper arrives.',blacksmith:'When the economy is booming, a new business arrives.',
+Object.assign(SHELF_CLUE,{necromancer:'When death befalls a holy follower, a new worshipper may arrive.',blacksmith:'When the economy is booming, a new business arrives.',
  apothecary:'When commerce has access to magic...',rogue:'After 50 tales, he sneaks in...',druid:'Explore every mile of land.',merchant:'The sound of a heavy purse draws him in.',
  monarch:'A large kingdom needs a leader.',traveler:'A market square brings new wares.',alchemist:'A maker of potions: wizardry and ingredients, side by side.'});
 // ---------- group events: checked every GROUP_EVERY seconds, ODDS.group chance one happens (if the board allows), lasting GROUP_TIME ----------
@@ -1045,7 +1042,6 @@ Object.assign(FLAVOR,{welllook:'They peer into the dark water and wonder how dee
 Object.assign(HINTS,{welllook:'Mages love a quiet well next door.',wellsplash:'Mages and water do not always mix... rarely, anyway.',welljump:'Fighters living by the well like to show off.',
  wellwish:'Shopkeepers by the well are a superstitious lot.',welldive:'Something monstrous living by the well might take a dip.'});
 const WELL_PCT={welllook:'27%',wellsplash:'3%',welljump:'30%',wellwish:'30%',welldive:'30%'}; // 30% of idles x (90% / 10% for Mages); with several tags it is shared
-SHELF_CLUE.necromancer='When death befalls a holy follower, a new worshipper may arrive.';
 TAG_ICON.structure=[[2,1,3,2,'#c0603a'],[2,1,3,1,'#e08a5a'],[0,4,3,2,'#c0603a'],[0,4,3,1,'#e08a5a'],[4,4,3,2,'#a84e2e'],[4,4,3,1,'#d07a4a']]; // a little stack of bricks: two below, one on top
 
 // ---------- travelling group events: everyone walks to a structure (a secret each) ----------

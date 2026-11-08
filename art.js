@@ -3,13 +3,10 @@ const WALL={traveler:['#9ccbe8','#6a9a44'],monarch:['#3e2a40','#5a1828'],druid:[
 // Priest's stained glass window (frame 16..44 x 12..52, center x 30, y 32). Tentacles can smash through it.
 const WINDOW=[[16,12,28,40,'#2a2434'],[18,16,7,10,'#c04040'],[26,16,8,10,'#3a6ad0'],[35,16,7,10,'#d0b030'],[18,27,7,10,'#40a060'],[26,27,8,10,'#c890ff'],[35,27,7,10,'#c04040'],[18,38,7,12,'#3a6ad0'],[26,38,8,12,'#d0b030'],[35,38,7,12,'#40a060'],[29,19,2,8,'#f2e8a0'],[27,21,6,2,'#f2e8a0'],[20,12,20,2,'#3a3448']].map(r=>[r[0],r[1]+12,r[2],r[3],r[4]]); // moved down, clear of the name label
 const WIN_C={x:30,y:44};
-// Knight's back-wall door (hides the stairs). Center x 72, bottom at the floor line (y 66).
-const BACKDOOR=[[61,31,22,35,'#1e2030'],[63,33,18,33,'#6a4420'],[69,33,1,33,'#5a3a1e'],[75,33,1,33,'#5a3a1e'],[63,38,18,2,'#3a2a1a'],[63,58,18,2,'#3a2a1a'],[65,49,2,2,'#f2c84a']];
 // The Monarch's fancy back door: dark red wood, gold trim and an arched gold top (same place as the plain one)
 const ROYALDOOR=[[60,28,24,38,'#1e1020'],[62,31,20,35,'#7a2a2a'],[61,29,22,3,'#f2c84a'],[64,27,16,2,'#f2c84a'],[62,31,2,35,'#c8a030'],[80,31,2,35,'#c8a030'],[71,33,2,33,'#5a1a1a'],[64,44,16,2,'#c8a030'],[64,56,16,2,'#c8a030'],[66,48,3,3,'#f2c84a'],[75,48,3,3,'#f2c84a']];
 // The Druid's forest by row (wall = sky behind the trees, floor = ground): 0 dark woods, 1 normal, 2 autumn with brownish-green grass, 3 fungal
 const DRUID_WALL=[['#0e2014','#1a2214'],null,['#4a3a22','#5a5a2a'],['#24182e','#302638']];
-const BACKDOOR_L=BACKDOOR.map(r=>[r[0]-48,r[1],r[2],r[3],r[4]]); // same door, on the left side of the room (Apothecary)
 // Wizard's second bookshelf (slides aside to reveal the spiral staircase). Center x 68, bottom y 66.
 const SHELF2=[[56,30,24,36,'#6a4a2a'],[58,32,20,32,'#3a2410'],[58,47,20,2,'#6a4a2a'],[59,35,4,12,'#c04040'],[64,37,3,10,'#40a0c0'],[68,35,4,12,'#d0b030'],[73,36,4,11,'#40c070'],[59,51,3,13,'#8a5ae0'],[63,52,5,12,'#c04040'],[69,50,3,14,'#40a0c0'],[73,53,4,11,'#d0b030']];
 // Room backgrounds. The top-left corner (about y < 24) is kept clear so the name label never covers the decor.

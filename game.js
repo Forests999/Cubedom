@@ -181,7 +181,7 @@ function endGroup(done){if(!grp)return;const g0=grp;grp=null;g0.ids.forEach(id=>
  if(done&&g0.kind==='market'){const n=1+Math.floor(Math.random()*10)+1+Math.floor(Math.random()*10),M=U[g0.ids[0]];addCoins(n,M?M.x:null,M?M.y-50:null);toast('The market closes. Sales brought in '+n+' coins!')} // 2d10 coins
  if(done&&g0.kind==='feast')toast('The feast is over. Everyone heads home happy and full.')}
 function stepGroup(dt){grpClock+=dt;
- if(grpClock>=GROUP_EVERY){grpClock-=GROUP_EVERY;if(!grp&&!rf&&Math.random()<ODDS.group){const o=groupOptions();if(o.length){const p=pick(o);if(p.host)startTravelGroup(p);else startGroup(p)}}}
+ if(grpClock>=GROUP_EVERY){let go=false;if(!grp&&!rf&&Math.random()<ODDS.group){const o=groupOptions();if(o.length){const p=pick(o);if(p.host)startTravelGroup(p);else startGroup(p);go=true}}grpClock=go?0:GROUP_EVERY-5} // (if nobody is ready right then, it tries again every 5 seconds)
  if(!grp)return;grp.t+=dt;if(TRAVEL_GRP[grp.kind]){stepTravelGroup(dt);return}
  // it stops early if a character is gone, moved, or pulled away (a funeral, for example)
  if(grp.ids.some((id,i)=>{const v=U[id];return !v||v.st!=='grp'||v.r!==grp.pos[i][0]||v.c!==grp.pos[i][1]})){endGroup(false);return}
@@ -814,7 +814,6 @@ function route(u,r1,c1,r2,c2,fin){
  return [{k:'walk',x:X1,y:y1+FY,on:f1},{k:'walk',x:X1,y:y1+A.ay,open:f1},{k:'vanish',f:f1,m:out},
   {k:'appear',x:X2,y:y2+Bx.ay,f:f2,m:inn},{k:'walk',x:X2,y:y2+FY,sp:34,close:f2},{k:'walk',x:fin.x,y:fin.y,off:f2}];
 }
-const isPair=(a,b)=>(a.id==='knight'&&b.id==='wizard')||(a.id==='wizard'&&b.id==='knight');
 // ---------- the decision roll (DECIDE, HANGOUT in data.js): idle activity, visit, or wander ----------
 function decide(u){
  if(u.form==='dknight'){followNecro(u);return} // the Death Knight only follows the Necromancer
@@ -1881,7 +1880,6 @@ function idleEntry(k){if(k.startsWith('prac:'))k='prac';for(const id in IDLES){c
 // % of an idle activity (commons share what the character's whole list leaves)
 function idlePct(k){const q=idleEntry(k);if(!q)return null;const[id,e]=q;if(e[1]!=='c')return RARITY[e[1]];if(id==='anyone')return null;
  const base=IDLES[id]||[];return listChances(base)[base.indexOf(e)]} // all of the character's activities count, so the list adds up to 100%
-const EVERYDAY={nbr:1,noRight:1,target:1,others:1};
 // Where a visit scene happens: [{a, b, rels}] from PAIRS (a is rel of b)
 function sceneWhere(k){const out=[];for(const p in PAIRS){const rels=Object.keys(PAIRS[p]).filter(r=>{const v=PAIRS[p][r];return v===k||(VISIT_EXPAND[v]||[]).some(e=>e[0]===k)});if(rels.length){const[a,b]=p.split('>');out.push({a,b,rels})}}return out}
 // The list a visit between a and b in that arrangement would roll from (no group scenes), and the % of key k in it
