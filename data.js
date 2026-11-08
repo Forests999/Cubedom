@@ -1068,3 +1068,27 @@ Object.assign(DESC,{'grp:wellchat':'Secret group event: with characters on all f
 Object.assign(FLAVOR,{'grp:wellchat':'The neighbors meet at the well and talk about the only thing everyone agrees on: the weather.',
  'grp:classic':'The old party, together again: drinks all round and stories that get taller with every telling.'});
 const STRUCT_ACTS={well:WELL_ACTS}; // each structure's activities for its neighbors, by tag (the Tavern has none yet)
+ODDS.group=1; // group events: every check (GROUP_EVERY) one happens whenever the board allows
+
+// ---------- the Tavern's activities for its neighbors (by tag) ----------
+// Mage: a fizzy magic drink (10%: the bubbles fill the room and they pop them by magic); Fighter: two drinks, then home to sleep it off (DRUNK_SLEEP);
+// Merchant: a delivery of crates (20%: a bottle of dwarven wine, the barkeep pays TAVERN_WINE coins); Monstrous: the barkeep chases them out with an axe
+STRUCT_ACTS.tavern={mage:['tvfizz','tvbubbles'],fighter:['tvdrink'],merchant:['tvdeliver','tvwine'],monstrous:['tvshoo']};
+const STRUCT_SECOND={wellsplash:WELL_SPLASH,tvbubbles:.1,tvwine:.2}; // the chance of the second, rarer activity of a tag
+const DRUNK_SLEEP=15,TAVERN_WINE=20;
+COMP_TABS.find(t=>t.id==='tavern').pairs.push('tvfizz','tvbubbles','tvdrink','tvdeliver','tvwine','tvshoo');
+Object.assign(PAIR_WITH,{tvfizz:['tavern','tag:mage'],tvbubbles:['tavern','tag:mage'],tvdrink:['tavern','tag:fighter'],tvdeliver:['tavern','tag:merchant'],tvwine:['tavern','tag:merchant'],tvshoo:['tavern','tag:monstrous']});
+COMP_TABS.forEach(t=>{const add={wizard:['tvfizz','tvbubbles'],priest:['tvfizz','tvbubbles'],necromancer:['tvfizz','tvbubbles'],druid:['tvfizz','tvbubbles'],
+ knight:['tvdrink'],rogue:['tvdrink'],blacksmith:['tvdrink','tvdeliver','tvwine'],merchant:['tvdeliver','tvwine'],apothecary:['tvdeliver','tvwine'],alchemist:['tvdeliver','tvwine','tvshoo'],traveler:['tvdeliver','tvwine']}[t.id];if(add)t.pairs.push(...add)});
+Object.assign(NAMES,{tvfizz:'A fizzy magic drink',tvbubbles:'Too many bubbles',tvdrink:'One more round',tvdeliver:'A delivery for the tavern',tvwine:'Dwarven wine',tvshoo:'Thrown out of the tavern'});
+Object.assign(TITLES,{tvfizz:'Fizzy Magic Drink',tvbubbles:'Bubble Trouble',tvdrink:'One More Round',tvdeliver:'Special Delivery',tvwine:'Dwarven Wine',tvshoo:'No Monsters Allowed'});
+Object.assign(DESC,{tvfizz:'A Mage next to the Tavern orders a fizzy magic drink. It bubbles.',tvbubbles:'A Mage next to the Tavern orders a fizzy magic drink, and the bubbles fill the whole room. The Mage pops them all with magic.',
+ tvdrink:'A Fighter next to the Tavern gulps down a drink, orders another, stumbles home and sleeps it off for 15 seconds.',tvdeliver:'A Merchant next to the Tavern delivers crates of drink.',
+ tvwine:'A Merchant next to the Tavern brings an expensive bottle of dwarven wine. The barkeep pays 20 coins for it.',tvshoo:'A Monstrous character comes into the Tavern. The barkeep grabs an axe from behind the counter and chases them out.'});
+Object.assign(FLAVOR,{tvfizz:'One fizzy enchanted ale! It bubbles, it sparkles, it tickles the nose.',tvbubbles:'The drink fizzes over and the whole tavern fills with bubbles. Pop, pop, pop goes the magic.',
+ tvdrink:'One ale, gulped. Another, gulped. Then a wobbly walk home and a long nap.',tvdeliver:'Crates of the good stuff, delivered right to the bar.',
+ tvwine:'A dusty bottle of dwarven wine, aged under a mountain. The barkeep pays handsomely.',tvshoo:'The barkeep pulls an axe from under the counter. "OUT! No monsters in my tavern!"'});
+Object.assign(HINTS,{tvfizz:'Mages next to the tavern like their drinks with sparkle.',tvbubbles:'Sometimes a magic drink gets a little... out of hand.',tvdrink:'Fighters next to the tavern rarely stop at one.',
+ tvdeliver:'Shopkeepers next door keep the tavern stocked.',tvwine:'A rare bottle could fetch a good price at the bar.',tvshoo:'Something monstrous next door might not be welcome at the bar.'});
+Object.assign(WELL_PCT,{tvfizz:'27%',tvbubbles:'3%',tvdrink:'30%',tvdeliver:'24%',tvwine:'6%',tvshoo:'30%'}); // share of a neighbor's idle activities (all structures)
+NOTE.tvwine='+20 coins.';NOTE.tvdrink='Asleep for 15 seconds once home.';

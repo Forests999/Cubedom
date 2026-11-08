@@ -948,8 +948,13 @@ function tavernRects(){const R=[...backDoor('tavern',1)],p=(x,y,w,h,c)=>R.push([
 const BARKEEP_SPOTS=[64,78,70,86,74];
 function drawTavernLife(c,bx,by,t){const seg=Math.floor(t/7),s=t%7,i=seg%BARKEEP_SPOTS.length,a0=BARKEEP_SPOTS[i],a1=BARKEEP_SPOTS[(i+1)%BARKEEP_SPOTS.length];
  const moving=s>6,x=bx+(moving?lerp(a0,a1,s-6):a0),dir=moving?(a1>a0?1:-1):(i%2?-1:1);
- spr(c,'barkeep','ok',x,by+64,dir,0,1,.95,!moving&&s>2&&s<3.4?'fwd':'none',moving?stepOf(t):0);
+ // on the board: the Tavern box can steer him (h.bk: chasing a monster out with an axe); remember where he stands (h.bkx) for his speech
+ const tv=typeof U!=='undefined'&&U.tavern&&U.tavern.c*CELL===bx&&U.tavern.r*CELL===by?U.tavern:null,bk=tv&&tv.bk;if(tv)tv.bkx=bk?bk.x:x;
+ const drawBarkeep=(xx,yy,f,pose,leg)=>{spr(c,'barkeep',bk&&bk.axe?'mad':'ok',xx,yy,f,0,1,.95,pose,leg);if(bk&&bk.axe){const ax=Math.round(xx+f*9),ay=Math.round(yy-40);c.fillStyle='#5a3a20';c.fillRect(ax,ay,2,14);c.fillStyle='#cfd6e0';c.fillRect(f>0?ax+2:ax-5,ay,5,6);c.fillStyle='#ffffff';c.fillRect(f>0?ax+6:ax-5,ay,1,6)}};
+ if(!bk||!bk.front)drawBarkeep(bk?bk.x:x,by+64,bk?bk.face:dir,bk?'up':(!moving&&s>2&&s<3.4?'fwd':'none'),moving&&!bk?stepOf(t):0);
  TAVERN_BAR.forEach(r=>{c.fillStyle=r[4];c.fillRect(bx+r[0],by+r[1],r[2],r[3])}); // the bar in front of him
+ if(bk&&bk.front)drawBarkeep(bk.x,by+FY,bk.face,'up',bk.walk?stepOf(t):0); // he has come round the bar
+ if(tv&&tv.cratesUntil>T){[[78,76],[86,80]].forEach(q=>{c.fillStyle=O;c.fillRect(bx+q[0]-1,by+q[1]-1,12,10);c.fillStyle='#8a5a2a';c.fillRect(bx+q[0],by+q[1],10,8);c.fillStyle='#6a4420';c.fillRect(bx+q[0],by+q[1]+3,10,1);c.fillRect(bx+q[0]+4,by+q[1],1,8)})} // a delivery
  const n=Math.floor(t/40),ph=t%40,who=['commoner','farmer','noble2','squire'][n%4];if(ph>=17)return;
  const door=bx+24,seat=bx+41,a=ph<.3?ph/.3:ph>16.7?(17-ph)/.3:1,sitting=ph>=1.2&&ph<15.6;
  const px=ph<1.2?lerp(door,seat,cl((ph-.3)/.9,0,1)):ph>=15.6?lerp(seat,door,cl((ph-15.6)/.9,0,1)):seat,drink=sitting&&Math.floor(ph*.5)%3===0;
