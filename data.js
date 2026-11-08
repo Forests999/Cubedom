@@ -1019,3 +1019,29 @@ const TITLES={friend:'Old Friends',learn:'Eldritch Awakening',bolt:'Thunderstruc
  'rq:merchant':'Exotic Fruit','rq:apothecary':'Time Off','rq:necromancer':'Prisoners','rq:druid':'Land for Nature',rqdeny:'Request Denied',court:'Holding Court',
  royalfuneral:'The Grand Funeral',regicide:'Revenge',royalpatron:'Royal Patron',wares:'Arranging the Wares',troad:'On the Road',tshop:'Artifact Shop',tscroll:'Scroll Sale',
  tpotion:'Potion Sale',tingot:'Ingot Sale','ss:gold':'A Golden Kingdom','ss:alltags':'One of Everything','grp:market':'Market Day','grp:feast':'The Grand Feast'};
+
+// ---------- Structures: boxes with nobody living in them (the Structure tag) ----------
+// A structure never decides anything, is never visited except for its own activities, does not count for group events
+// and cannot be killed; items do nothing on it. It gives its neighbors new idle activities: STRUCT_IDLE of their idle rolls,
+// picked by one of the neighbor's tags (at random if they have several).
+const isStruct=u=>!!u&&CLASS[u.id]==='structure';
+const STRUCT_IDLE=.3;
+// The Well (on the shelf from the start). Its activities by the neighbor's tag; a Mage is splashed 10% of the time (WELL_SPLASH), else looks in.
+CH.well={name:'Well',eye:O,p:[]};CLASS.well='structure';TR.well={up:'fade',down:'fade'};SHELF_CHARS.push('well');ALL_CHARS.push('well');NAMES.well='Well';
+const WELL_ACTS={mage:['welllook','wellsplash'],fighter:['welljump'],merchant:['wellwish'],monstrous:['welldive']},WELL_SPLASH=.1;
+TAG_NOTES.well='{structure} Structure. Nobody lives here: its neighbors come over for its activities instead.';
+COMP_TABS.push({id:'well',name:'Well',pairs:['welllook','wellsplash','welljump','wellwish','welldive'],idle:[],items:[]});
+Object.assign(PAIR_WITH,{welllook:['well','tag:mage'],wellsplash:['well','tag:mage'],welljump:['well','tag:fighter'],wellwish:['well','tag:merchant'],welldive:['well','tag:monstrous']});
+COMP_TABS.forEach(t=>{const add={wizard:['welllook','wellsplash'],priest:['welllook','wellsplash'],necromancer:['welllook','wellsplash'],druid:['welllook','wellsplash'],
+ knight:['welljump'],rogue:['welljump'],blacksmith:['welljump','wellwish'],merchant:['wellwish'],apothecary:['wellwish'],alchemist:['wellwish','welldive'],traveler:['wellwish']}[t.id];if(add)t.pairs.push(...add)});
+Object.assign(NAMES,{welllook:'Looking into the well',wellsplash:'Splashed at the well',welljump:'Jumping the well',wellwish:'A wish in the well',welldive:'Into the well'});
+Object.assign(TITLES,{welllook:'Wishing Well Gaze',wellsplash:'I\'m Melting!',welljump:'Well Vault',wellwish:'Silent Wish',welldive:'Down the Well'});
+Object.assign(DESC,{welllook:'A Mage next to the Well peers into it peacefully.',wellsplash:'A Mage next to the Well gets a bucket of well water thrown at them by a peasant. They melt into a puddle, the peasant runs, and they slowly reform.',
+ welljump:'A Fighter next to the Well runs at it and leaps right over, showing off.',wellwish:'A Merchant next to the Well tosses a coin down it and makes a silent wish.',
+ welldive:'A Monstrous character next to the Well jumps in, peeks out with just the top of their head, then climbs back out.'});
+Object.assign(FLAVOR,{welllook:'They peer into the dark water and wonder how deep it goes.',wellsplash:'A peasant flings a bucket of well water. They melt into a puddle, the peasant runs, and they slowly pull themselves back together.',
+ welljump:'A running start and a mighty leap right over the well. Show-off.',wellwish:'A coin plinks into the water. The wish stays a secret.',
+ welldive:'In they go! Then two eyes peek over the rim before they climb back out.'});
+Object.assign(HINTS,{welllook:'Mages love a quiet well next door.',wellsplash:'Mages and water do not always mix... rarely, anyway.',welljump:'Fighters living by the well like to show off.',
+ wellwish:'Shopkeepers by the well are a superstitious lot.',welldive:'Something monstrous living by the well might take a dip.'});
+const WELL_PCT={welllook:'27%',wellsplash:'3%',welljump:'30%',wellwish:'30%',welldive:'30%'}; // 30% of idles x (90% / 10% for Mages); with several tags it is shared

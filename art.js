@@ -50,6 +50,7 @@ function bg(id,w){
   [6,25,3,3,'#f4ece0'],[16,27,3,2,'#f4ece0'],[44,20,4,3,'#f4ece0'],[58,23,3,3,'#f4ece0'],[78,27,3,3,'#f4ece0'],[88,29,3,2,'#f4ece0'],
   [24,60,2,6,'#e0d8c4'],[21,57,8,3,'#c04a6a'],[36,62,2,4,'#e0d8c4'],[34,60,6,2,'#9a60d0'],[66,62,2,4,'#e0d8c4'],[64,60,6,2,'#e07a40'],[16,76,2,4,'#e0d8c4'],[14,74,6,2,'#c04a6a'],[44,84,2,4,'#e0d8c4'],[42,82,6,2,'#7ae0c0'],[76,80,2,4,'#e0d8c4'],[74,78,6,2,'#9a60d0']];
  // Traveling Merchant: a dirt road through the meadow, a tree, flowers, a covered wagon with a mule, and a stand covered in striped cloth for the wares
+ if(id==='well')return wellRects(); // the Well (a structure: nobody lives here)
  if(id==='traveler')return [[0,50,96,16,'#7ab05a'],[0,56,30,10,'#6aa04a'],[60,56,36,10,'#6aa04a'],
   [82,26,5,40,'#6a4424'],[83,30,1,30,'#4e3018'],[70,10,26,18,'#3a8a3a'],[74,6,18,6,'#4aa04a'],[68,24,28,8,'#2e7a30'],[76,9,6,3,'#6aba5a'],[88,14,4,3,'#6aba5a'], // a big tree
   [6,40,3,22,'#6a4424'],[0,30,16,12,'#3a8a3a'],[2,27,10,4,'#4aa04a'],[0,40,16,4,'#2e7a30'],[4,29,4,2,'#6aba5a'], // a small tree (below the name label)
@@ -504,6 +505,7 @@ function drawItem(c,kind,x,y,s){
   :kind==='candle'?[[-1,-6,2,2,'#ffd060'],[-2,-4,4,9,'#24222a']]
   :kind==='skull'?[[-3,-3,6,5,'#e8e4d0'],[-2,2,4,2,'#d8d4c0'],[-2,-1,1,2,O],[1,-1,1,2,O]]
   :kind==='pineapple'?[[-2,-2,5,7,'#e0a830'],[-1,-1,1,1,'#a07018'],[1,1,1,1,'#a07018'],[-1,3,1,1,'#a07018'],[-2,-5,1,3,'#4a9a3a'],[0,-6,1,4,'#5aba4a'],[2,-5,1,3,'#4a9a3a']]
+  :kind==='bucket'?[[-3,-2,7,6,'#7a5030'],[-3,-1,7,1,'#5a5a64'],[-3,2,7,1,'#5a5a64'],[-2,-3,5,1,'#8fd0ff'],[-3,-5,1,3,'#5a5a64'],[3,-5,1,3,'#5a5a64'],[-3,-6,7,1,'#5a5a64']]
   :kind==='sack'?[[-4,-2,8,7,'#b8945a'],[-2,-4,4,2,'#9a7a44'],[-1,-5,2,1,'#6a4a24'],[-1,0,2,3,'#f2c84a']]
   :kind==='barrel'?[[-4,-4,8,9,'#8a5a2a'],[-4,-3,8,1,'#4a4a52'],[-4,3,8,1,'#4a4a52'],[-3,-5,6,1,'#cfe8f0'],[0,-2,1,3,'#f2c84a'],[-1,-1,3,1,'#f2c84a']]
   :kind==='staff'?[[0,-6,1,12,'#4a4e5e'],[0,-7,1,1,'#aab0c0'],[-1,-10,3,2,'#7ff0ff']]
@@ -831,7 +833,7 @@ const OUTDOOR={farmer:{sky:['#4a8ad0','#bfe2f4']},traveler:{sky:['#5a9ad8','#cfe
 const outKey=(id,w)=>id==='druid'?'druid'+(w>=0&&w<=3?w:1):id;
 function outBack(c,id,w){const k=outKey(id,w),o=OUTDOOR[k];if(!o)return false;const gr=c.createLinearGradient(0,0,0,66);gr.addColorStop(0,o.sky[0]);gr.addColorStop(1,o.sky[1]);c.fillStyle=gr;c.fillRect(0,0,96,66);
  const blob=(x,y,r,col)=>{c.fillStyle=col;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill()};
- if(k==='farmer'||k==='traveler'){[[30,14,5],[37,12,6],[44,15,4]].forEach(q=>blob(q[0],q[1],q[2],'rgba(255,255,255,.85)'));[[60,30,3],[65,28,4],[70,31,3]].forEach(q=>blob(q[0],q[1],q[2],'rgba(255,255,255,.6)'));
+ if(k==='farmer'||k==='traveler'||k==='well'){[[30,14,5],[37,12,6],[44,15,4]].forEach(q=>blob(q[0],q[1],q[2],'rgba(255,255,255,.85)'));[[60,30,3],[65,28,4],[70,31,3]].forEach(q=>blob(q[0],q[1],q[2],'rgba(255,255,255,.6)'));
   if(k==='traveler'){c.fillStyle='#8aa4c8';c.beginPath();c.moveTo(0,52);c.lineTo(18,30);c.lineTo(30,40);c.lineTo(46,24);c.lineTo(66,46);c.lineTo(66,52);c.closePath();c.fill();
    c.fillStyle='#e8f0f8';c.beginPath();c.moveTo(14,35);c.lineTo(18,30);c.lineTo(22,35);c.closePath();c.fill();c.beginPath();c.moveTo(41,30);c.lineTo(46,24);c.lineTo(51,30);c.closePath();c.fill()} // far mountains with snow
   c.fillStyle=k==='farmer'?'#7ab868':'#8ac070';c.beginPath();c.moveTo(0,50);c.quadraticCurveTo(24,36,50,48);c.quadraticCurveTo(74,38,96,46);c.lineTo(96,66);c.lineTo(0,66);c.closePath();c.fill(); // rolling hills
@@ -905,3 +907,19 @@ const SPRITE_DETAIL={knight:[[2,9,3,2,'#b8c2d4'],[11,9,3,2,'#8a94a8'],[5,11,2,2,
  traveler:[[11,13,2,3,'#8a6a3a'],[11,13,2,1,'#a8884a'],[5,10,1,4,'#5a3a22']],
  rogue:[[4,15,1,2,'#cfd6e0']]};
 const detailOf=id=>{const b=id.replace(/~\d+$/,'');let best=null;for(const k in SPRITE_DETAIL)if(b===k||b.startsWith(k+'_'))if(!best||k.length>best.length)best=k;return best?SPRITE_DETAIL[best]:null};
+
+// ---------- the Well: a village green with a stone well (roof, crank, rope and bucket) ----------
+WALL.well=['#8ac0e8','#7a9a5a'];OUTDOOR.well={sky:['#5a9ad8','#cfe8f4']};
+function wellRects(){const R=[],p=(x,y,w,h,c)=>R.push([x,y,w,h,c]);
+ p(0,60,96,6,'#6aa04a');for(let i=0;i<96;i+=16){p(i,44,14,20,['#c8b898','#b8a888','#d0c0a0'][i/16%3]);p(i-1,40,16,4,'#8a4a3a');p(i+5,50,4,5,'#4a5a7a')} // cottages behind
+ p(0,58,96,8,'#6aa04a');
+ p(31,34,3,24,'#6a4424');p(62,34,3,24,'#6a4424');p(32,34,1,24,'#8a5a30');p(63,34,1,24,'#8a5a30'); // posts
+ p(24,30,48,4,'#8a3a2a');p(28,26,40,4,'#9a4a32');p(32,22,32,4,'#8a3a2a');p(37,19,22,3,'#9a4a32');p(24,33,48,1,'#5a2418'); // roof
+ p(33,38,30,2,'#5a3a20');p(64,37,4,2,'#5a3a20');p(67,37,1,5,'#5a3a20');p(47,40,1,12,'#c8a878');p(44,52,8,5,'#7a5030');p(44,53,8,1,'#5a5a64'); // crank, rope, bucket
+ p(29,56,38,4,'#b8b8c4');p(32,57,32,2,'#1a2a3a');p(34,57,10,1,'#3a6a9a'); // rim and dark water
+ for(let row=0;row<5;row++)for(let x=30-(row%2)*4,i=0;x<66;x+=9,i++){const xx=Math.max(30,x),ww=Math.min(66,x+8)-xx;if(ww>0)p(xx,60+row*4,ww,3,['#8a8a96','#7a7a86','#9a9aa6'][(row+i)%3])} // stone base
+ p(30,79,36,2,'#5a5a64');
+ [[10,74,'#f080a0'],[20,86,'#f2e060'],[78,76,'#c890ff'],[86,88,'#f080a0'],[70,90,'#f2e060'],[8,92,'#c890ff']].forEach(q=>p(q[0],q[1],2,2,q[2])); // flowers
+ return R}
+// A puddle under a melting character (the Well's splash)
+function drawPuddle(c,x,y,k){c.save();c.globalAlpha=.85;c.fillStyle='#6a8ad0';c.beginPath();c.ellipse(x,y-1,4+12*k,2+2*k,0,0,Math.PI*2);c.fill();c.fillStyle='#a8c8f0';c.fillRect(Math.round(x-3*k),Math.round(y-2),Math.max(1,Math.round(4*k)),1);c.restore()}

@@ -171,7 +171,7 @@ Plain scripts, no modules, loaded in this order and sharing global variables (th
 - Druid: **land for nature**: up to 3 Farmers on the nearest free spaces (`DRUID_FARMS`).
 
 ### Group events (`grp`, `stepGroup`; their own Compendium tab `group`)
-- Separate from everyone's own decisions: every 5 minutes (`GROUP_EVERY`) there is a 20% chance (`ODDS.group`) that one happens, picked at random among the shapes on the board (`groupOptions`; characters at home and free, no Farmers). It lasts 1 minute (`GROUP_TIME`). Its characters are busy (`st 'grp'`, `stepGrpUnit`): nobody visits them, they stay in their rooms. It ends early (no reward) if one of them is moved, removed or pulled away. Not saved.
+- Separate from everyone's own decisions: every 5 minutes (`GROUP_EVERY`) there is a 20% chance (`ODDS.group`) that one happens, picked at random among the shapes on the board (`groupOptions`, `grpReady`: characters at home, free or busy with an idle activity, which is interrupted, except the few in `NO_INTERRUPT`; no Farmers, no structures). It lasts 1 minute (`GROUP_TIME`). Its characters are busy (`st 'grp'`, `stepGrpUnit`): nobody visits them, they stay in their rooms. It ends early (no reward) if one of them is moved, removed or pulled away. Not saved.
 - **Market day:** four Merchant-tagged characters in a 2x2 square. The four rooms become one market square (`drawMarketBack`: town, striped tents, wares, cobbles; `drawMarketCrowd`: shoppers strolling); the merchants stroll their stalls and shout (`MARKET_SHOUT`). At the end +2d10 coins.
 - **A grand feast:** any three characters side by side in a row. The rooms become one feast hall (`drawFeastBack`) and they sit behind a long table of food (`drawFeastFront`, drawn after them), chatting and toasting (`FEAST_SAY`).
 
@@ -194,6 +194,11 @@ Tiers: C common, U uncommon (15%), R rare (5%), L legendary (0.75%); commons sha
 - **Blacksmith:** hammer C (sparks), smelt armor or a sword C, shovel coal U, pour an ingot mold L (+1 ingot), lead into gold U [next to the Alchemist; +5 coins, secret].
 - **Farmer:** hoe C, pitchfork C; harvest when time is up. **Monarch:** holding court C (`COURT`). **Traveling Merchant:** arranging the wares C.
 - **Anyone:** a short story C [living in the Druid's Rain; 15% of stories are a clue]; revenge on the Monarch L [refused by a Monarch; from anywhere, secret].
+
+## Structures
+- A structure is a box with nobody living in it (`CLASS` 'structure', the Structure tag, `isStruct`). It never decides anything (skipped in `step`, no sprite), is never visited except for its own activities (`freeU` is false), cannot die (`kill` ignores it), sleeps through nothing, does not count for group events or the Monarch's ten boxes, and items do nothing on it (`useItem`). Its Compendium tab says so instead of the Decisions line.
+- It gives its neighbors new idle activities: `STRUCT_IDLE` (30%) of their idle rolls (`structIdle`, before their own list), chosen by one of their tags at random. The neighbor visits the structure's room for the scene (`visit` with the structure as host).
+- **Well** (on the shelf from the start, `SHELF_CHARS`; room `wellRects`: a village green, cottages, a stone well with a roof, crank, rope and bucket). By tag (`WELL_ACTS`): Mage looks in peacefully (`welllook`) or 10% (`WELL_SPLASH`) a peasant throws well water and they melt into a puddle and reform (`wellsplash`, `u.melt`, `drawPuddle`); Fighter leaps over the well (`welljump`, `u.jy`); Merchant tosses in a coin and makes a silent wish (`wellwish`); Monstrous jumps in and peeks out (`welldive`, `u.dive`, clipped at the rim by `u.diveClip`). Compendium labels: `WELL_PCT`.
 
 ## Druid
 - No doors: left/right he walks across the edge; up/down he slips into the shadow between two trees (exit `shadow`).
