@@ -943,11 +943,15 @@ function tavernRects(){const R=[...backDoor('tavern',1)],p=(x,y,w,h,c)=>R.push([
  p(32,74,18,3,'#8a5a30');p(32,74,18,1,'#a8784a');p(40,77,2,9,'#5a3a20');p(29,82,5,2,'#6a4426');p(49,82,5,2,'#6a4426');
  p(12,70,4,3,'#c8a060');p(42,72,4,3,'#c8a060'); // mugs on the tables
  return R}
-// The barkeep pacing behind the bar, and now and then a patron who comes in, drinks and leaves
-function drawTavernLife(c,bx,by,t){const k=(Math.sin(t*.5)+1)/2,dir=Math.cos(t*.5)>=0?1:-1,x=bx+60+k*26;
- spr(c,'barkeep','ok',x,by+64,dir,0,1,.95,Math.floor(t*.7)%5===0?'fwd':'none',Math.abs(Math.cos(t*.5))>.15?stepOf(t):0);
+// The barkeep mostly stands behind the bar (polishing a mug now and then) and only sometimes steps to another spot.
+// Now and then a patron walks in from the back door, sits at the far table for a drink, then leaves.
+const BARKEEP_SPOTS=[64,78,70,86,74];
+function drawTavernLife(c,bx,by,t){const seg=Math.floor(t/7),s=t%7,i=seg%BARKEEP_SPOTS.length,a0=BARKEEP_SPOTS[i],a1=BARKEEP_SPOTS[(i+1)%BARKEEP_SPOTS.length];
+ const moving=s>6,x=bx+(moving?lerp(a0,a1,s-6):a0),dir=moving?(a1>a0?1:-1):(i%2?-1:1);
+ spr(c,'barkeep','ok',x,by+64,dir,0,1,.95,!moving&&s>2&&s<3.4?'fwd':'none',moving?stepOf(t):0);
  TAVERN_BAR.forEach(r=>{c.fillStyle=r[4];c.fillRect(bx+r[0],by+r[1],r[2],r[3])}); // the bar in front of him
- const n=Math.floor(t/40),ph=t%40,who=['commoner','farmer','noble2','squire'][n%4];if(ph>=26)return;
- const door=bx+24,seat=bx+20,a=ph<.8?ph/.8:ph>25.2?(26-ph)/.8:1,px=ph<3?lerp(door,seat,cl((ph-.5)/2.5,0,1)):ph>22?lerp(seat,door,cl((ph-22)/2.8,0,1)):seat;
- const walking=(ph>.5&&ph<3)||(ph>22&&ph<24.8),drink=!walking&&Math.floor(ph*.6)%3===0;
- spr(c,who,'happy',px,by+FY-2,ph>22?-1:1,0,a,.95,drink?'up':'none',walking?stepOf(ph):0);if(!walking&&ph>3)drawItem(c,'ale',Math.round(px+8),Math.round(by+FY-2-(drink?36:22)),1)}
+ const n=Math.floor(t/40),ph=t%40,who=['commoner','farmer','noble2','squire'][n%4];if(ph>=17)return;
+ const door=bx+24,seat=bx+41,a=ph<.3?ph/.3:ph>16.7?(17-ph)/.3:1,sitting=ph>=1.2&&ph<15.6;
+ const px=ph<1.2?lerp(door,seat,cl((ph-.3)/.9,0,1)):ph>=15.6?lerp(seat,door,cl((ph-15.6)/.9,0,1)):seat,drink=sitting&&Math.floor(ph*.5)%3===0;
+ spr(c,who,'happy',px,by+FY-2+(sitting?6:0),ph>=15.6?-1:1,0,a,.95,drink?'up':'none',sitting?0:stepOf(ph));
+ if(sitting){drawItem(c,'ale',Math.round(px+8),Math.round(by+FY+4-(drink?36:22)),1);c.fillStyle='#8a5a30';c.fillRect(bx+32,by+74,18,3);c.fillStyle='#a8784a';c.fillRect(bx+32,by+74,18,1);c.fillStyle='#6a4426';c.fillRect(bx+33,by+77,16,6);c.fillStyle='#4a2e18';c.fillRect(bx+33,by+82,16,1)}} // seated: the table in front hides their legs

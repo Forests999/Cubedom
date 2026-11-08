@@ -63,7 +63,7 @@ weapon:id==='knight'?(weapon||pick(WEAPONS)):null,form:form||null,color:color||(
  setLabel(U[id]);label(U[id]);if(!quiet){poof(c*CELL+48,r*CELL+FY-16);if(id==='monarch')S.monarchs=(S.monarchs||0)+1;save();checkUnlocks();if(id==='monarch')toast('A '+U[id].trait+' '+(U[id].color==='f'?'Queen':'King')+' takes the throne.')}ui();
 }
 // Clear everything an interaction leaves on a character (but not the teleport flag)
-function clearFx(u){if(u.melt||u.dive||u.jy){u.melt=0;u.dive=0;u.diveClip=null;u.jy=0;u.sk=1} // (the Well's melt, dive and leap)
+function clearFx(u){if(u.melt||u.dive||u.jy||u.diveClip){u.melt=0;u.dive=0;u.diveClip=null;u.jy=0;u.sk=1} // (the Well's melt, dive and leap)
  u.dress=null;u.paint=null;u.show2=null;u.big=null;u.gather=null;u.gatherOf=null;u.crowd=null;u.table=null;u.show=null;u.feastHost=null;u.fall=false;u.act=null;u.orc=null;u.tent=null;u.und=null;u.lite=null;u.dark=null;u.ward=null;u.kneel=false;u.after=null;u.mv=false;u.npc=null;u.def=null;u.ghost=null;u.spirit=null;u.mobs=null;u.made=null;u.swapWith=null}
 function toHome(u){u.fxs=[];u.npcDoor=null; // drop every doorway/stairs this character had open
  clearFx(u);u.tp=false;u.inv=false;u.sneak=false;u.thenVisit=null;for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===u.id)demons.splice(i,1);u.x=u.c*CELL+48;u.y=u.r*CELL+FY;u.path=[];u.st=u.dead?'dead':'idle';u.wait=1;u.al=1;u.sk=1;u.mood='ok';u.mt=0;u.gt=0;label(u)}
@@ -771,7 +771,7 @@ function potionTeleport(u){ // (uses up the potion even if nobody is free: he ju
 // Up/down: the ROOMS decide (TR in data.js): leave by this room's stairs, arrive by the other room's.
 // Not next door (potion teleport): a pair of portals.
 // Rooms without side doors, and a room's up/down exits (the Rogue's graveyard just fades)
-const noSideDoor=id=>isFarm(id)||id==='druid'||id==='traveler'||(id==='rogue'&&graveyardOn(U.rogue));
+const noSideDoor=id=>isFarm(id)||id==='druid'||id==='traveler'||id==='well'||(id==='rogue'&&graveyardOn(U.rogue));
 const exitsOf=id=>id==='rogue'&&graveyardOn(U.rogue)?{up:'fade',down:'fade'}:TR[id];
 function route(u,r1,c1,r2,c2,fin){
  const ra=at(r1,c1)||u.id,rb=at(r2,c2)||u.id,dc=c2-c1,dr=r2-r1;
@@ -1502,7 +1502,7 @@ function talk(u,dt){
   once('b',1.2,()=>{u.mood='sleep';u.mt=1.8;parts.push({k:'h',x:u.x,y:u.y-44,t:0,life:1.3})});once('c',3.2,()=>{u.mood='happy';u.mt=1.5;u.hop=.3})}
  else if(k==='welldive'){end=7.4;// in the well, peek out (only the top of the head shows), climb back out
   once('a',.3,()=>say(u,pick(['Cannonball!','Geronimo!','Last one in is a rotten egg!'])));once('b',.8,()=>{u.hop=.5});
-  if(u.tt>=1.1){u.diveClip=hy+57}
+  if(u.tt>=1.1&&u.tt<5.2)u.diveClip=hy+57; // only while in the well (it used to stay on afterwards)
   if(u.tt>=1.1&&u.tt<1.5)u.dive=30*(u.tt-1.1)/.4;once('s',1.5,()=>{u.dive=30;poof(h.x,hy+56,'#8fd0ff');for(let i=0;i<6;i++)parts.push({k:'drop',col:'#8fd0ff',x:h.x+(Math.random()-.5)*20,y:hy+56,vx:(Math.random()-.5)*40,vy:-60-Math.random()*30,t:0,life:.6})});
   if(u.tt>=2.8&&u.tt<3.3)u.dive=30-26*(u.tt-2.8)/.5;once('p',3.3,()=>{u.dive=4;u.mood='ok'});
   once('x',5.2,()=>{u.dive=0;u.diveClip=null;u.hop=.5;poof(h.x,hy+56,'#8fd0ff')});once('y',5.8,()=>{say(u,'Refreshing!');u.mood='happy';u.mt=2})}
@@ -1574,6 +1574,8 @@ function step(dt){
   if(u.wings>0)u.wings-=dt;if(u.spirit){u.spirit.t+=dt;if(u.spirit.t>1.8)u.spirit=null}
   if(u.mobs){u.mobs.forEach(m=>{m.t+=dt;if(m.blink>0)m.blink-=dt;if(m.gone)m.al=(m.al==null?1:m.al)-dt*3});u.mobs=u.mobs.filter(m=>!(m.gone&&m.al<=0))}
   if(u.made)u.made.t+=dt;if(u.beam){u.beam.t+=dt;if(u.beam.t>.5)u.beam=null}
+  // safety: the Well's rim clip and melt only ever apply during those scenes
+  if(!(u.st==='talk'&&(u.kind==='welldive'||u.kind==='wellsplash'))){if(u.diveClip||u.dive){u.diveClip=null;u.dive=0}if(u.melt){u.melt=0;u.sk=1}}
   if(u.st==='sleep'){stepSleep(u,dt);continue}
   if(u.st==='away'){stepAway(u,dt);continue} // on crusade
   if(u.st==='grp'){stepGrpUnit(u,dt);continue} // in a group event (market day, feast)
