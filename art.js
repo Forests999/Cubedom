@@ -104,30 +104,24 @@ function tagURL(cls){if(!TAGURL[cls]){const c=document.createElement('canvas');c
 // leg = walking step (0 standing, 1 or 2 = the two steps): legs and boots slide apart and the back foot lifts
 function stepLegs(p,leg){if(!leg)return p;const s=leg===1?1:-1;
  return p.map(r=>{if(r[1]<15)return r;const L=r[0]<8,dx=L?-s:s,lift=(L?s<0:s>0)&&r[1]>=19?1:0;return[r[0]+dx,r[1]-lift,r[2],r[3],r[4],r[5]]})}
-// Characters are drawn at double resolution (32x44): the 16x22 design (body, SPRITE_DETAIL, arms) is drawn without an outline,
-// doubled with rounded diagonals (scale2x), given a thin 1-pixel outline and soft shading, then a detailed face is drawn on top.
+// Characters: the 16x22 design (body, SPRITE_DETAIL, arms) gets a dark outline and blocky shading, is doubled to 32x44 with square pixels,
+// and then gets a detailed face at double resolution (drawFace): chunky pixel art with lively expressions.
 // Skin tones, outfits and poses all come from the 16x22 design, so every variant keeps working.
 function drawSprite(c,id,mood,pose,leg){
  const lo=document.createElement('canvas');lo.width=16;lo.height=22;const lx=lo.getContext('2d'),ch=CH[id],lf=(p)=>{lx.fillStyle=p[4];lx.fillRect(p[0],p[1],p[2],p[3])};
  const A=ch.a?POSE[pose||'none'](ch.a):[],front=A.filter(r=>r[5]),det=detailOf(id);
  [...A.filter(r=>!r[5]),...stepLegs(ch.p,leg)].forEach(lf);if(det)stepLegs(det,leg).forEach(lf);front.forEach(lf); // body, hand-placed details, then hands in front
- const x=c.getContext('2d'),W=32,H=44,src=lx.getImageData(0,0,16,22).data,im=x.createImageData(W,H),d=im.data;
- scale2x(src,d);outline(d,W,H);shadeSprite(d,W,H);x.putImageData(im,0,0);drawFace(x,ch,mood)}
-// scale2x (EPX): each pixel becomes 2x2; a corner takes a neighbor's color where two equal neighbors meet, which rounds off stair-step diagonals
-function scale2x(s,d){const px=(i,j)=>i<0||j<0||i>=16||j>=22?-1:(j*16+i)*4,clear=a=>a<0||s[a+3]===0,eq=(a,b)=>clear(a)||clear(b)?clear(a)&&clear(b):s[a]===s[b]&&s[a+1]===s[b+1]&&s[a+2]===s[b+2]; // (outside the grid counts as empty)
- const put=(i,j,p)=>{const q=(j*32+i)*4;if(p<0){d[q+3]=0;return}for(let k=0;k<4;k++)d[q+k]=s[p+k]};
- for(let j=0;j<22;j++)for(let i=0;i<16;i++){const P=px(i,j),A=px(i,j-1),Bp=px(i+1,j),C=px(i-1,j),D=px(i,j+1);
-  const n1=eq(C,A)&&!eq(C,D)&&!eq(A,Bp)?A:P,n2=eq(A,Bp)&&!eq(A,C)&&!eq(Bp,D)?Bp:P,n3=eq(D,C)&&!eq(D,Bp)&&!eq(C,A)?C:P,n4=eq(Bp,D)&&!eq(Bp,A)&&!eq(D,C)?D:P;
-  put(i*2,j*2,n1);put(i*2+1,j*2,n2);put(i*2,j*2+1,n3);put(i*2+1,j*2+1,n4)}}
-// A thin dark outline: every empty pixel touching the figure (sides and corners) turns dark
+ const im=lx.getImageData(0,0,16,22);outline(im.data,16,22);shadeSprite(im.data,16,22);lx.putImageData(im,0,0); // chunky: outline and shading on the 16x22 grid
+ const x=c.getContext('2d');x.imageSmoothingEnabled=false;x.drawImage(lo,0,0,32,44);drawFace(x,ch,mood)} // doubled with square pixels, then the detailed face
+// A dark outline one pixel thick (on the 16x22 grid): every empty pixel touching the figure (sides and corners) turns dark
 function outline(d,W,H){const a=new Uint8Array(W*H);for(let i=0;i<W*H;i++)a[i]=d[i*4+3]>0;
  for(let j=0;j<H;j++)for(let i=0;i<W;i++){if(a[j*W+i])continue;let n=0;for(let v=-1;v<=1;v++)for(let u=-1;u<=1;u++){const ii=i+u,jj=j+v;if(ii>=0&&jj>=0&&ii<W&&jj<H&&a[jj*W+ii])n=1}
   if(n){const q=(j*W+i)*4;d[q]=26;d[q+1]=18;d[q+2]=38;d[q+3]=255}}}
-// Light from the top-left: highlights on top and left edges, shadows on the right and bottom, two pixels deep (soft), and a gentle
+// Light from the top-left (on the 16x22 grid): highlights on top and left edges, shadows on the right and bottom, and a gentle
 // darkening toward the feet. Dark outline pixels are left alone.
 function shadeSprite(d,w,h){const src=new Uint8ClampedArray(d),on=(i,j)=>{if(i<0||j<0||i>=w||j>=h)return false;const p=(j*w+i)*4;return src[p+3]>0&&!(src[p]===26&&src[p+1]===18&&src[p+2]===38)};
  for(let j=0;j<h;j++)for(let i=0;i<w;i++){if(!on(i,j))continue;const p=(j*w+i)*4;
-  let f=.06-j*.0035+(!on(i,j-1)?.22:!on(i,j-2)?.08:0)+(!on(i-1,j)?.12:!on(i-2,j)?.04:0)-(!on(i+1,j)?.2:!on(i+2,j)?.07:0)-(!on(i,j+1)?.15:!on(i,j+2)?.05:0);
+  const f=.06-j*.007+(!on(i,j-1)?.24:0)+(!on(i-1,j)?.12:0)-(!on(i+1,j)?.22:0)-(!on(i,j+1)?.16:0);
   if(f)for(let k=0;k<3;k++){const v=src[p+k];d[p+k]=Math.round(f>0?v+(255-v)*f:v*(1+f))}}}
 // The face, at double resolution (head: x 10-21, y 6-17). Eyes have a shine; moods get brows, smiles, blush and open mouths.
 function drawFace(x,ch,mood){const f=(a,b,w,h,k)=>{x.fillStyle=k;x.fillRect(a,b,w,h)},E=ch.eye,W='#ffffff',M='#8a4a4a';
