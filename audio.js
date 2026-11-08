@@ -40,14 +40,14 @@ const LAYERS={
  well:[(s,c,t,b)=>{if(s%16===6)tone(b,'sine',mf(c[1]+12),t,.25,.2,mf(c[1]+14))},-.7], // one soft, low water drip every two bars
  tavern:[(s,c,t,b)=>{if(JIG[s])tone(b,'square',mf(JIG[s]),t,.11,.17)},.1]}; // a jig
 // Mixing levels: each part's loudness evened out (measured), so every room you add is clearly heard
-const MIX={knight:.7,rogue:2,merchant:.85,necromancer:1.5,priest:.8,wizard:1.45,apothecary:.65,alchemist:2,druid:.85,blacksmith:2,monarch:1.2,traveler:4,farmer:1.35,well:.45,tavern:1.5}; // (the Well is kept quiet on purpose)
+const MIX={knight:.42,rogue:2,merchant:.85,necromancer:1.5,priest:.8,wizard:.85,apothecary:.65,alchemist:2,druid:.85,blacksmith:2,monarch:1.2,traveler:4,farmer:1.35,well:.45,tavern:1.5}; // (the Well is kept quiet on purpose)
 // Which parts play: one per room on the board (the three Farmers share one; a buried Druid is silent)
 function activeLayers(){const on={};Object.values(U).forEach(u=>{if(u.dead)return;const k=isFarm(u.id)?'farmer':u.id;if(LAYERS[k])on[k]=1});return on}
 function schedule(){if(!AC)return;const on=activeLayers();
  for(const k in LAYERS){if(!layerGain[k]){const p=AC.createStereoPanner?AC.createStereoPanner():null;layerGain[k]=AC.createGain();layerGain[k].gain.value=0;if(p){p.pan.value=LAYERS[k][1];layerGain[k].connect(p);p.connect(musicBus)}else layerGain[k].connect(musicBus)}
   if(!!on[k]!==!!layerOn[k]){layerOn[k]=!!on[k];const gg=layerGain[k].gain,t=AC.currentTime;gg.cancelScheduledValues(t);gg.setValueAtTime(gg.value,t);gg.linearRampToValueAtTime(on[k]?(MIX[k]||1):0,t+(on[k]?.8:1.5))}} // a part rises quickly when its room arrives
  while(nextT<AC.currentTime+.15){const c=CHORDS[Math.floor(seqStep/8)%4];if(SND.music)for(const k in LAYERS)if(layerOn[k]||layerGain[k].gain.value>.01)LAYERS[k][0](seqStep,c,nextT,layerGain[k]);seqStep=(seqStep+1)%32;nextT+=STEP}}
-// The Music button and the Volume dial (under the shelf)
+// The Music button and the Volume dial (on the Settings tab)
 function musicControls(){const mb=$('#musicBtn'),vd=$('#musicVol');if(!mb)return;
  const keep=()=>{try{localStorage.setItem('sq-music',JSON.stringify(SND))}catch(e){}mb.textContent='Music: '+(SND.music?'On':'Off');if(musicBus)musicBus.gain.setTargetAtTime(volGain(),AC.currentTime,.05)};
  mb.onclick=()=>{SND.music=!SND.music;if(SND.music){audioStart();if(AC.state==='suspended')AC.resume()}keep()};

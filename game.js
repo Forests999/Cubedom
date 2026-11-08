@@ -90,14 +90,31 @@ function say(u,t){if(u.backwards)t=t.split('').reverse().join('');
  u.bubEl.textContent=t;u.bubEl.style.display='block';u.bubT=2.1;bubs.add(u);placeBub(u)}
 function placeBub(u){u.bubEl.style.left=cl(u.x/W*100,14,86)+'%';u.bubEl.style.top=(u.y-50)/H*100+'%'}
 function dropBub(u){if(u.bubEl){u.bubEl.remove();u.bubEl=null}bubs.delete(u)}
-let toastT=0;function toast(m){const e=$('#toast');e.textContent=m;e.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>e.style.display='none',4000)}
+let toastT=0;function toast(m){const e=$('#toast');e.textContent=m;e.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>e.style.display='none',4000);logEv(m,'','toast')}
+// ---------- event log: the last LOG_MAX things that happened (not saved), shown on the Event Log tab ----------
+// logEv(title, detail): a named event (bold title) with who was involved. A toast right after a death replaces the plain "died" line.
+const LOG=[],LOG_MAX=20,tabLog=$('#tab-log');
+const nameOfU=v=>v?(isStruct(v)?'the '+CH[v.id].name:'the '+CH[idOf(v)].name):'';
+function logEv(title,detail,kind){const now=new Date(),last=LOG[0];
+ if(last&&last.title===title&&last.detail===detail&&now-last.at<4000)return; // the same scene, logged twice as it starts
+ if(kind==='toast'&&last&&last.kind==='death'&&now-last.at<1500)LOG.shift();
+ LOG.unshift({title,detail:detail||'',kind:kind||'',at:now});if(LOG.length>LOG_MAX)LOG.pop();
+ if(!tabLog.hidden)buildLog()}
+const logScene=(k,u,h)=>{if(!k||!(NAMES[k]||TITLES[k]))return;const a=nameOfU(u),b=nameOfU(h);logEv(titleOf(k),a&&b&&a!==b?cap(a)+' and '+b:cap(a||b))};
+const cap=s=>s?s[0].toUpperCase()+s.slice(1):s;
+function buildLog(){const box=$('#logs');box.textContent='';
+ const h=document.createElement('p');h.className='cinfo';h.textContent=LOG.length?'The last '+LOG_MAX+' events, newest first.':'Nothing has happened yet. Give it a moment!';box.append(h);
+ const ol=document.createElement('ol');ol.className='log';
+ LOG.forEach(e=>{const li=document.createElement('li');if(e.kind)li.className=e.kind;const tm=document.createElement('span');tm.className='tm';tm.textContent=e.at.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+  li.append(tm);if(e.kind!=='toast'&&e.kind!=='death'){const b=document.createElement('b');b.textContent=e.title;li.append(b,document.createTextNode(e.detail?' - '+e.detail:''))}else li.append(document.createTextNode(e.title));ol.append(li)});
+ box.append(ol)}
 // A short arm gesture (pose from POSE) for d seconds, used to liven up interactions
 function gest(u,p,d){if(u){u.gp=p;u.gt=d}}
 const home=u=>({x:u.c*CELL+16+Math.random()*64,y:u.r*CELL+FY});
 // A character dies: their box is gone (back on the shelf). Anyone they were with goes home.
 function kill(v){
  if(v.dead||isStruct(v))return; // a buried Druid can't die again; a structure can't die at all
- poof(v.x,v.y-20);
+ poof(v.x,v.y-20);logEv(cap(nameOfU(v))+' has died.','','death');
  if(v.target){const h=U[v.target];if(h&&h.hosting===v.id)freeHost(h)}
  if(v.hosting){const w=U[v.hosting];if(w&&w.target===v.id){const inRoom=w.st==='talk';clearFx(w);w.target=null;
   if(inRoom){w.st='back';w.path=route(w,v.r,v.c,w.r,w.c,home(w))}else toHome(w)}}
@@ -155,7 +172,7 @@ function groupOptions(){const ok=(r,c)=>{const v=U[at(r,c)];return grpReady(v)?v
  for(let r=0;r<ROWS-1;r++)for(let c=0;c<COLS-1;c++){const q=[[r,c],[r,c+1],[r+1,c],[r+1,c+1]].map(p=>ok(p[0],p[1]));if(q.every(v=>v&&hasClass(v,'merchant')))out.push({kind:'market',us:q})} // four Merchants in a 2x2 square
  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS-2;c++){const q=[0,1,2].map(d=>ok(r,c+d));if(q.every(Boolean))out.push({kind:'feast',us:q})} // three side by side in a row
  return [...out,...travelOptions()]} // (plus the travelling ones: the Well, the Tavern)
-function startGroup(o){const rs=o.us.map(v=>v.r),cs=o.us.map(v=>v.c);
+function startGroup(o){const rs=o.us.map(v=>v.r),cs=o.us.map(v=>v.c);logEv(titleOf('grp:'+o.kind),o.us.map(v=>CH[idOf(v)].name).join(', '));
  grp={kind:o.kind,ids:o.us.map(v=>v.id),pos:o.us.map(v=>[v.r,v.c]),t:0,box:[Math.min(...rs),Math.min(...cs),Math.max(...rs)-Math.min(...rs)+1,Math.max(...cs)-Math.min(...cs)+1]};
  o.us.forEach((v,i)=>{stopIdle(v);v.path=[];v.act=null;v.gx=null;v.st='grp';v.gwait=.5+Math.random()*2;v.mood='happy';v.mt=2;
   if(o.kind==='feast'){v.x=v.c*CELL+48;v.y=v.r*CELL+FY;v.face=i===0?1:i===2?-1:pick([1,-1])}});
@@ -184,7 +201,7 @@ function travelOptions(){const out=[];Object.values(U).forEach(s=>{if(!isStruct(
  if(s.id==='well'){const n4=four(s);if(n4.every(v=>grpReady(v)))out.push({kind:'wellchat',us:n4,host:s})}
  if(s.id==='tavern'){const q=['priest','knight','wizard','rogue'].map(id=>U[id]);if(q.every(v=>v&&!v.as&&v.r===s.r&&grpReady(v)))out.push({kind:'classic',us:q,host:s})}});
  return out}
-function startTravelGroup(o){const H=o.host,T2=TRAVEL_GRP[o.kind];grp={kind:o.kind,ids:o.us.map(v=>v.id),pos:o.us.map(v=>[v.r,v.c]),t:0,host:H.id,hpos:[H.r,H.c],talkT:3};H.gather={grp:1};H.x=H.c*CELL+48;
+function startTravelGroup(o){const H=o.host,T2=TRAVEL_GRP[o.kind];logEv(titleOf('grp:'+o.kind),o.us.map(v=>CH[idOf(v)].name).join(', ')+' at '+nameOfU(H));grp={kind:o.kind,ids:o.us.map(v=>v.id),pos:o.us.map(v=>[v.r,v.c]),t:0,host:H.id,hpos:[H.r,H.c],talkT:3};H.gather={grp:1};H.x=H.c*CELL+48;
  o.us.forEach((v,i)=>{stopIdle(v);detach(v);v.act=null;v.fxs=[];v.gatherOf=H.id;v.st='gather';const sp={x:H.c*CELL+T2.spots[i][0],y:H.r*CELL+T2.spots[i][1]};v.path=routeAlong(v,cellY(v),cellX(v),H.r,H.c,sp)});
  markSeen('grp:'+o.kind);toast(o.kind==='wellchat'?'The neighbors meet at the well for a chat.':'The old party heads to the Tavern. Classic Adventurers!')}
 function endTravelGroup(g0){const H=U[g0.host];if(H)H.gather=null;g0.ids.forEach(id=>{const v=U[id];if(v&&v.gatherOf===g0.host){v.gatherOf=null;v.show=null;goHome(v)}});
@@ -226,7 +243,7 @@ function startWeather(u){if(weathers.filter(w=>w.by===u.id).length>=WEATHER_MAX)
  const open=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c)&&!weathers.some(w=>w.r===r&&w.c===c))open.push([r,c]);if(!open.length)return false;
  const ks=Object.keys(WEATHER_TIERS).filter(k=>!(u.arch&&ARCH_SKIP.includes(k))),q=pick(open); // an Archdruid never casts Moonlight, Decay or Infest
  beginAct(u,'wcast',true);u.dur=3;u.wx={k:rollList(ks.map(k=>[k,WEATHER_TIERS[k]])),r:q[0],c:q[1]};return true}
-function addWeather(r,c,k,by){const w={r,c,k,t:0,by};weathers.push(w);markSeen('wx:'+k);poof(c*CELL+48,r*CELL+48,'#c8f0c0');
+function addWeather(r,c,k,by){const w={r,c,k,t:0,by};logEv(titleOf('wx:'+k),'weather cast by the Druid');weathers.push(w);markSeen('wx:'+k);poof(c*CELL+48,r*CELL+48,'#c8f0c0');
  if(k==='moonlight')wolfRoll(w);refreshTags();return w}
 // Moonlight, when it starts and when it ends: 30% a werewolf leaps out and kills whoever lives in that space (if they are there)
 function wolfRoll(w){const v=U[at(w.r,w.c)];if(!v||v.dead||v.st==='away'||v.st==='sleep'||cellX(v)!==v.c||cellY(v)!==v.r||Math.random()>=ODDS.werewolf)return;
@@ -277,7 +294,7 @@ function idleMult(u,list){const wx=wxOf(u),rt=rarestTier(list);return e=>(wx==='
 // A structure next door (the Well): STRUCT_IDLE of idle rolls go to one of its activities, chosen by one of the character's tags (at random if several)
 function structIdle(u){if(!atHome(u)||u.as||u.form||Math.random()>=STRUCT_IDLE)return false;const s=[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filter(v=>isStruct(v)&&STRUCT_ACTS[v.id]&&!v.hosting&&!v.gather);if(!s.length)return false;
  const w=pick(s),SA=STRUCT_ACTS[w.id],tags=Object.keys(SA).filter(t=>hasClass(u,t));if(!tags.length)return false;const acts=SA[pick(tags)],k=acts.length>1?(Math.random()<STRUCT_SECOND[acts[1]]?acts[1]:acts[0]):acts[0];visit(u,w,k);return true}
-function startAct(u){u.path=[];if(structIdle(u))return true;const list=idleList(u);if(!list.length)return false;const k=rollList(list,idleMult(u,list));return k?doIdle(u,k):false}
+function startAct(u){u.path=[];if(structIdle(u))return true;const list=idleList(u);if(!list.length)return false;const k=rollList(list,idleMult(u,list));if(!k)return false;const ok=doIdle(u,k),e=list.find(e=>e[0]===k);if(ok&&e&&e[1]!=='c')logScene(k,u);return ok} // (uncommon and rarer idle activities go in the event log)
 // Start the idle activity k (returns false if it could not start: the character wanders instead)
 function doIdle(u,k){const bx=u.c*CELL,dur=(a,d)=>{beginAct(u,a);u.dur=d};
  if(k==='regicide'){visit(u,U.monarch,'regicide');return true}
@@ -853,7 +870,7 @@ function visitRoll(u){const id=idOf(u),M=U.monarch;
  if(!kd){visit(u,h,null);return true}
  playScene(u,h,kd);return true}
 // Start scene kd between u (the one who rolled) and h. Some scenes always have the same visitor, some are cast from a room.
-function playScene(u,h,kd){const N=U.necromancer,busy=()=>{u.wait=1};
+function playScene(u,h,kd){const N=U.necromancer,busy=()=>{u.wait=1};logScene(kd,u,h);
  if(kd==='massprayer'){startGather(u,four(u));return}
  if(kd==='fourmage'){visit(u,pick(four(u).filter(v=>freeU(v)&&!v.as&&ITEM_FX.potion[v.id])),'fourmage');return}
  if(kd==='adventure'){const fs=recruitable(u);beginAct(u,'recruit');u.dur=3.4;u.recruits=fs.map(v=>v.id);fs.forEach(v=>{stopIdle(v);v.path=[];v.st='idle';v.wait=6});return}
@@ -902,7 +919,7 @@ function visit(u,h,vk){
  if(vk&&vk.startsWith('tv'))dest=vk==='tvshoo'?hx+40:hx+64+Math.floor(Math.random()*14); // at the Tavern's bar (the monster only gets as far as the door)
  if(vk==='spar')dest=standBy(h,36,dc!==0?-dc:pick([-1,1])); // a little more room to swing
  if(vk==='tentacle')dest=hx+46; // between the broken window and the Priest
- u.vk=vk;u.path=route(u,u.r,u.c,h.r,h.c,{x:dest,y:hy+FY});u.st='out';u.target=h.id;h.hosting=u.id;h.path=[];h.st='idle';h.act=null;
+ logScene(vk,u,h);u.vk=vk;u.path=route(u,u.r,u.c,h.r,h.c,{x:dest,y:hy+FY});u.st='out';u.target=h.id;h.hosting=u.id;h.path=[];h.st='idle';h.act=null;
  if(h.mvTo){h.path=[{k:'walk',x:h.mvTo,y:hy+FY,sp:30}];h.mvTo=null}
  if(vk==='orc'){// the orc shows up first; the knight notices, then heads over
   u.orc={x:ox,y:hy+FY,blink:0};poof(ox,u.orc.y-20,'#6a9a3a');
@@ -2428,8 +2445,8 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
 let compTab='knight';
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
- $('#tab-board').hidden=b.dataset.t!=='board';tabRef.hidden=b.dataset.t!=='ref';
- if(b.dataset.t==='ref')buildRef(compTab);else{hideTip();fitLabels()}});
+ const t=b.dataset.t;['board','ref','log','set'].forEach(k=>{$('#tab-'+k).hidden=t!==k});
+ hideTip();if(t==='ref')buildRef(compTab);else if(t==='log')buildLog();else if(t==='board')fitLabels()});
 
 // ---------- state ----------
 function ui(){document.querySelectorAll('.it[data-id]').forEach(b=>b.classList.toggle('used',!!U[b.dataset.id]||(b.dataset.id==='traveler'&&!!S.travelRoam)))} // dimmed: on the board, or on the road

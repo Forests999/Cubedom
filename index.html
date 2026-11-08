@@ -15,14 +15,25 @@
 <link rel="stylesheet" href="style.css?v=38">
 </head><body>
 <h1>Squaredom <small class="ver">v1.0</small></h1>
-<div class="tabs"><button class="tab on" data-t="board">Board</button><button class="tab" data-t="ref">Compendium</button><button class="b tool" id="unlockAll" title="For testing">Unlock all</button></div>
+<div class="tabs"><button class="tab on" data-t="board">Board</button><button class="tab" data-t="ref">Compendium</button><button class="tab" data-t="log">Event Log</button><button class="tab" data-t="set">Settings</button></div>
 <section id="tab-board">
 <div id="items"><div class="lbl">Items: drag onto a room while its owner is home</div></div>
 <div id="wrap"><canvas id="cv" aria-label="Squaredom board"></canvas><div id="labels"></div><div id="bub"></div></div>
 <div id="tray"><div class="lbl">Shelf: drag a box up to the board</div></div>
-<div class="row"><button class="b" id="musicBtn">Music: Off</button><label class="vol" title="Music volume">Volume <input type="range" id="musicVol" min="0" max="100" value="60"></label><button class="b" id="reset">Reset game</button></div>
 </section>
 <section id="tab-ref" hidden><div id="refs"></div></section>
+<section id="tab-log" hidden><div id="logs"></div></section>
+<section id="tab-set" hidden>
+<h2 class="sec">Music</h2>
+<div class="set"><button class="b" id="musicBtn">Music: Off</button><label class="vol" title="Music volume">Volume <input type="range" id="musicVol" min="0" max="100" value="60"></label></div>
+<p class="cinfo">Every room on the board adds its own part to the tune. Group events play a theme of their own.</p>
+<h2 class="sec">Testing</h2>
+<div class="set"><button class="b" id="unlockAll">Unlock all</button></div>
+<p class="cinfo">Unlocks every character, board space and Compendium entry, secrets too. No rewards are paid for them.</p>
+<h2 class="sec">Start over</h2>
+<div class="set"><button class="b" id="reset">Reset game</button></div>
+<p class="cinfo">Wipes your save: the board, coins, unlocks and the Compendium. Tap twice to confirm.</p>
+</section>
 <canvas id="ghost" width="96" height="96"></canvas>
 <div id="toast" role="status"></div>
 <div id="modal" hidden><div class="mbox" role="dialog" aria-modal="true"><p></p><div class="mrow"><button class="b" id="mYes">Buy</button><button class="b" id="mNo">Cancel</button></div></div></div>
