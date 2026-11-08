@@ -2451,3 +2451,10 @@ function load(){let d=null;try{d=JSON.parse(localStorage.getItem(KEY))}catch(e){
 load();requestAnimationFrame(frame);
 // The Tavern's barkeep, as something that can speak (a speech bubble at his spot behind the bar, or wherever he chased someone to)
 function barkeepOf(h){const b=h.bkT||(h.bkT={talker:1,id:'barkeep'});b.x=h.bk?h.bk.x:(h.bkx||h.c*CELL+74);b.y=h.r*CELL+64;return b}
+// Testing: unlock everything at once (every character, every board space, every Compendium entry including secrets). Asks first.
+// The discovery rewards for all of that are not paid out.
+$('#unlockAll').onclick=()=>ask('Unlock everything for testing? Every character, every board space and every Compendium entry (secrets too). No rewards are paid for them.','Unlock all',()=>{
+ ALL_CHARS.forEach(id=>{S.un[id]=true;S.ever[id]=1});S.travelRoam=false;
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(!isOpen(r,c))S.cells.push(r+','+c);
+ ALL_KEYS.forEach(k=>{S.seen[k]=1});const n=foundCount();S.rewarded=Math.floor(n/DISCOVER_EVERY);S.bigRewarded=Math.floor(n/BIG_EVERY);COMP_TABS.forEach(t=>{S.tabDone[t.id]=1});
+ buildShelf();save();if(!tabRef.hidden)buildRef(compTab);toast('Everything is unlocked.')});

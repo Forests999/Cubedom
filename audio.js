@@ -37,10 +37,10 @@ const LAYERS={
  monarch:[(s,c,t,b)=>{if(FANFARE[s])tone(b,'square',mf(FANFARE[s]),t,STEP*2.4,.16)},.2], // trumpet fanfare
  traveler:[(s,c,t,b)=>{if(s%2===1)c.forEach(n=>tone(b,'sawtooth',mf(n),t,.1,.07))},-.5], // accordion off-beats
  farmer:[(s,c,t,b)=>{if(WHISTLE[s])tone(b,'sine',mf(WHISTLE[s]),t,STEP*1.6,.3)},.7], // whistling
- well:[(s,c,t,b)=>{if(s%8===3||s%8===6)tone(b,'sine',mf(c[(s>>3)%3]+24),t,.2,.35,mf(c[(s>>3)%3]+31))},-.7], // water drips
+ well:[(s,c,t,b)=>{if(s%16===6)tone(b,'sine',mf(c[1]+12),t,.25,.2,mf(c[1]+14))},-.7], // one soft, low water drip every two bars
  tavern:[(s,c,t,b)=>{if(JIG[s])tone(b,'square',mf(JIG[s]),t,.11,.17)},.1]}; // a jig
 // Mixing levels: each part's loudness evened out (measured), so every room you add is clearly heard
-const MIX={knight:.7,rogue:2,merchant:.85,necromancer:1.5,priest:.8,wizard:1.45,apothecary:.65,alchemist:2,druid:.85,blacksmith:2,monarch:1.2,traveler:4,farmer:1.35,well:1.6,tavern:1.5};
+const MIX={knight:.7,rogue:2,merchant:.85,necromancer:1.5,priest:.8,wizard:1.45,apothecary:.65,alchemist:2,druid:.85,blacksmith:2,monarch:1.2,traveler:4,farmer:1.35,well:.45,tavern:1.5}; // (the Well is kept quiet on purpose)
 // Which parts play: one per room on the board (the three Farmers share one; a buried Druid is silent)
 function activeLayers(){const on={};Object.values(U).forEach(u=>{if(u.dead)return;const k=isFarm(u.id)?'farmer':u.id;if(LAYERS[k])on[k]=1});return on}
 function schedule(){if(!AC)return;const on=activeLayers();
