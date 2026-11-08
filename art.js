@@ -108,7 +108,9 @@ function stepLegs(p,leg){if(!leg)return p;const s=leg===1?1:-1;
 function drawSprite(c,id,mood,pose,leg){
  const x=c.getContext('2d'),ch=CH[id],f=(a,b,w,h,k)=>{x.fillStyle=k;x.fillRect(a,b,w,h)};
  const A=ch.a?POSE[pose||'none'](ch.a):[],R=[...A.filter(r=>!r[5]),...stepLegs(ch.p,leg),...A.filter(r=>r[5])]; // front-of-body arm pieces last
- R.forEach(p=>f(p[0]-1,p[1]-1,p[2]+2,p[3]+2,O));R.forEach(p=>f(p[0],p[1],p[2],p[3],p[4]));
+ R.forEach(p=>f(p[0]-1,p[1]-1,p[2]+2,p[3]+2,O));const front=A.filter(r=>r[5]),det=detailOf(id);
+ R.filter(r=>!front.includes(r)).forEach(p=>f(p[0],p[1],p[2],p[3],p[4]));if(det)stepLegs(det,leg).forEach(p=>f(p[0],p[1],p[2],p[3],p[4]));front.forEach(p=>f(p[0],p[1],p[2],p[3],p[4])); // body, hand-placed details (SPRITE_DETAIL), then hands in front
+ shadeSprite(c); // light from the top-left: highlights on top and left edges, shadows on the right and bottom (before the face, so eyes stay crisp)
  if(mood==='hurt'){f(5,6,2,1,O);f(9,6,2,1,O);f(7,8,2,1,'#a22');return}
  if(mood==='sleep'){f(5,6,2,1,O);f(9,6,2,1,O);f(7,8,2,1,'#8a4a4a');return} // eyes closed, calm
  if(mood==='shock'){f(5,4,2,3,'#ffffff');f(9,4,2,3,'#ffffff');f(6,5,1,2,ch.eye);f(9,5,1,2,ch.eye);f(7,8,2,2,'#5a2a2a');return} // wide eyes, open mouth (surprise)
@@ -879,3 +881,27 @@ function drawFeastBack(c,x0,y0,w,t){c.save();c.beginPath();c.rect(x0,y0,w,96);c.
 function drawFeastFront(c,x0,y0,w){const y=y0+FY-16;c.fillStyle=O;c.fillRect(x0+6,y-1,w-12,24);c.fillStyle='#f0e8d8';c.fillRect(x0+7,y,w-14,5);c.fillStyle='#8a2434';c.fillRect(x0+7,y+5,w-14,16);c.fillStyle='#d8b860';c.fillRect(x0+7,y+5,w-14,1);
  c.fillStyle='#5a3a20';c.fillRect(x0+12,y+21,4,6);c.fillRect(x0+w-16,y+21,4,6);
  const food=['apple','ale','orange','wine','banana','bloodorange','goldapple','ale','starfruit'];for(let i=0,x=x0+18;x<x0+w-14;i++,x+=22){if(i%3===1){c.fillStyle=O;c.fillRect(x-7,y-6,14,7);c.fillStyle='#a8603a';c.fillRect(x-6,y-5,12,5);c.fillStyle='#d8904a';c.fillRect(x-4,y-5,6,2)}else drawItem(c,food[i%food.length],x,y-3,1)}} // a roast now and then
+// Shade a freshly drawn sprite (16x22): every colored pixel at the edge of the shape gets lighter on its top and left sides
+// and darker on its right and bottom sides, so flat colors look rounded. The dark outline counts as "outside".
+function shadeSprite(c){const x=c.getContext('2d'),w=c.width,h=c.height,im=x.getImageData(0,0,w,h),d=im.data,src=new Uint8ClampedArray(d);
+ const on=(i,j)=>{if(i<0||j<0||i>=w||j>=h)return false;const p=(j*w+i)*4;return src[p+3]>0&&!(src[p]===26&&src[p+1]===18&&src[p+2]===38)};
+ for(let j=0;j<h;j++)for(let i=0;i<w;i++){if(!on(i,j))continue;const p=(j*w+i)*4;let f=0;
+  f=.06-j*.007; // gentle light from above (top a little lighter, feet a little darker)
+  if(!on(i,j-1))f+=.24;if(!on(i-1,j))f+=.12;if(!on(i+1,j))f-=.22;if(!on(i,j+1))f-=.16;
+  if(f)for(let k=0;k<3;k++){const v=src[p+k];d[p+k]=Math.round(f>0?v+(255-v)*f:v*(1+f))}}
+ x.putImageData(im,0,0)}
+// Extra hand-placed details per character (drawn over the body, before shading). Matched by the start of the sprite name (knight_bronze, wizard_blue_arm_st, priest_f~2...).
+const SPRITE_DETAIL={knight:[[2,9,3,2,'#b8c2d4'],[11,9,3,2,'#8a94a8'],[5,11,2,2,'#c8d0dc'],[7,14,2,1,'#f2c84a'],[5,17,2,1,'#aab4c8'],[9,17,2,1,'#aab4c8'],[6,2,4,1,'#c8d0dc']],
+ paladin:[[2,9,3,2,'#f2c84a'],[11,9,3,2,'#d8b040'],[5,17,2,1,'#f2c84a'],[9,17,2,1,'#f2c84a']],
+ wizard:[[4,18,8,1,'#d8b860'],[6,15,1,1,'#f2e8a0'],[9,17,1,1,'#f2e8a0'],[5,13,1,1,'#f2e8a0']],
+ priest:[[5,10,1,8,'#d8b860'],[10,10,1,8,'#d8b860'],[4,18,8,1,'#c8c0a0']],
+ necromancer:[[7,15,2,2,'#5aba5a'],[4,18,1,1,O],[7,18,1,1,O],[10,18,1,1,O],[5,10,6,1,'#0e180e']],
+ merchant:[[6,14,4,2,'#3a7a2a'],[11,13,2,2,'#8a6a3a'],[11,13,2,1,'#a8884a']],
+ apothecary:[[5,14,1,2,'#7aff7a'],[6,14,1,2,'#c890ff'],[4,18,8,1,'#2e4a36']],
+ alchemist:[[6,14,1,2,'#c890ff'],[8,14,1,2,'#7aff7a'],[7,13,1,1,'#e8e4d0']],
+ druid:[[5,13,1,1,'#6aba4a'],[10,16,1,1,'#6aba4a'],[7,17,1,1,'#6aba4a'],[4,18,8,1,'#3a4a24']],
+ blacksmith:[[11,12,1,4,'#8a5a2a'],[10,12,3,1,'#5a5a64'],[6,12,1,1,'#5a5a64'],[9,12,1,1,'#5a5a64']],
+ monarch:[[4,18,8,1,'#f2c84a'],[7,13,2,1,'#f2c84a'],[7,15,2,1,'#f2c84a']],
+ traveler:[[11,13,2,3,'#8a6a3a'],[11,13,2,1,'#a8884a'],[5,10,1,4,'#5a3a22']],
+ rogue:[[4,15,1,2,'#cfd6e0']]};
+const detailOf=id=>{const b=id.replace(/~\d+$/,'');let best=null;for(const k in SPRITE_DETAIL)if(b===k||b.startsWith(k+'_'))if(!best||k.length>best.length)best=k;return best?SPRITE_DETAIL[best]:null};

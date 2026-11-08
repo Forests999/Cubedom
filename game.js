@@ -1835,8 +1835,8 @@ function flavorOf(k){if(FLAVOR[k])return FLAVOR[k];const t=(DESC[k]||'').replace
  return out?out[0].toUpperCase()+out.slice(1):''}
 // Every description starts with the entry's title in bold (from NAMES, without any chance in brackets or a "Secret:" label)
 const escH=s=>String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
-const titleOf=k=>(NAMES[k]||k).replace(/\s*\([^)]*%[^)]*\)/g,'').replace(/^(Super secret|Secret): /i,'').replace(/[.!?]$/,'');
-function showTip(tile,k,hint){tipEl.innerHTML='<b>'+escH(titleOf(k))+'.</b> '+escH(hint?hintOf(k):infoText(k));tipEl.hidden=false;tipOn=tile;
+const titleOf=k=>(TITLES[k]||NAMES[k]||k).replace(/\s*\([^)]*%[^)]*\)/g,'').replace(/^(Super secret|Secret): /i,'');
+function showTip(tile,k,hint){tipEl.innerHTML='<b>'+escH(titleOf(k))+(/[.!?]$/.test(titleOf(k))?'':'.')+'</b> '+escH(hint?hintOf(k):infoText(k));tipEl.hidden=false;tipOn=tile;
  const R=tile.getBoundingClientRect(),w=Math.min(260,innerWidth-16);tipEl.style.width=w+'px';
  tipEl.style.left=cl(R.left+R.width/2-w/2,8,innerWidth-w-8)+scrollX+'px';tipEl.style.top=R.bottom+scrollY+6+'px'}
 function hideTip(){tipEl.hidden=true;tipOn=null}
