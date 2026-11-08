@@ -107,22 +107,44 @@ function tagURL(cls){if(!TAGURL[cls]){const c=document.createElement('canvas');c
 // leg = walking step (0 standing, 1 or 2 = the two steps): legs and boots slide apart and the back foot lifts
 function stepLegs(p,leg){if(!leg)return p;const s=leg===1?1:-1;
  return p.map(r=>{if(r[1]<15)return r;const L=r[0]<8,dx=L?-s:s,lift=(L?s<0:s>0)&&r[1]>=19?1:0;return[r[0]+dx,r[1]-lift,r[2],r[3],r[4],r[5]]})}
+// Characters are drawn at double resolution (32x44): the 16x22 design (body, SPRITE_DETAIL, arms) is drawn without an outline,
+// doubled with rounded diagonals (scale2x), given a thin 1-pixel outline and soft shading, then a detailed face is drawn on top.
+// Skin tones, outfits and poses all come from the 16x22 design, so every variant keeps working.
 function drawSprite(c,id,mood,pose,leg){
- const x=c.getContext('2d'),ch=CH[id],f=(a,b,w,h,k)=>{x.fillStyle=k;x.fillRect(a,b,w,h)};
- const A=ch.a?POSE[pose||'none'](ch.a):[],R=[...A.filter(r=>!r[5]),...stepLegs(ch.p,leg),...A.filter(r=>r[5])]; // front-of-body arm pieces last
- R.forEach(p=>f(p[0]-1,p[1]-1,p[2]+2,p[3]+2,O));const front=A.filter(r=>r[5]),det=detailOf(id);
- R.filter(r=>!front.includes(r)).forEach(p=>f(p[0],p[1],p[2],p[3],p[4]));if(det)stepLegs(det,leg).forEach(p=>f(p[0],p[1],p[2],p[3],p[4]));front.forEach(p=>f(p[0],p[1],p[2],p[3],p[4])); // body, hand-placed details (SPRITE_DETAIL), then hands in front
- shadeSprite(c); // light from the top-left: highlights on top and left edges, shadows on the right and bottom (before the face, so eyes stay crisp)
- if(mood==='hurt'){f(5,6,2,1,O);f(9,6,2,1,O);f(7,8,2,1,'#a22');return}
- if(mood==='sleep'){f(5,6,2,1,O);f(9,6,2,1,O);f(7,8,2,1,'#8a4a4a');return} // eyes closed, calm
- if(mood==='shock'){f(5,4,2,3,'#ffffff');f(9,4,2,3,'#ffffff');f(6,5,1,2,ch.eye);f(9,5,1,2,ch.eye);f(7,8,2,2,'#5a2a2a');return} // wide eyes, open mouth (surprise)
- if(mood==='roll'){f(6,4,1,1,ch.eye);f(9,4,1,1,ch.eye);f(5,3,2,1,O);f(9,3,2,1,O);f(7,8,3,1,'#8a4a4a');return} // rolling the eyes: pupils up, flat mouth
- const e=mood==='mad'?'#e03030':ch.eye;f(6,5,1,2,e);f(9,5,1,2,e);
- if(mood==='happy'){f(7,8,2,1,'#7a2a2a');f(5,7,1,1,'#f08080');f(10,7,1,1,'#f08080')}
- else if(mood==='mad'){f(6,4,2,1,O);f(9,4,2,1,O);f(7,8,2,1,'#a22')}else f(7,8,2,1,'#8a4a4a');
-}
+ const lo=document.createElement('canvas');lo.width=16;lo.height=22;const lx=lo.getContext('2d'),ch=CH[id],lf=(p)=>{lx.fillStyle=p[4];lx.fillRect(p[0],p[1],p[2],p[3])};
+ const A=ch.a?POSE[pose||'none'](ch.a):[],front=A.filter(r=>r[5]),det=detailOf(id);
+ [...A.filter(r=>!r[5]),...stepLegs(ch.p,leg)].forEach(lf);if(det)stepLegs(det,leg).forEach(lf);front.forEach(lf); // body, hand-placed details, then hands in front
+ const x=c.getContext('2d'),W=32,H=44,src=lx.getImageData(0,0,16,22).data,im=x.createImageData(W,H),d=im.data;
+ scale2x(src,d);outline(d,W,H);shadeSprite(d,W,H);x.putImageData(im,0,0);drawFace(x,ch,mood)}
+// scale2x (EPX): each pixel becomes 2x2; a corner takes a neighbor's color where two equal neighbors meet, which rounds off stair-step diagonals
+function scale2x(s,d){const px=(i,j)=>i<0||j<0||i>=16||j>=22?-1:(j*16+i)*4,clear=a=>a<0||s[a+3]===0,eq=(a,b)=>clear(a)||clear(b)?clear(a)&&clear(b):s[a]===s[b]&&s[a+1]===s[b+1]&&s[a+2]===s[b+2]; // (outside the grid counts as empty)
+ const put=(i,j,p)=>{const q=(j*32+i)*4;if(p<0){d[q+3]=0;return}for(let k=0;k<4;k++)d[q+k]=s[p+k]};
+ for(let j=0;j<22;j++)for(let i=0;i<16;i++){const P=px(i,j),A=px(i,j-1),Bp=px(i+1,j),C=px(i-1,j),D=px(i,j+1);
+  const n1=eq(C,A)&&!eq(C,D)&&!eq(A,Bp)?A:P,n2=eq(A,Bp)&&!eq(A,C)&&!eq(Bp,D)?Bp:P,n3=eq(D,C)&&!eq(D,Bp)&&!eq(C,A)?C:P,n4=eq(Bp,D)&&!eq(Bp,A)&&!eq(D,C)?D:P;
+  put(i*2,j*2,n1);put(i*2+1,j*2,n2);put(i*2,j*2+1,n3);put(i*2+1,j*2+1,n4)}}
+// A thin dark outline: every empty pixel touching the figure (sides and corners) turns dark
+function outline(d,W,H){const a=new Uint8Array(W*H);for(let i=0;i<W*H;i++)a[i]=d[i*4+3]>0;
+ for(let j=0;j<H;j++)for(let i=0;i<W;i++){if(a[j*W+i])continue;let n=0;for(let v=-1;v<=1;v++)for(let u=-1;u<=1;u++){const ii=i+u,jj=j+v;if(ii>=0&&jj>=0&&ii<W&&jj<H&&a[jj*W+ii])n=1}
+  if(n){const q=(j*W+i)*4;d[q]=26;d[q+1]=18;d[q+2]=38;d[q+3]=255}}}
+// Light from the top-left: highlights on top and left edges, shadows on the right and bottom, two pixels deep (soft), and a gentle
+// darkening toward the feet. Dark outline pixels are left alone.
+function shadeSprite(d,w,h){const src=new Uint8ClampedArray(d),on=(i,j)=>{if(i<0||j<0||i>=w||j>=h)return false;const p=(j*w+i)*4;return src[p+3]>0&&!(src[p]===26&&src[p+1]===18&&src[p+2]===38)};
+ for(let j=0;j<h;j++)for(let i=0;i<w;i++){if(!on(i,j))continue;const p=(j*w+i)*4;
+  let f=.06-j*.0035+(!on(i,j-1)?.22:!on(i,j-2)?.08:0)+(!on(i-1,j)?.12:!on(i-2,j)?.04:0)-(!on(i+1,j)?.2:!on(i+2,j)?.07:0)-(!on(i,j+1)?.15:!on(i,j+2)?.05:0);
+  if(f)for(let k=0;k<3;k++){const v=src[p+k];d[p+k]=Math.round(f>0?v+(255-v)*f:v*(1+f))}}}
+// The face, at double resolution (head: x 10-21, y 6-17). Eyes have a shine; moods get brows, smiles, blush and open mouths.
+function drawFace(x,ch,mood){const f=(a,b,w,h,k)=>{x.fillStyle=k;x.fillRect(a,b,w,h)},E=ch.eye,W='#ffffff',M='#8a4a4a';
+ if(mood==='hurt'){[[12,10],[13,11],[12,12],[19,10],[18,11],[19,12]].forEach(p=>f(p[0],p[1],1,1,O));f(14,16,1,1,'#a22');f(15,17,2,1,'#a22');f(17,16,1,1,'#a22');return} // squeezed shut > <, wobbly mouth
+ if(mood==='sleep'){f(12,12,2,1,O);f(11,11,1,1,O);f(18,12,2,1,O);f(20,11,1,1,O);f(15,16,2,1,M);return} // eyes closed, calm
+ if(mood==='shock'){f(11,9,4,5,W);f(17,9,4,5,W);f(12,11,2,2,E);f(18,11,2,2,E);f(15,15,2,3,'#5a2a2a');return} // wide eyes, open mouth (surprise)
+ if(mood==='roll'){f(12,10,2,3,W);f(18,10,2,3,W);f(12,10,2,1,E);f(18,10,2,1,E);f(12,8,2,1,O);f(18,8,2,1,O);f(14,16,4,1,M);return} // pupils up, flat mouth
+ const mad=mood==='mad';f(12,10,2,3,mad?'#e03030':E);f(18,10,2,3,mad?'#e03030':E);
+ if(!mad){f(13,10,1,1,W);f(19,10,1,1,W)} // a little shine in each eye
+ if(mood==='happy'){f(14,15,1,1,'#7a2a2a');f(15,16,2,1,'#7a2a2a');f(17,15,1,1,'#7a2a2a');f(10,14,2,1,'#f08080');f(20,14,2,1,'#f08080')} // smile and blush
+ else if(mad){f(11,8,2,1,O);f(13,9,1,1,O);f(19,8,2,1,O);f(18,9,1,1,O);f(14,17,1,1,'#a22');f(15,16,2,1,'#a22');f(17,17,1,1,'#a22')} // angry brows, frown
+ else f(15,16,2,1,M)}
 const SP={};
-function sprite(id,m,pose,leg){const k=id+m+(pose||'')+(leg||'');if(!SP[k]){const c=document.createElement('canvas');c.width=16;c.height=22;drawSprite(c,id,m,pose,leg);SP[k]=c}return SP[k]}
+function sprite(id,m,pose,leg){const k=id+m+(pose||'')+(leg||'');if(!SP[k]){const c=document.createElement('canvas');c.width=32;c.height=44;drawSprite(c,id,m,pose,leg);SP[k]=c}return SP[k]}
 function spr(c,id,m,cx,fy,face,bob,al,sc,pose,leg){c.save();c.globalAlpha=al==null?1:al;sc=sc||1;c.translate(Math.round(cx),Math.round(fy+bob));c.scale(face<0?-sc:sc,sc);c.drawImage(sprite(id,m,pose,leg),-16,-44,32,44);c.restore()}
 // Walking step for time t (alternates 1, 2); eyes blink now and then (a short 'sleep' face), different timing per name
 const stepOf=t=>1+Math.floor(t*7)%2;
@@ -885,15 +907,6 @@ function drawFeastBack(c,x0,y0,w,t){c.save();c.beginPath();c.rect(x0,y0,w,96);c.
 function drawFeastFront(c,x0,y0,w){const y=y0+FY-16;c.fillStyle=O;c.fillRect(x0+6,y-1,w-12,24);c.fillStyle='#f0e8d8';c.fillRect(x0+7,y,w-14,5);c.fillStyle='#8a2434';c.fillRect(x0+7,y+5,w-14,16);c.fillStyle='#d8b860';c.fillRect(x0+7,y+5,w-14,1);
  c.fillStyle='#5a3a20';c.fillRect(x0+12,y+21,4,6);c.fillRect(x0+w-16,y+21,4,6);
  const food=['apple','ale','orange','wine','banana','bloodorange','goldapple','ale','starfruit'];for(let i=0,x=x0+18;x<x0+w-14;i++,x+=22){if(i%3===1){c.fillStyle=O;c.fillRect(x-7,y-6,14,7);c.fillStyle='#a8603a';c.fillRect(x-6,y-5,12,5);c.fillStyle='#d8904a';c.fillRect(x-4,y-5,6,2)}else drawItem(c,food[i%food.length],x,y-3,1)}} // a roast now and then
-// Shade a freshly drawn sprite (16x22): every colored pixel at the edge of the shape gets lighter on its top and left sides
-// and darker on its right and bottom sides, so flat colors look rounded. The dark outline counts as "outside".
-function shadeSprite(c){const x=c.getContext('2d'),w=c.width,h=c.height,im=x.getImageData(0,0,w,h),d=im.data,src=new Uint8ClampedArray(d);
- const on=(i,j)=>{if(i<0||j<0||i>=w||j>=h)return false;const p=(j*w+i)*4;return src[p+3]>0&&!(src[p]===26&&src[p+1]===18&&src[p+2]===38)};
- for(let j=0;j<h;j++)for(let i=0;i<w;i++){if(!on(i,j))continue;const p=(j*w+i)*4;let f=0;
-  f=.06-j*.007; // gentle light from above (top a little lighter, feet a little darker)
-  if(!on(i,j-1))f+=.24;if(!on(i-1,j))f+=.12;if(!on(i+1,j))f-=.22;if(!on(i,j+1))f-=.16;
-  if(f)for(let k=0;k<3;k++){const v=src[p+k];d[p+k]=Math.round(f>0?v+(255-v)*f:v*(1+f))}}
- x.putImageData(im,0,0)}
 // Extra hand-placed details per character (drawn over the body, before shading). Matched by the start of the sprite name (knight_bronze, wizard_blue_arm_st, priest_f~2...).
 const SPRITE_DETAIL={knight:[[2,9,3,2,'#b8c2d4'],[11,9,3,2,'#8a94a8'],[5,11,2,2,'#c8d0dc'],[7,14,2,1,'#f2c84a'],[5,17,2,1,'#aab4c8'],[9,17,2,1,'#aab4c8'],[6,2,4,1,'#c8d0dc']],
  paladin:[[2,9,3,2,'#f2c84a'],[11,9,3,2,'#d8b040'],[5,17,2,1,'#f2c84a'],[9,17,2,1,'#f2c84a']],
