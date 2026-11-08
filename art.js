@@ -104,15 +104,15 @@ function tagURL(cls){if(!TAGURL[cls]){const c=document.createElement('canvas');c
 // leg = walking step (0 standing, 1 or 2 = the two steps): legs and boots slide apart and the back foot lifts
 function stepLegs(p,leg){if(!leg)return p;const s=leg===1?1:-1;
  return p.map(r=>{if(r[1]<15)return r;const L=r[0]<8,dx=L?-s:s,lift=(L?s<0:s>0)&&r[1]>=19?1:0;return[r[0]+dx,r[1]-lift,r[2],r[3],r[4],r[5]]})}
-// Characters: the 16x22 design (body, SPRITE_DETAIL, arms) gets a dark outline and blocky shading, is doubled to 32x44 with square pixels,
-// and then gets a detailed face at double resolution (drawFace): chunky pixel art with lively expressions.
+// Characters: the 16x22 design (body, SPRITE_DETAIL, arms) gets a dark outline, blocky shading and its face (drawFace),
+// then is doubled to 32x44 with square pixels.
 // Skin tones, outfits and poses all come from the 16x22 design, so every variant keeps working.
 function drawSprite(c,id,mood,pose,leg){
  const lo=document.createElement('canvas');lo.width=16;lo.height=22;const lx=lo.getContext('2d'),ch=CH[id],lf=(p)=>{lx.fillStyle=p[4];lx.fillRect(p[0],p[1],p[2],p[3])};
  const A=ch.a?POSE[pose||'none'](ch.a):[],front=A.filter(r=>r[5]),det=detailOf(id);
  [...A.filter(r=>!r[5]),...stepLegs(ch.p,leg)].forEach(lf);if(det)stepLegs(det,leg).forEach(lf);front.forEach(lf); // body, hand-placed details, then hands in front
- const im=lx.getImageData(0,0,16,22);outline(im.data,16,22);shadeSprite(im.data,16,22);lx.putImageData(im,0,0); // chunky: outline and shading on the 16x22 grid
- const x=c.getContext('2d');x.imageSmoothingEnabled=false;x.drawImage(lo,0,0,32,44);drawFace(x,ch,mood)} // doubled with square pixels, then the detailed face
+ const im=lx.getImageData(0,0,16,22);outline(im.data,16,22);shadeSprite(im.data,16,22);lx.putImageData(im,0,0);drawFace(lx,ch,mood); // chunky: outline and shading on the 16x22 grid
+ const x=c.getContext('2d');x.imageSmoothingEnabled=false;x.drawImage(lo,0,0,32,44)} // doubled with square pixels
 // A dark outline one pixel thick (on the 16x22 grid): every empty pixel touching the figure (sides and corners) turns dark
 function outline(d,W,H){const a=new Uint8Array(W*H);for(let i=0;i<W*H;i++)a[i]=d[i*4+3]>0;
  for(let j=0;j<H;j++)for(let i=0;i<W;i++){if(a[j*W+i])continue;let n=0;for(let v=-1;v<=1;v++)for(let u=-1;u<=1;u++){const ii=i+u,jj=j+v;if(ii>=0&&jj>=0&&ii<W&&jj<H&&a[jj*W+ii])n=1}
@@ -123,17 +123,15 @@ function shadeSprite(d,w,h){const src=new Uint8ClampedArray(d),on=(i,j)=>{if(i<0
  for(let j=0;j<h;j++)for(let i=0;i<w;i++){if(!on(i,j))continue;const p=(j*w+i)*4;
   const f=.06-j*.007+(!on(i,j-1)?.24:0)+(!on(i-1,j)?.12:0)-(!on(i+1,j)?.22:0)-(!on(i,j+1)?.16:0);
   if(f)for(let k=0;k<3;k++){const v=src[p+k];d[p+k]=Math.round(f>0?v+(255-v)*f:v*(1+f))}}}
-// The face, at double resolution (head: x 10-21, y 6-17). Eyes have a shine; moods get brows, smiles, blush and open mouths.
-function drawFace(x,ch,mood){const f=(a,b,w,h,k)=>{x.fillStyle=k;x.fillRect(a,b,w,h)},E=ch.eye,W='#ffffff',M='#8a4a4a';
- if(mood==='hurt'){[[12,10],[13,11],[12,12],[19,10],[18,11],[19,12]].forEach(p=>f(p[0],p[1],1,1,O));f(14,16,1,1,'#a22');f(15,17,2,1,'#a22');f(17,16,1,1,'#a22');return} // squeezed shut > <, wobbly mouth
- if(mood==='sleep'){f(12,12,2,1,O);f(11,11,1,1,O);f(18,12,2,1,O);f(20,11,1,1,O);f(15,16,2,1,M);return} // eyes closed, calm
- if(mood==='shock'){f(11,9,4,5,W);f(17,9,4,5,W);f(12,11,2,2,E);f(18,11,2,2,E);f(15,15,2,3,'#5a2a2a');return} // wide eyes, open mouth (surprise)
- if(mood==='roll'){f(12,10,2,3,W);f(18,10,2,3,W);f(12,10,2,1,E);f(18,10,2,1,E);f(12,8,2,1,O);f(18,8,2,1,O);f(14,16,4,1,M);return} // pupils up, flat mouth
- const mad=mood==='mad';f(12,10,2,3,mad?'#e03030':E);f(18,10,2,3,mad?'#e03030':E);
- if(!mad){f(13,10,1,1,W);f(19,10,1,1,W)} // a little shine in each eye
- if(mood==='happy'){f(14,15,1,1,'#7a2a2a');f(15,16,2,1,'#7a2a2a');f(17,15,1,1,'#7a2a2a');f(10,14,2,1,'#f08080');f(20,14,2,1,'#f08080')} // smile and blush
- else if(mad){f(11,8,2,1,O);f(13,9,1,1,O);f(19,8,2,1,O);f(18,9,1,1,O);f(14,17,1,1,'#a22');f(15,16,2,1,'#a22');f(17,17,1,1,'#a22')} // angry brows, frown
- else f(15,16,2,1,M)}
+// The face, on the 16x22 grid (simple pixel eyes and mouth; drawn after the shading so they stay crisp)
+function drawFace(x,ch,mood){const f=(a,b,w,h,k)=>{x.fillStyle=k;x.fillRect(a,b,w,h)};
+ if(mood==='hurt'){f(5,6,2,1,O);f(9,6,2,1,O);f(7,8,2,1,'#a22');return}
+ if(mood==='sleep'){f(5,6,2,1,O);f(9,6,2,1,O);f(7,8,2,1,'#8a4a4a');return} // eyes closed, calm
+ if(mood==='shock'){f(5,4,2,3,'#ffffff');f(9,4,2,3,'#ffffff');f(6,5,1,2,ch.eye);f(9,5,1,2,ch.eye);f(7,8,2,2,'#5a2a2a');return} // wide eyes, open mouth (surprise)
+ if(mood==='roll'){f(6,4,1,1,ch.eye);f(9,4,1,1,ch.eye);f(5,3,2,1,O);f(9,3,2,1,O);f(7,8,3,1,'#8a4a4a');return} // rolling the eyes: pupils up, flat mouth
+ const e=mood==='mad'?'#e03030':ch.eye;f(6,5,1,2,e);f(9,5,1,2,e);
+ if(mood==='happy'){f(7,8,2,1,'#7a2a2a');f(5,7,1,1,'#f08080');f(10,7,1,1,'#f08080')}
+ else if(mood==='mad'){f(6,4,2,1,O);f(9,4,2,1,O);f(7,8,2,1,'#a22')}else f(7,8,2,1,'#8a4a4a')}
 const SP={};
 function sprite(id,m,pose,leg){const k=id+m+(pose||'')+(leg||'');if(!SP[k]){const c=document.createElement('canvas');c.width=32;c.height=44;drawSprite(c,id,m,pose,leg);SP[k]=c}return SP[k]}
 function spr(c,id,m,cx,fy,face,bob,al,sc,pose,leg){c.save();c.globalAlpha=al==null?1:al;sc=sc||1;c.translate(Math.round(cx),Math.round(fy+bob));c.scale(face<0?-sc:sc,sc);c.drawImage(sprite(id,m,pose,leg),-16,-44,32,44);c.restore()}
