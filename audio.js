@@ -80,3 +80,8 @@ function musicControls(){const mb=$('#musicBtn'),vd=$('#musicVol');if(!mb)return
 musicControls();
 // (music that was left on starts again at the first tap or click, as browsers require)
 addEventListener('pointerdown',()=>{if(SND.music){audioStart();if(AC&&AC.state==='suspended')AC.resume()}},{passive:true});
+// Music plays only while you are in the game: it pauses when the tab is hidden (another tab, minimized, phone locked or the app in the
+// background) or the window loses focus, and picks up where it left off when you come back
+const musicAway=()=>document.hidden||!document.hasFocus();
+function musicPresence(){if(!AC)return;if(musicAway()){if(AC.state==='running')AC.suspend()}else if(SND.music&&AC.state==='suspended')AC.resume()}
+document.addEventListener('visibilitychange',musicPresence);addEventListener('blur',musicPresence);addEventListener('focus',musicPresence);addEventListener('pagehide',()=>{if(AC)AC.suspend()});addEventListener('pageshow',musicPresence);

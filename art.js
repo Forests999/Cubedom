@@ -134,7 +134,12 @@ function drawFace(x,ch,mood){const f=(a,b,w,h,k)=>{x.fillStyle=k;x.fillRect(a,b,
  else if(mood==='mad'){f(6,4,2,1,O);f(9,4,2,1,O);f(7,8,2,1,'#a22')}else f(7,8,2,1,'#8a4a4a')}
 const SP={};
 function sprite(id,m,pose,leg){const k=id+m+(pose||'')+(leg||'');if(!SP[k]){const c=document.createElement('canvas');c.width=32;c.height=44;drawSprite(c,id,m,pose,leg);SP[k]=c}return SP[k]}
-function spr(c,id,m,cx,fy,face,bob,al,sc,pose,leg){c.save();c.globalAlpha=al==null?1:al;sc=sc||1;c.translate(Math.round(cx),Math.round(fy+bob));c.scale(face<0?-sc:sc,sc);c.drawImage(sprite(id,m,pose,leg),-16,-44,32,44);c.restore()}
+// Compendium tiles: while one is drawn, SWAP can replace a stand-in character (e.g. the Wizard standing in for "a Mage") with the tab's own character,
+// e.g. {wizard:'priest'}: its sprite and its room. Null the rest of the time.
+let SWAP=null;
+const swapRoom=id=>{if(!SWAP)return id;const t=SWAP[String(id).split(/[_~]/)[0]];return t||id};
+const swapSpr=id=>{if(!SWAP)return id;const t=SWAP[String(id).split(/[_~]/)[0]];return !t?id:CH[t]?t:Object.keys(CH).find(k=>k.startsWith(t+'_'))||id};
+function spr(c,id,m,cx,fy,face,bob,al,sc,pose,leg){id=swapSpr(id);c.save();c.globalAlpha=al==null?1:al;sc=sc||1;c.translate(Math.round(cx),Math.round(fy+bob));c.scale(face<0?-sc:sc,sc);c.drawImage(sprite(id,m,pose,leg),-16,-44,32,44);c.restore()}
 // Walking step for time t (alternates 1, 2); eyes blink now and then (a short 'sleep' face), different timing per name
 const stepOf=t=>1+Math.floor(t*7)%2;
 const blinkMood=(m,seed,t)=>m==='ok'&&((t+seed*1.37)%4.3)<.13?'sleep':m;
@@ -217,7 +222,7 @@ function poseOf(act,at){
  if(act==='horse')return at>=1&&at<4.6?'fwd':'none';
  return 'none';
 }
-function box(c,id,x,y,w){if(isFarm(id))id='farmer'; // every Farmer box (farmer2, farmer3) looks the same
+function box(c,id,x,y,w){id=swapRoom(id);if(isFarm(id))id='farmer'; // every Farmer box (farmer2, farmer3) looks the same
  const key=id+'|'+(w==null?'':w);let rc=ROOMC[key];if(!rc){rc=document.createElement('canvas');rc.width=rc.height=CELL;const q=rc.getContext('2d');q.imageSmoothingEnabled=false;paintRoom(q,id,w);ROOMC[key]=rc}c.drawImage(rc,x,y)} // each room is painted once (paintRoom) and reused
 // Extra 2px of frame on the sides of a box that have no neighbor box, so every edge on the board looks the same thickness
 // (two boxes side by side each draw their 2px, making 4px; a lone edge gets 2 + 2 = 4px too). sides = {t,b,l,r} true = add.
@@ -246,10 +251,11 @@ function drawFx(f){
   g.fillStyle='#6a4cc2';g.fillRect(x-w/2,y-h,w,h);g.fillStyle=c;g.fillRect(x-w/2+2,y-h+2,w-4,h-4);g.fillStyle='#fff';g.fillRect(x-w/2+5,y-h+6,w-10,h-12)}
  else if(t==='backdoor'&&o>.02){
   // black doorway, door panel swinging toward the viewer on its left hinge
-  g.fillStyle='#000000';g.fillRect(x-9,y-33,18,33);
+  g.fillStyle='#000000';g.fillRect(x-9,y-33,18,33);if(ds.arch){g.fillRect(x-8,y-36,16,3);g.fillRect(x-5,y-38,10,2)} // (an arched doorway is open at the top too)
   const pw=Math.max(2,Math.round(18*Math.cos(o*1.35))),gr=Math.round(3*Math.sin(o*1.35));
   g.fillStyle=O;g.fillRect(x-10,y-34-gr,pw+2,35+gr*2);g.fillStyle=ds.wood;g.fillRect(x-9,y-33-gr,pw,33+gr*2);
-  g.fillStyle=ds.band||ds.dark;g.fillRect(x-9,y-28-gr,pw,2);g.fillRect(x-9,y-8+gr,pw,2)}
+  g.fillStyle=ds.band||ds.dark;g.fillRect(x-9,y-28-gr,pw,2);g.fillRect(x-9,y-8+gr,pw,2);
+  if(ds.arch){const sx=v=>Math.round(v*pw/18);g.fillStyle=O;g.fillRect(x-10+sx(1),y-37-gr,sx(16)+2,4);g.fillRect(x-10+sx(4),y-39-gr,sx(10)+2,3);g.fillStyle=ds.wood;g.fillRect(x-9+sx(1),y-36-gr,sx(16),3);g.fillRect(x-9+sx(4),y-38-gr,sx(10),2)}} // the arched top swings with the door
  else if(t==='shelf'&&o>.02){
   // black opening; the bookshelf slides right into the wall
   const bl=Math.floor(x/CELL)*CELL,top=y-66;
@@ -956,7 +962,7 @@ function drawTavernLife(c,bx,by,t){const seg=Math.floor(t/7),s=t%7,i=seg%BARKEEP
  if(!bk||!bk.front)drawBarkeep(bk?bk.x:x,by+64,bk?bk.face:dir,bk?'up':(!moving&&s>2&&s<3.4?'fwd':'none'),moving&&!bk?stepOf(t):0);
  TAVERN_BAR.forEach(r=>{c.fillStyle=r[4];c.fillRect(bx+r[0],by+r[1],r[2],r[3])}); // the bar in front of him
  if(bk&&bk.front)drawBarkeep(bk.x,by+FY,bk.face,'up',bk.walk?stepOf(t):0); // he has come round the bar
- if(tv&&tv.cratesUntil>T){[[78,76],[86,80]].forEach(q=>{c.fillStyle=O;c.fillRect(bx+q[0]-1,by+q[1]-1,12,10);c.fillStyle='#8a5a2a';c.fillRect(bx+q[0],by+q[1],10,8);c.fillStyle='#6a4420';c.fillRect(bx+q[0],by+q[1]+3,10,1);c.fillRect(bx+q[0]+4,by+q[1],1,8)})} // a delivery
+ if(tv&&tv.cratesUntil>T){[[62,72,15,13],[78,72,15,13],[70,59,15,13]].forEach(q=>{const[x0,y0,w,h]=q;c.fillStyle=O;c.fillRect(bx+x0-1,by+y0-1,w+2,h+2);c.fillStyle='#8a5a2a';c.fillRect(bx+x0,by+y0,w,h);c.fillStyle='#a8763a';c.fillRect(bx+x0,by+y0,w,2);c.fillStyle='#6a4420';c.fillRect(bx+x0,by+y0+Math.floor(h/2),w,1);c.fillRect(bx+x0+3,by+y0,1,h);c.fillRect(bx+x0+w-4,by+y0,1,h)})} // a delivery: three crates stacked by the bar, while the delivery scene lasts
  const n=Math.floor(t/40),ph=t%40,who=['commoner','farmer','noble2','squire'][n%4];if(ph>=17)return;
  const door=bx+24,seat=bx+41,a=ph<.3?ph/.3:ph>16.7?(17-ph)/.3:1,sitting=ph>=1.2&&ph<15.6;
  const px=ph<1.2?lerp(door,seat,cl((ph-.3)/.9,0,1)):ph>=15.6?lerp(seat,door,cl((ph-15.6)/.9,0,1)):seat,drink=sitting&&Math.floor(ph*.5)%3===0;

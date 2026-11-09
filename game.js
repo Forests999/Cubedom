@@ -189,7 +189,8 @@ function stepGroup(dt){grpClock+=dt;
 // A character in a group event: Merchants stroll their stall and shout; diners stay seated, chat and toast
 function stepGrpUnit(u,dt){const bx=u.c*CELL;u.mv=false;
  if((u.gwait-=dt)<=0){u.gwait=2.5+Math.random()*3;
-  if(grp&&grp.kind==='market'){u.gx=bx+18+Math.random()*60;if(Math.random()<.55){say(u,pick(MARKET_SHOUT));gest(u,'up',1)}}
+  if(grp&&grp.kind==='market'){u.gx=bx+18+Math.random()*40; // (stays left of the shop coin in the bottom-right corner, which is drawn over the feet)
+   if(Math.random()<.55){say(u,pick(MARKET_SHOUT));gest(u,'up',1)}}
   else if(Math.random()<.55){say(u,pick(FEAST_SAY));u.hop=.3;gest(u,'fwd',.8)}}
  if(u.gx!=null&&Math.abs(u.gx-u.x)>.5){const d=u.gx-u.x,s=22*dt;u.face=d>0?1:-1;u.x+=Math.abs(d)<s?d:Math.sign(d)*s;u.mv=true;u.t+=dt}}
 // ---- travelling group events: everyone walks to a structure (the Well's small talk, the Tavern's Classic Adventurers) ----
@@ -282,7 +283,7 @@ function idleOk(u,c){const M=U.monarch;
  if(c==='target')return Object.values(U).some(v=>v!==u&&freeU(v)&&atHome(v));
  if(c==='alc')return alcNext(u);
  if(c==='madsci')return madSci(u)&&!u.as&&atHome(u)&&nbrs(u).some(v=>!isFarm(v.id));
- if(c==='others')return u.id==='rogue'&&!u.as&&Object.values(U).some(v=>v!==u&&!v.dead&&!isFarm(v.id)&&v.id!=='rogue'&&!v.form);
+ if(c==='others')return u.id==='rogue'&&!u.as&&Object.values(U).some(v=>v!==u&&!v.dead&&!isFarm(v.id)&&v.id!=='rogue'&&!isStruct(v)&&!v.form);
  if(c==='mageTag')return u.id==='rogue'&&!u.as&&!!u.mageTag;
  if(c==='spirit')return [[0,1],[0,-1],[1,0],[-1,0]].every(d=>{const rr=u.r+d[0],cc=u.c+d[1];return rr>=0&&rr<ROWS&&cc>=0&&cc<COLS&&isOpen(rr,cc)&&!at(rr,cc)});
  if(c==='rain')return wxOf(u)==='rain'&&atHome(u)&&!isFarm(u.id);
@@ -311,7 +312,7 @@ function doIdle(u,k){const bx=u.c*CELL,dur=(a,d)=>{beginAct(u,a);u.dur=d};
  if(k==='forgework'||k==='smelt'||k==='coal'||k==='pour'){dur(k,{forgework:5,smelt:6,coal:4.5,pour:5}[k]);u.hx=k==='forgework'||k==='pour'?bx+52:bx+44;if(k==='smelt')u.smeltWhat=Math.random()<.5?'armor':'sword';return true}
  if(k==='alcbrew'||k==='research'||k==='smoke'){dur(k,{alcbrew:4.6,research:5,smoke:5}[k]);if(k==='alcbrew')u.hx=bx+46;return true}
  if(k==='conjure'){dur('conjure',3);return true}
- if(k==='disguise'){disguise(u,pick(Object.values(U).filter(v=>v!==u&&!v.dead&&!isFarm(v.id)&&v.id!=='rogue'&&!v.form)));return true}
+ if(k==='disguise'){const who=Object.values(U).filter(v=>v!==u&&!v.dead&&!isFarm(v.id)&&!isStruct(v)&&v.id!=='rogue'&&!v.form);if(!who.length)return false;disguise(u,pick(who));return true} // (never a structure; nobody to copy: he does something else)
  if(k==='daggers'||k==='smokebomb'||k==='count'){dur(k,{daggers:5,smokebomb:4,count:4}[k]);if(k==='daggers')u.hx=bx+30;return true}
  if(k==='brew'){dur('brew',4.2);return true}
  if(k==='read'||k==='magic'||k==='demon'){markSeen(k);u.st='act';u.act=k;u.at=0;u.ev={};u.dur=k==='read'?4+Math.random()*2:k==='magic'?3.5+Math.random()*1.5:3;
@@ -1594,6 +1595,9 @@ function step(dt){
  // No coins just for having the game open: only the Wizard's advertising pays boostAmt coins every COIN_EVERY seconds while boostT runs
  coinT+=dt;if(coinT>=COIN_EVERY){coinT-=COIN_EVERY;if(boostT>0&&boostAmt>0){const M=U.merchant;addCoins(boostAmt,M?M.x:null,M?M.y-50:null)}}if(boostT>0&&(boostT-=dt)<=0)boostAmt=0;
  bubs.forEach(u=>{if((!u.talker&&(!U[u.id]||U[u.id]!==u))||(u.bubT-=dt)<=0)dropBub(u)}); // talker = a creature that speaks (the demon whispering to the Rogue)
+ // The Tavern's scene props (bubbles, delivered crates, the barkeep's axe chase) last only while that scene is running in it,
+ // so moving or removing the Tavern (or the visitor) mid-scene never leaves them behind
+ Object.values(U).forEach(s=>{if(s.id!=='tavern')return;const v=U[s.hosting],k=v&&v.st==='talk'&&v.target===s.id?v.kind:null;if(k!=='tvbubbles')s.bubbles=null;if(k!=='tvdeliver')s.cratesUntil=0;if(k!=='tvshoo')s.bk=null});
  refreshTags();
  rains.forEach(q=>q.t+=dt);rains=rains.filter(q=>q.t<6);
  stepWeather(dt);stepRoyal(dt);stepTraveler(dt);stepGroup(dt);
@@ -1825,8 +1829,9 @@ function buildShelf(){
  ALL_CHARS.forEach(id=>{if(S.un[id])S.ever[id]=1}); // remember every character ever unlocked (its Compendium tab stays)
  const have=ALL_CHARS.filter(id=>SHELF_CHARS.includes(id)||S.un[id]);
  tray.querySelector('.lbl').textContent='Shelf: drag a box up to the board ('+have.length+'/'+ALL_CHARS.length+' unlocked)';
- // every character in order: unlocked ones as boxes (dimmed while on the board, or the Traveling Merchant on the road); locked ones as a blank box with a clue (SHELF_CLUE)
- ALL_CHARS.forEach(id=>{if(!have.includes(id)){const b=document.createElement('button');b.className='it locked';b.disabled=true;b.innerHTML='<canvas width="96" height="96"></canvas><span class="clue"></span>';b.lastChild.textContent=SHELF_CLUE[id]||'???';
+ // unlocked characters first, in alphabetical order, as boxes (dimmed while on the board, or the Traveling Merchant on the road); then the locked ones as a blank box with a clue (SHELF_CLUE)
+ const order=[...have.slice().sort((a,b)=>CH[a].name.localeCompare(CH[b].name)),...ALL_CHARS.filter(id=>!have.includes(id))];
+ order.forEach(id=>{if(!have.includes(id)){const b=document.createElement('button');b.className='it locked';b.disabled=true;b.innerHTML='<canvas width="96" height="96"></canvas><span class="clue"></span>';b.lastChild.textContent=SHELF_CLUE[id]||'???';
    const t=b.firstChild.getContext('2d');t.fillStyle='#221e3c';t.fillRect(0,0,96,96);t.font='34px '+GAME_FONT;t.fillStyle='#4a4470';t.textAlign='center';t.fillText('?',48,62);tray.appendChild(b);return}
   const b=document.createElement('button');b.className='it';b.dataset.id=id;b.innerHTML='<canvas width="96" height="96"></canvas>'+CH[id].name+tagImg(id);
   const t=b.firstChild.getContext('2d');t.imageSmoothingEnabled=false;box(t,id,0,0,'longsword');if(!CLASS[id]||CLASS[id]!=='structure')spr(t,id,'ok',48,FY,1,0);
@@ -1990,6 +1995,12 @@ const PD={study:['wizard','right'],gossip:['wizard','left'],undead:['wizard','be
  nscoff:['necromancer','left','blacksmith'],smithk:['knight','left','blacksmith'],reforge:['knight','left','blacksmith'],metal:['wizard','left','blacksmith'],greenarmor:['wizard','left','blacksmith'],metaltalk:['wizard','left','blacksmith'],
  awkjoke:['merchant','left','blacksmith'],flirt:['apothecary','left','blacksmith'],childhood:['alchemist','left','blacksmith'],holyfire:['priest','left','blacksmith'],rbuy:['rogue','left','blacksmith'],metalitch:['druid','left','blacksmith'],rqdeny:['monarch','left','rogue'],drain:['druid','left','necromancer']};
 REQS.forEach(q=>PD['rq:'+q]=['monarch','left',q==='paladin'?'knight':q]);
+// A tile's picture in a character's tab: a scene "with a Mage" (or Fighter, Merchant, Monstrous character) normally shows a stand-in
+// (the Wizard, Knight, Fruit Merchant, mad Alchemist); in the tab of another character with that tag, it shows that character instead.
+const TAG_STANDIN={mage:'wizard',fighter:'knight',merchant:'merchant',monstrous:'alchemist'};
+function tileArt(make,tid,k){const pw=PAIR_WITH[k]||[],tg=pw.find(p=>String(p).startsWith('tag:')),rep=tg&&TAG_STANDIN[tg.slice(4)];
+ if(!rep||rep===tid||pw.includes(tid)||!CH[tid]&&!Object.keys(CH).some(c=>c.startsWith(tid+'_'))||isStruct({id:tid}))return make();
+ SWAP={[rep]:tid};try{return make()}finally{SWAP=null}}
 function pairDiagram(k){
  const[o,rl,a0]=PD[k],a=a0||'priest',v=rl==='above'||rl==='below',[c,x]=mkc(v?96:192,v?192:96,NAMES[k]);let od=o,ad=a; // od/ad = sprites drawn (can differ from the room)
  const P={left:[[0,0],[96,0]],right:[[96,0],[0,0]],above:[[0,0],[0,96]],below:[[0,96],[0,0]]}[rl],p=P[0],q=P[1],pf=v?1:(p[0]<q[0]?1:-1);
@@ -2408,10 +2419,8 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
   btn.innerHTML=t.name+tagImg(t.id)+' <small>'+all.filter(k=>S.seen[k]).length+'/'+all.length+'</small>';btn.onclick=()=>buildRef(t.id);bar.append(btn)});
  const vis=[...new Set(tabs.flatMap(allOf))],n=foundCount(),left=DISCOVER_EVERY-n%DISCOVER_EVERY,info=document.createElement('p');info.className='cinfo';
  info.textContent='Discovered '+n+' of '+ALL_KEYS.length+'. Every '+DISCOVER_EVERY+' discoveries pay '+DISCOVER_REWARD+' coins ('+left+' more to the next reward).'; // out of everything in the game, unlocked or not
- // Tags: what this character's class tags are and what changes them
- const tn=document.createElement('p');tn.className='cinfo';tn.innerHTML='<b>Tags:</b> '+(TAG_NOTES[tab.id]||'').replace(/\{(\w+)\}/g,(m,c)=>tagOf(c));
  const dn=document.createElement('p');dn.className='cinfo';dn.innerHTML='<b>Decisions.</b> '+decideText(tab.id); // how often this character idles, visits or wanders
- if(tab.id==='super'||tab.id==='group'||CLASS[tab.id]==='structure'){const sp=document.createElement('p');sp.className='cinfo';sp.textContent=CLASS[tab.id]==='structure'?'Structures have nobody living in them. They give their neighbors new idle activities ('+Math.round(STRUCT_IDLE*100)+'% of their idle rolls), are never visited otherwise, do not count toward the shapes group events need, and items do nothing on them.':tab.id==='super'?'Super Secrets belong to no character and have no hints or clues. They come from simply playing around. Good luck!':'Group events are separate from what each character decides on their own. Every 5 minutes, if the board has the right characters in the right shape, one happens (picked at random if several could). It lasts 1 minute.';b.append(bar,info,sp)}else b.append(bar,info,dn,tn);
+ if(tab.id==='super'||tab.id==='group'||CLASS[tab.id]==='structure'){const sp=document.createElement('p');sp.className='cinfo';sp.textContent=CLASS[tab.id]==='structure'?'Structures have nobody living in them. They give their neighbors new idle activities ('+Math.round(STRUCT_IDLE*100)+'% of their idle rolls), are never visited otherwise, do not count toward the shapes group events need, and items do nothing on them.':tab.id==='super'?'Super Secrets belong to no character and have no hints or clues. They come from simply playing around. Good luck!':'Group events are separate from what each character decides on their own. Every 5 minutes, if the board has the right characters in the right shape, one happens (picked at random if several could). It lasts 1 minute.';b.append(bar,info,sp)}else b.append(bar,info,dn);
  // A grid of tiles (easter eggs only once found)
  const grid=(keys,items)=>{const d=document.createElement('div');d.className='cg';
   // easter eggs show once found, or once revealed by the Priest's studies
@@ -2423,7 +2432,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
    const[make,p]=T[k],tile=document.createElement('div'),s=document.createElement('span');
    tile.className='tile'+(S.seen[k]?' seen':'')+(EGGS.includes(k)?' egg':'');tile.dataset.k=k;
    tile.onpointerenter=e=>{if(e.pointerType==='mouse')showTip(tile,k)};tile.onpointerleave=e=>{if(e.pointerType==='mouse')hideTip()};
-   tile.onclick=e=>{e.stopPropagation();if(tipOn===tile&&e.pointerType!=='mouse')hideTip();else showTip(tile,k)};s.className='pct';s.textContent=fmt(ITEMLBL[k]&&items?ITEMLBL[k]:p);tile.append(make(),s);
+   tile.onclick=e=>{e.stopPropagation();if(tipOn===tile&&e.pointerType!=='mouse')hideTip();else showTip(tile,k)};s.className='pct';s.textContent=fmt(ITEMLBL[k]&&items?ITEMLBL[k]:p);tile.append(tileArt(make,tab.id,k),s);
    if(GAINS[k]){const gn=document.createElement('span');gn.className='gain';GAINS[k].forEach(i=>{const im=document.createElement('img');im.src=iconURL(i);im.alt=i;gn.append(im)});tile.append(gn)}
    d.append(tile)});return d};
  const count=keys=>keys.filter(k=>S.seen[k]).length+' / '+keys.length;

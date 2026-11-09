@@ -487,10 +487,6 @@ const LECTURE=[['priest','Stealing is a sin, my son.'],['rogue','I prefer "creat
 const CONFESS=[[['rogue','Forgive me, Father, for I have stolen.'],['priest','What did you take?'],['rogue','Forty purses, a goat and the Knight\'s left boot.'],['priest','Return the boot. We will work on the rest.']],
  [['rogue','I have a confession. A big one.'],['priest','Go on. I am listening.'],['rogue','It was me who ate the feast pie.'],['priest','I knew it! ...You are forgiven.']]];
 const DRINKS=[['knight','To old battles!'],['rogue','To full purses!'],['knight','Ha ha! This ale is strong!'],['rogue','Ha! You are wearing my boot.']];
-// Tags (Compendium): what each character's tags are and what changes them. {mage} etc. become the tag icons.
-const TAG_NOTES={knight:'{fighter} Fighter.',wizard:'{mage} Mage.',priest:'{mage} Mage.',necromancer:'{mage} Mage.',merchant:'{merchant} Merchant.',apothecary:'{merchant} Merchant.',
- alchemist:'{merchant} Merchant. He also gets the {mage} Mage tag while a Mage is next to him (both tags show). His neighbor effects go by tag: Mages, Merchants and Fighters next to him each get something.',
- rogue:'{fighter} Fighter. He gets the {mage} Mage tag when you use a spell scroll on him (conjuring an artifact uses it up). While disguised he shows the tags of whoever he copies.'};
 Object.assign(NAMES,{magictalk:'Is magic useful?',promo:'Alchemy sale (+5 coins)',haste:'Haste potions',twopot:'Secret: two for one',madsci:'Secret: the mad scientist',beast:'Secret: the beast-man',fourmage:'Secret: four Mages',
  nscroll:'Scroll on Necromancer: raise a skeleton',
  nefarious:'Nefarious potions (+5 coins)',poisons:'Buying poisons (+5 coins)',wine:'Poisoned wine',rtrip:'A clumsy burglary',pinch:'Pinching fruit',
@@ -613,8 +609,6 @@ COMP_TABS.forEach(t=>{const add={necromancer:['nscoff'],knight:['smithk','reforg
  if(t.id==='knight')t.items.push('paladin')});
 Object.assign(PAIR_WITH,{nscoff:['blacksmith','necromancer'],smithk:['blacksmith','knight'],reforge:['blacksmith','knight'],metal:['blacksmith','wizard'],greenarmor:['blacksmith','wizard'],metaltalk:['blacksmith','wizard'],
  awkjoke:['blacksmith','merchant'],flirt:['blacksmith','apothecary'],childhood:['blacksmith','alchemist'],holyfire:['blacksmith','priest'],rbuy:['blacksmith','rogue'],adventure:['blacksmith','tag:fighter']});
-TAG_NOTES.druid='{mage} Mage. Even buried, he still counts as a Mage for his neighbors.';
-TAG_NOTES.blacksmith='{merchant} Merchant and {fighter} Fighter.';
 Object.assign(DESC,{
  'prac:axe':'Knight with a battle axe. Big, heavy chops. Firewood for a week.',
  grove:'The Druid tends his grove of trees. They seem to like him.',
@@ -669,7 +663,6 @@ EGGS.push('ddiscount');
 {const dt=COMP_TABS.find(t=>t.id==='druid');dt.pairs.push('metalitch');dt.idle.push(...Object.keys(WX_NAMES).map(k=>'wx:'+k),'story','wolfkill');dt.items.splice(3,0,'archdruid');dt.items.push('ddiscount');
  COMP_TABS.find(t=>t.id==='blacksmith').pairs.push('metalitch')}
 PAIR_WITH.metalitch=['blacksmith','druid'];
-TAG_NOTES.druid='{mage} Mage. Even buried, he still counts as a Mage for his neighbors.';
 Object.assign(DESC,{metalitch:'Blacksmith and Druid, any side. The Druid explains how uncomfortable metal is to wear. The Blacksmith rolls his eyes.',
  archdruid:'Artifact on the Druid: he becomes the Archdruid, with a glowing living staff. He never casts Moonlight, Decay or Infest again.',
  ddiscount:'Secret: with the Druid next to the Apothecary, her potions cost 5 coins less (herbs from his grove).',
@@ -709,7 +702,6 @@ const COURT={generous:['Bread and honey for everyone!','Lower the taxes. Again!'
  greedy:['More gold for the vault!','Raise the taxes. Again!','Who touched my crown?','The jester costs too much.']};
 NAMES.court='Holding court';
 DESC.court='The Monarch sits on the throne and gives royal orders. A generous ruler gives things away; a greedy one wants more gold. (Each Monarch is one or the other, 50/50.)';
-TAG_NOTES.monarch='No tags. Each Monarch is a King or a Queen, and generous or greedy (50/50 each).';
 COMP_TABS.push({id:'monarch',name:'Monarch',pairs:[],idle:['court'],items:[]});
 
 // ---------- Monarch requests, the grand funeral; the Traveling Merchant; more Farmers ----------
@@ -758,8 +750,6 @@ EGGS.push('regicide','royalpatron');
  COMP_TABS.find(t=>t.id==='blacksmith').items.push('royalpatron');
  COMP_TABS.find(t=>t.id==='necromancer').pairs.push('drain');COMP_TABS.find(t=>t.id==='druid').pairs.push('drain');PAIR_WITH.drain=['necromancer','druid']}
 COMP_TABS.push({id:'traveler',name:'Traveling Merchant',pairs:[],idle:['wares','troad'],items:['tshop','tscroll','tpotion','tingot']});
-TAG_NOTES.monarch='None, and a Monarch can never gain one (an ingot does nothing). Each Monarch is a King or a Queen, generous or greedy (50/50 each), in red and gold, emerald and cream, blue and silver, or black and dark red.';
-TAG_NOTES.traveler='{merchant} Merchant.';
 // ---------- Compendium descriptions: every chance says what it is a chance OF ----------
 // "of their visits" = when one of the two visits the other; "of his idle activities" = when he picks something to do at home;
 // "checked first" = rolled before his normal idle choices; "each time he decides" = every few seconds, before anything else.
@@ -958,7 +948,6 @@ HINTS.promo='A shopkeeper with the Alchemist next door sometimes sells his potio
 TAG_ICON.monstrous=[0,1,2].flatMap(k=>[[k*2,0,1,2,'#e04848'],[k*2+1,2,1,3,'#e04848'],[k*2+2,5,1,2,'#e04848']]); // three claw slashes
 TAG_ICON.structure=[[3,0,1,1,'#c8c0b8'],[2,1,3,1,'#c8c0b8'],[1,2,5,1,'#c8c0b8'],[0,3,7,1,'#c8c0b8'],[1,4,5,3,'#8a8494'],[3,5,1,2,'#3a2a1a']]; // a little house
 Object.assign(TAG_NAMES,{'tag:monstrous':'a Monstrous one','tag:structure':'a Structure'});
-TAG_NOTES.alchemist='{merchant} Merchant. He also gets the {mage} Mage tag while a Mage is next to him (both tags show), and the {monstrous} Monstrous tag on the bottom-right space (the mad scientist). His neighbor effects go by tag: Mages, Merchants and Fighters next to him each get something.';
 // ---------- Super Secrets: their own Compendium tab; no hints, no clues, tied to no character ----------
 COMP_TABS.push({id:'super',name:'Super Secrets',pairs:[],idle:[],items:['ss:gold','ss:alltags']});EGGS.push('ss:gold','ss:alltags');
 Object.assign(NAMES,{'ss:gold':'Super secret: a golden kingdom','ss:alltags':'Super secret: one of everything'});
@@ -1022,15 +1011,12 @@ const TITLES={friend:'Old Friends',learn:'Eldritch Awakening',bolt:'Thunderstruc
 // and cannot be killed; items do nothing on it. It gives its neighbors new idle activities: STRUCT_IDLE of their idle rolls,
 // picked by one of the neighbor's tags (at random if they have several).
 const isStruct=u=>!!u&&CLASS[u.id]==='structure';
-const STRUCT_IDLE=.3;
+const STRUCT_IDLE=.2; // (structure activities are listed only in the structure's own Compendium tab, not under each character)
 // The Well (on the shelf from the start). Its activities by the neighbor's tag; a Mage is splashed 10% of the time (WELL_SPLASH), else looks in.
 CH.well={name:'Well',eye:O,p:[]};CLASS.well='structure';TR.well={up:'fade',down:'fade'};SHELF_CHARS.push('well');ALL_CHARS.push('well');NAMES.well='Well';
 const WELL_ACTS={mage:['welllook','wellsplash'],fighter:['welljump'],merchant:['wellwish'],monstrous:['welldive']},WELL_SPLASH=.1;
-TAG_NOTES.well='{structure} Structure. Nobody lives here: its neighbors come over for its activities instead.';
 COMP_TABS.push({id:'well',name:'Well',pairs:['welllook','wellsplash','welljump','wellwish','welldive'],idle:[],items:[]});
 Object.assign(PAIR_WITH,{welllook:['well','tag:mage'],wellsplash:['well','tag:mage'],welljump:['well','tag:fighter'],wellwish:['well','tag:merchant'],welldive:['well','tag:monstrous']});
-COMP_TABS.forEach(t=>{const add={wizard:['welllook','wellsplash'],priest:['welllook','wellsplash'],necromancer:['welllook','wellsplash'],druid:['welllook','wellsplash'],
- knight:['welljump'],rogue:['welljump'],blacksmith:['welljump','wellwish'],merchant:['wellwish'],apothecary:['wellwish'],alchemist:['wellwish','welldive'],traveler:['wellwish']}[t.id];if(add)t.pairs.push(...add)});
 Object.assign(NAMES,{welllook:'Looking into the well',wellsplash:'Splashed at the well',welljump:'Jumping the well',wellwish:'A wish in the well',welldive:'Into the well'});
 Object.assign(TITLES,{welllook:'Wishing Well Gaze',wellsplash:'I\'m Melting!',welljump:'Well Vault',wellwish:'Silent Wish',welldive:'Down the Well'});
 Object.assign(DESC,{welllook:'A Mage next to the Well peers into it peacefully.',wellsplash:'A Mage next to the Well gets a bucket of well water thrown at them by a peasant. They melt into a puddle, the peasant runs, and they slowly reform.',
@@ -1041,7 +1027,9 @@ Object.assign(FLAVOR,{welllook:'They peer into the dark water and wonder how dee
  welldive:'In they go! Then two eyes peek over the rim before they climb back out.'});
 Object.assign(HINTS,{welllook:'Mages love a quiet well next door.',wellsplash:'Mages and water do not always mix... rarely, anyway.',welljump:'Fighters living by the well like to show off.',
  wellwish:'Shopkeepers by the well are a superstitious lot.',welldive:'Something monstrous living by the well might take a dip.'});
-const WELL_PCT={welllook:'27%',wellsplash:'3%',welljump:'30%',wellwish:'30%',welldive:'30%'}; // 30% of idles x (90% / 10% for Mages); with several tags it is shared
+// Compendium labels: the share of a neighbor's idle activities (STRUCT_IDLE x the outcome's share for that tag; with several tags it is shared)
+const structPct=f=>Math.floor(STRUCT_IDLE*f*100+1e-9)+'%';
+const WELL_PCT={welllook:structPct(1-WELL_SPLASH),wellsplash:structPct(WELL_SPLASH),welljump:structPct(1),wellwish:structPct(1),welldive:structPct(1)};
 TAG_ICON.structure=[[2,1,3,2,'#c0603a'],[2,1,3,1,'#e08a5a'],[0,4,3,2,'#c0603a'],[0,4,3,1,'#e08a5a'],[4,4,3,2,'#a84e2e'],[4,4,3,1,'#d07a4a']]; // a little stack of bricks: two below, one on top
 
 // ---------- travelling group events: everyone walks to a structure (a secret each) ----------
@@ -1053,7 +1041,6 @@ const CLASSIC_TALK=['Remember the dragon in the Ashfell caves?','To the old part
 CH.tavern={name:'Tavern',eye:O,p:[]};CLASS.tavern='structure';TR.tavern={up:'backdoorL',down:'backdoorL'};ALL_CHARS.push('tavern');NAMES.tavern='Tavern';
 const BKC={body:'#e8dcc0',bodyD:'#c8bca0',pants:'#4a3a2a',boot:'#2a1a10',belt:'#8a5a2a'};
 CH.barkeep={name:'Barkeep',eye:O,a:arms(BKC),p:[...B(BKC),[5,11,6,7,'#6a4a2a'],[5,7,6,2,'#6a4a2a'],[5,1,6,2,'#3a2a1a'],[6,9,4,1,'#8a2a2a']]}; // apron, mustache
-TAG_NOTES.tavern='{structure} Structure. Nobody lives here, but the barkeep never seems to leave.';
 SHELF_CLUE.tavern='When the old party is back together, they will need a drink.';
 COMP_TABS.push({id:'tavern',name:'Tavern',pairs:[],idle:[],items:['grp:classic']});
 COMP_TABS.find(t=>t.id==='well').items.push('grp:wellchat');COMP_TABS.find(t=>t.id==='group').items.push('grp:wellchat','grp:classic');EGGS.push('grp:wellchat','grp:classic');
@@ -1074,8 +1061,6 @@ const STRUCT_SECOND={wellsplash:WELL_SPLASH,tvbubbles:.1,tvwine:.2}; // the chan
 const DRUNK_SLEEP=15,TAVERN_WINE=20;
 COMP_TABS.find(t=>t.id==='tavern').pairs.push('tvfizz','tvbubbles','tvdrink','tvdeliver','tvwine','tvshoo');
 Object.assign(PAIR_WITH,{tvfizz:['tavern','tag:mage'],tvbubbles:['tavern','tag:mage'],tvdrink:['tavern','tag:fighter'],tvdeliver:['tavern','tag:merchant'],tvwine:['tavern','tag:merchant'],tvshoo:['tavern','tag:monstrous']});
-COMP_TABS.forEach(t=>{const add={wizard:['tvfizz','tvbubbles'],priest:['tvfizz','tvbubbles'],necromancer:['tvfizz','tvbubbles'],druid:['tvfizz','tvbubbles'],
- knight:['tvdrink'],rogue:['tvdrink'],blacksmith:['tvdrink','tvdeliver','tvwine'],merchant:['tvdeliver','tvwine'],apothecary:['tvdeliver','tvwine'],alchemist:['tvdeliver','tvwine','tvshoo'],traveler:['tvdeliver','tvwine']}[t.id];if(add)t.pairs.push(...add)});
 Object.assign(NAMES,{tvfizz:'A fizzy magic drink',tvbubbles:'Too many bubbles',tvdrink:'One more round',tvdeliver:'A delivery for the tavern',tvwine:'Dwarven wine',tvshoo:'Thrown out of the tavern'});
 Object.assign(TITLES,{tvfizz:'Fizzy Magic Drink',tvbubbles:'Bubble Trouble',tvdrink:'One More Round',tvdeliver:'Special Delivery',tvwine:'Dwarven Wine',tvshoo:'No Monsters Allowed'});
 Object.assign(DESC,{tvfizz:'A Mage next to the Tavern orders a fizzy magic drink. It bubbles.',tvbubbles:'A Mage next to the Tavern orders a fizzy magic drink, and the bubbles fill the whole room. The Mage pops them all with magic.',
@@ -1086,5 +1071,5 @@ Object.assign(FLAVOR,{tvfizz:'One fizzy enchanted ale! It bubbles, it sparkles, 
  tvwine:'A dusty bottle of dwarven wine, aged under a mountain. The barkeep pays handsomely.',tvshoo:'The barkeep pulls an axe from under the counter. "OUT! No monsters in my tavern!"'});
 Object.assign(HINTS,{tvfizz:'Mages next to the tavern like their drinks with sparkle.',tvbubbles:'Sometimes a magic drink gets a little... out of hand.',tvdrink:'Fighters next to the tavern rarely stop at one.',
  tvdeliver:'Shopkeepers next door keep the tavern stocked.',tvwine:'A rare bottle could fetch a good price at the bar.',tvshoo:'Something monstrous next door might not be welcome at the bar.'});
-Object.assign(WELL_PCT,{tvfizz:'27%',tvbubbles:'3%',tvdrink:'30%',tvdeliver:'24%',tvwine:'6%',tvshoo:'30%'}); // share of a neighbor's idle activities (all structures)
+Object.assign(WELL_PCT,{tvfizz:structPct(1-STRUCT_SECOND.tvbubbles),tvbubbles:structPct(STRUCT_SECOND.tvbubbles),tvdrink:structPct(1),tvdeliver:structPct(1-STRUCT_SECOND.tvwine),tvwine:structPct(STRUCT_SECOND.tvwine),tvshoo:structPct(1)}); // share of a neighbor's idle activities (all structures)
 NOTE.tvwine='+20 coins.';NOTE.tvdrink='Asleep for 15 seconds once home.';
