@@ -12,10 +12,10 @@
 <link rel="apple-touch-icon" href="icon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Tiny5&display=swap" rel="stylesheet">
 <!-- ?v= is the release number: change it (all five together) with every update so browsers load the new files -->
-<link rel="stylesheet" href="style.css?v=43">
+<link rel="stylesheet" href="style.css?v=44">
 </head><body>
 <h1>Squaredom <small class="ver">v1.0</small></h1>
-<div class="tabs"><button class="tab on" data-t="board">Board</button><button class="tab" data-t="ref">Compendium</button><button class="tab" data-t="log">Event Log</button></div>
+<div class="tabs"><button class="tab on" data-t="board">Board</button><button class="tab" data-t="ref">Compendium</button><button class="tab" data-t="quest">Quests</button><button class="tab" data-t="log">Event Log</button></div>
 <button class="tab gear" data-t="set" title="Settings" aria-label="Settings"><svg viewBox="0 0 12 12" width="22" height="22" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M3 2h6v1h1v6h-1v1h-6v-1h-1v-6h1zM4 4v4h4v-4zM5 0h2v2h-2zM5 10h2v2h-2zM0 5h2v2h-2zM10 5h2v2h-2zM1 1h2v2h-2zM9 1h2v2h-2zM1 9h2v2h-2zM9 9h2v2h-2z"/></svg></button>
 <section id="tab-board">
 <div id="items"><div class="lbl">Items: drag onto a room while its owner is home</div></div>
@@ -23,6 +23,7 @@
 <div id="tray"><div class="lbl">Shelf: drag a box up to the board</div></div>
 </section>
 <section id="tab-ref" hidden><div id="refs"></div></section>
+<section id="tab-quest" hidden><h2 class="sec">Quests</h2><p class="cinfo">Do these things to earn rewards. Each quest pays once.</p><div id="quests"></div></section>
 <section id="tab-log" hidden><div id="logs"></div></section>
 <section id="tab-set" hidden>
 <h2 class="sec">Settings</h2>
@@ -64,6 +65,13 @@
 <li>While you drag a box, rooms with a faint blue glow still have entries left to find (secrets not counted).</li>
 <li>Secrets are hidden until you stumble on them.</li>
 </ul>
+<h3>Quests</h3>
+<ul><li>The Quests tab lists goals to reach, each with a reward. A quest's reward is paid once, as soon as you reach the goal.</li></ul>
+<h3>Weather</h3>
+<ul>
+<li>The icon in the top-right corner of the board shows the weather. Tap it to see what the weather does.</li>
+<li>Every 10 minutes the weather may change. Partly Cloudy does nothing. When it's Sunny, characters visit more. When it's Rainy, they stay home more. A rare Fae Wind makes the rarest events much more likely.</li>
+</ul>
 <h3>Coins and items</h3>
 <ul>
 <li>Coins come from scenes, sales, customers and discoveries. Nothing earns coins just by waiting.</li>
@@ -82,8 +90,8 @@
 <canvas id="ghost" width="96" height="96"></canvas>
 <div id="toast" role="status"></div>
 <div id="modal" hidden><div class="mbox" role="dialog" aria-modal="true"><p></p><div class="mrow"><button class="b" id="mYes">Buy</button><button class="b" id="mNo">Cancel</button></div></div></div>
-<script src="data.js?v=43"></script>
-<script src="art.js?v=43"></script>
-<script src="game.js?v=43"></script>
-<script src="audio.js?v=43"></script>
+<script src="data.js?v=44"></script>
+<script src="art.js?v=44"></script>
+<script src="game.js?v=44"></script>
+<script src="audio.js?v=44"></script>
 </body></html>

@@ -745,6 +745,21 @@ function drawWeather(c,bx,by,k,t,a){if(a<=0)return;c.save();c.beginPath();c.rect
 function drawMound(c,bx,by,t){const x=bx+48,y=by+84;c.fillStyle=O;c.fillRect(x-17,y-7,34,8);c.fillStyle='#5a4024';c.fillRect(x-16,y-6,32,6);c.fillRect(x-12,y-8,24,3);c.fillStyle='#6a5030';c.fillRect(x-10,y-7,6,1);
  const sw=Math.round(Math.sin(t*1.5));c.fillStyle='#6a4420';c.fillRect(x,y-22,2,15);c.fillStyle='#4aaa3a';c.fillRect(x-5+sw,y-26,6,4);c.fillRect(x+2+sw,y-24,5,4);c.fillRect(x-2+sw,y-30,5,4)}
 // Rain falling in one room (the Druid's storm). a = strength 0..1
+// The board's weather icon (BOARD_WX): pixel art on a 12x12 grid, 2 px per grid pixel (times s). Sun, sun behind a cloud, rain cloud, pink wind.
+const WX_ICON={sunny:[['#ffb020',[[5,0,2,1],[5,11,2,1],[0,5,1,2],[11,5,1,2],[2,2,1,1],[9,2,1,1],[2,9,1,1],[9,9,1,1]]],['#ffd23a',[[4,3,4,6],[3,4,6,4]]],['#fff3a0',[[4,4,2,1],[4,5,1,1]]]],
+ cloudy:[['#ffb020',[[3,0,1,1],[0,3,1,1],[7,0,1,1],[0,7,1,1]]],['#ffd23a',[[2,2,4,5],[1,3,6,3]]],['#fff3a0',[[2,3,2,1]]],['#f4f6fa',[[5,6,3,1],[4,7,7,3],[3,8,9,2],[8,5,2,2]]],['#c0c8d6',[[3,10,9,1]]]],
+ rainy:[['#aab4c4',[[4,1,3,1],[2,2,8,3],[1,3,10,3]]],['#7c8698',[[1,6,10,1]]],['#d0d8e4',[[4,2,2,1]]],['#5ab0ff',[[2,8,1,2],[5,9,1,2],[8,8,1,2],[3,11,1,1],[9,11,1,1]]]],
+ fae:[['#ff7ad0',[[0,3,6,1],[6,2,2,1],[8,3,1,2],[7,5,1,1],[2,6,7,1],[9,7,1,1],[8,8,1,1],[1,9,4,1],[5,10,2,1]]],['#ffd0f0',[[3,1,1,1],[10,1,1,1],[10,10,1,1],[0,11,1,1]]]]};
+function drawWxIcon(c,k,x,y,s){const u=2*(s||1);(WX_ICON[k]||[]).forEach(([col,rs])=>{c.fillStyle=col;rs.forEach(r=>c.fillRect(x+r[0]*u,y+r[1]*u,r[2]*u,r[3]*u))})}
+// The board's weather over the whole board: soft falling rain (Rainy) or drifting pink wind streaks and sparkles (Fae Wind)
+function drawBoardWx(c,k,t){if(k!=='rainy'&&k!=='fae')return;const W2=c.canvas.width,H2=c.canvas.height;c.save();
+ if(k==='rainy'){c.fillStyle='rgba(40,60,110,.07)';c.fillRect(0,0,W2,H2);c.fillStyle='rgba(170,200,255,.32)';
+  for(let i=0;i<90;i++){const x=((i*73.7+t*30)%(W2+20))-10,y=((i*131.3+t*240)%(H2+20))-10;c.fillRect(Math.round(x),Math.round(y),1,6)}}
+ else{c.fillStyle='rgba(255,140,220,.05)';c.fillRect(0,0,W2,H2);
+  for(let i=0;i<14;i++){const sp=40+(i%4)*10,x0=((i*97+t*sp)%(W2+120))-60,y0=(i*61)%H2;c.fillStyle='rgba(255,150,225,.28)';
+   for(let j=0;j<36;j+=2)c.fillRect(Math.round(x0+j),Math.round(y0+Math.sin((x0+j)/18+i)*6),2,2)}
+  c.fillStyle='rgba(255,220,245,.55)';for(let i=0;i<18;i++){if(Math.floor(t*3+i)%4)continue;c.fillRect(Math.round(((i*151+t*25)%W2)),Math.round((i*89+Math.sin(t+i)*10)%H2),2,2)}}
+ c.restore()}
 function drawRain(c,bx,by,t,a){c.save();c.beginPath();c.rect(bx+2,by+2,CELL-4,CELL-4);c.clip();c.fillStyle='rgba(40,50,80,'+(.35*a)+')';c.fillRect(bx,by,CELL,CELL);
  c.fillStyle='rgba(170,200,255,'+(.8*a)+')';for(let i=0;i<22;i++){const px=bx+((i*37+Math.floor(t*40)*7)%92),py=by+((t*160+i*41)%96);c.fillRect(Math.round(px),Math.round(py),1,5)}c.restore()}
 // Leaves blowing around (Druid's weather magic)

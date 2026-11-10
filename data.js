@@ -586,7 +586,7 @@ const CHILDHOOD=[[['alchemist','Remember when we blew up the mill?'],['blacksmit
  [['blacksmith','You still owe me for that "gold" you made.'],['alchemist','It was gold! For an hour.'],['blacksmith','My mother wore it to church.'],['alchemist','And it turned her finger green. Good times.']]];
 const RBUY=[['rogue','Twenty daggers and fifty ninja stars, please.'],['blacksmith','Twenty? You bought twenty last week!'],['rogue','I keep... leaving them in people.'],['blacksmith','Ha! Business is business.']];
 const METALTALK=[['wizard','The armor hums at night, you know.'],['blacksmith','Moonsteel does that. It likes you.'],['wizard','A fireball bounced right off it!'],['blacksmith','Told you. Finest work of my life.']];
-Object.assign(NAMES,{grove:'Tending the grove',animals:'Talking to animals',weather:'Predicting the weather',spirit:'Secret: a nature spirit',dpotion:'Potion on Druid: saved for a rainy day',dscroll:'Scroll on Druid: rain storm',drevive:'Scroll on a buried Druid: revived',dburied:'A buried Druid',
+Object.assign(NAMES,{grove:'Tending the grove',animals:'Talking to animals',weather:'Predicting the weather',spirit:'Secret: a nature spirit',dpotion:'Potion on Druid: saved for a rainy day',dscroll:'Scroll on Druid: the weather changes',drevive:'Scroll on a buried Druid: revived',dburied:'A buried Druid',
  ingotshop:'Coin in the Blacksmith\'s room: ingot for 100 coins',reinforce:'Ingot on anyone: reinforced (Fighter tag)',adventure:'Adventure (3 min)',
  nscoff:'Armor? How quaint.',smithk:'Smithing talk',reforge:'A new weapon for the Knight',metal:'Magical metal',greenarmor:'Green mage armor',metaltalk:'Talking about the armor',awkjoke:'An awkward joke',flirt:'Flirting (badly)',childhood:'Childhood friends',holyfire:'Holy fire',paladin:'Secret: the Paladin',rbuy:'Daggers and ninja stars','prac:axe':'Weapon practice: axe'});
 EGGS.push('spirit','paladin');
@@ -616,7 +616,7 @@ Object.assign(DESC,{
  weather:'The Druid casts green nature magic to predict the weather. Leaves blow everywhere. Results vary.',
  dburied:'When the Druid dies he does not go back to the shelf: he is buried in his space and a sapling grows. Nobody visits him until he is revived.',
  dpotion:'Potion on the Druid: he tucks it away for a rainy day. (It is used up.)',
- dscroll:'Spell scroll on the Druid: a rain storm. Everyone away (dates, crusades, dungeons, adventures) comes home at once, as if the whole time had passed.',
+ dscroll:'Spell scroll on the Druid: he reads it to the sky and the weather over the whole board changes to another one, picked at random.',
  drevive:'Spell scroll on the buried Druid\'s space: the sapling glows and the Druid climbs back out.',
  ingotshop:'Tap the coin in the Blacksmith\'s room to buy a steel ingot for 100 coins.',
  reinforce:'Ingot on any character: reinforced! They gain the Fighter tag for good.',
@@ -633,48 +633,37 @@ DESC.dungeon='Rogue above the Knight. They go dungeon crawling for 3 minutes and
 NAMES.dungeon='Dungeon crawl (3 min)';
 
 // ---------- Druid: weather on the board, familiars, Archdruid; Blacksmith next to the Druid ----------
-// The Druid never visits neighbors. When he would, he casts a weather effect on a random open space (with or without a box)
-// that lasts WEATHER_TIME seconds; at most WEATHER_MAX of his effects are on the board at once. An Archdruid never casts ARCH_SKIP.
-const WEATHER_TIME=30,WEATHER_MAX=2,ARCH_SKIP=['moonlight','decay','infest'];
-// weather = how likely each effect is; blizzVisit = fewer visits in a blizzard; blizzRare = rarest idle +30%; sandDeath = death chances x3;
-// sunMerchant / sunFarmer = more coins in sunshine; rainStory = idle chance of reading a story in the rain, storySecret = it reveals a secret;
-// werewolf = chance a werewolf kills the one in the moonlight, when it starts and when it ends; familiar = the Druid's animal
-Object.assign(ODDS,{weather:{blizzard:.1,sandstorm:.1,sunshine:.15,rain:.15,overgrowth:.15,moonlight:.15,decay:.15,infest:.05},
- blizzVisit:.3,blizzRare:.3,sandDeath:3,sunMerchant:.2,sunFarmer:.5,rainStory:.8,werewolf:.3,familiar:{bear:1/3,eagle:1/3,wolf:1/3}});
+// The Druid never visits neighbors. When he would, he casts instead (WEATHER_TIERS): Overgrowth (common) on a random open space
+// (with or without a box) for WEATHER_TIME seconds, at most WEATHER_MAX at once; or (rare) he changes the board's weather (BOARD_WX).
+const WEATHER_TIME=30,WEATHER_MAX=2;
+Object.assign(ODDS,{familiar:{bear:1/3,eagle:1/3,wolf:1/3}}); // the Druid's animal
 const DRUID_DISCOUNT=5; // secret: coins off an Apothecary potion while the Druid is next to her
-const WX_NAMES={blizzard:'Blizzard',sandstorm:'Sandstorm',sunshine:'Sunshine',rain:'Rain',overgrowth:'Overgrowth',moonlight:'Moonlight',decay:'Decay',infest:'Infest'};
-const WX_SAY={blizzard:'Winds of the north, come!',sandstorm:'Sands of the far desert, rise!',sunshine:'Let the sun shine warm!',rain:'Clouds, gather and pour!',
- overgrowth:'Grow, little seeds, grow!',moonlight:'Moon, show your face.',decay:'All things return to the earth...',infest:'Little hungry ones, swarm!'};
-// short stories read in the Druid's rain
-const STORIES=['Once a frog wished to be a king. Now he is a very damp king.','A lonely cloud cried so much it made a lake. The fish were grateful.',
- 'The old oak remembered every squirrel that ever lived in it. Even Gerald.','A knight lost a duel to a puddle. He never spoke of it again.',
- 'The moon once fell into a well. The miller fished it out with a bucket.','Two snails raced for a hundred years. It was a tie.'];
+const WX_NAMES={overgrowth:'Overgrowth',shift:'Change the Weather'};
+const WX_SAY={overgrowth:'Grow, little seeds, grow!',shift:'Winds of change, turn the sky!'};
+// ---------- the board's weather (one for the whole board; changes every WX_EVERY seconds of play, saved) ----------
+// Tiers as everywhere else (RARITY). Effects: sunny = visits +WX_SUN_VISIT (taken from wandering); rainy = idle +WX_RAIN_IDLE (taken from visits);
+// fae wind = the rarest idle and visit scenes in each list x WX_FAE (taken from the common ones). Partly cloudy: nothing.
+const BOARD_WX={cloudy:{name:'Partly Cloudy',tier:'c',info:'No special effects.'},sunny:{name:'Sunny',tier:'u',info:'Everyone visits their neighbors more (+10%, less wandering).'},
+ rainy:{name:'Rainy',tier:'u',info:'Everyone stays in more: idle activities +15% (fewer visits).'},fae:{name:'Fae Wind',tier:'l',info:'Magic is in the air: the rarest idle activities and visit scenes are four times as likely.'}};
+const WX_EVERY=600,WX_SUN_VISIT=.1,WX_RAIN_IDLE=.15,WX_FAE=4;
+const WX_CHANGE_SAY={cloudy:'A few clouds roll in.',sunny:'The sun comes out!',rainy:'It starts to rain.',fae:'A strange pink wind sweeps over the land...'};
 // Archdruid: the Druid after an artifact. A living staff with a glowing orb, a golden leaf crown.
 CH.druid_arch=Object.assign({},CH.druid,{name:'Archdruid',p:[...CH.druid.p,[4,0,2,1,'#f2c84a'],[7,0,2,1,'#f2c84a'],[10,0,2,1,'#f2c84a'],[0,0,3,3,'#9affb0'],[1,1,1,1,'#ffffff'],[3,1,1,2,'#5aba4a'],[0,4,1,1,'#5aba4a'],[2,8,1,1,'#5aba4a']]});
 // Blacksmith and Druid (any side): metal is SO uncomfortable. The Blacksmith rolls his eyes.
 PAIRS['blacksmith>druid']=SIDES('metalitch');
 const METALITCH=[['druid','How do you wear metal all day?'],['druid','It is cold. It pinches. It clanks!'],['druid','Bark and leaves breathe, you know.'],['blacksmith','...Bark. Right.']];
-// Werewolf (moonlight)
+// Werewolf (a sprite; no longer used by the Druid's weather)
 const WWC={body:'#5a5a66',bodyD:'#46464f',pants:'#3a3040',boot:'#2a2a30',belt:'#3a3040',skin:'#6a6a76',skinD:'#55555f'};
 CH.werewolf={name:'Werewolf',eye:'#ff3030',a:arms(WWC),p:[...B(WWC),[4,1,2,3,'#46464f'],[10,1,2,3,'#46464f'],[9,6,4,3,'#7a7a86'],[12,6,1,1,O],[6,9,1,1,'#f0ead0'],[10,9,1,1,'#f0ead0'],[5,10,6,2,'#7a7a86']]};
-Object.assign(NAMES,{metalitch:'Metal is uncomfortable',archdruid:'Artifact on Druid: the Archdruid',ddiscount:'Secret: herbal discount',story:'A story in the rain',wolfkill:'A werewolf in the moonlight'});
-for(const k in WX_NAMES)NAMES['wx:'+k]='Weather: '+WX_NAMES[k];
+Object.assign(NAMES,{metalitch:'Metal is uncomfortable',archdruid:'Artifact on Druid: the Archdruid',ddiscount:'Secret: herbal discount','wx:overgrowth':'Overgrowth','wx:shift':'Changing the weather'});
 EGGS.push('ddiscount');
-{const dt=COMP_TABS.find(t=>t.id==='druid');dt.pairs.push('metalitch');dt.idle.push(...Object.keys(WX_NAMES).map(k=>'wx:'+k),'story','wolfkill');dt.items.splice(3,0,'archdruid');dt.items.push('ddiscount');
+{const dt=COMP_TABS.find(t=>t.id==='druid');dt.pairs.push('metalitch');dt.idle.push(...Object.keys(WX_NAMES).map(k=>'wx:'+k));dt.items.splice(3,0,'archdruid');dt.items.push('ddiscount');
  COMP_TABS.find(t=>t.id==='blacksmith').pairs.push('metalitch')}
 PAIR_WITH.metalitch=['blacksmith','druid'];
 Object.assign(DESC,{metalitch:'Blacksmith and Druid, any side. The Druid explains how uncomfortable metal is to wear. The Blacksmith rolls his eyes.',
- archdruid:'Artifact on the Druid: he becomes the Archdruid, with a glowing living staff. He never casts Moonlight, Decay or Infest again.',
+ archdruid:'Artifact on the Druid: he becomes the Archdruid, with a glowing living staff and a golden leaf crown.',
  ddiscount:'Secret: with the Druid next to the Apothecary, her potions cost 5 coins less (herbs from his grove).',
- wolfkill:'Moonlight: when it starts and when it ends, 30% a werewolf leaps out and kills whoever is in that space.',
- 
- 
- 
- 
- 
- 
- 
- 'wx:infest':'The Druid\'s weather instead of a visit, 5%. 30 s of locusts on a random space: nobody visits it.'});
+ 'wx:shift':'Instead of a visit, the Druid sometimes calls the winds and changes the weather over the whole board (Sunny, Rainy, Partly Cloudy or, very rarely... something else).'});
 
 // ---------- the Monarch (no tags) ----------
 // A King (50%) or a Queen (50%), saved in the box's color ('m' / 'f'). Generous (50%) or greedy (50%), saved; later it will change how they treat others.
@@ -808,15 +797,7 @@ Object.assign(DESC,{
  reforge:'Blacksmith and Knight, any side: 40% of their visits. The Blacksmith forges the Knight a different weapon (it stays).',
  greenarmor:'Blacksmith and Wizard, while Mages are on all four sides of the Blacksmith: instead of refusing, he CAN work the magical metal. Green metal mage armor!',
  desk:'With a Merchant and another Mage next to him, the Wizard gets a writing desk: tap the coin in his room to buy a spell scroll (50 coins, 30 for the black Wizard).',
- story:'Anyone living on a space with the Druid\'s Rain: 80% of their idle activities are a short story. 10% of the stories reveal a hidden secret.',
- 'wx:blizzard':'The Druid never visits: each time he would, he casts weather on a random open space instead (30 s, at most 2 at once). 10% of his casts: a Blizzard. Whoever lives there visits 30% less, but their rarest idle activity is 30% more likely.',
- 'wx:sandstorm':'10% of the Druid\'s weather casts (he casts instead of visiting): a Sandstorm for 30 s. Every chance of dying for whoever lives there is tripled.',
- 'wx:sunshine':'15% of the Druid\'s weather casts (he casts instead of visiting): Sunshine for 30 s. A Merchant living there earns 20% more coins, a Farmer 50% more.',
- 'wx:rain':'15% of the Druid\'s weather casts (he casts instead of visiting): Rain for 30 s. Whoever lives there spends 80% of their idle activities reading short stories (10% reveal a secret).',
- 'wx:overgrowth':'15% of the Druid\'s weather casts (he casts instead of visiting): Overgrowth for 30 s. Pink and yellow flowers bloom all around the border of the space. Lovely.',
- 'wx:moonlight':'15% of the Druid\'s weather casts (he casts instead of visiting): Moonlight for 30 s, dark with a soft pink glow. When it starts and when it ends, 30% a werewolf kills whoever is there.',
- 'wx:decay':'15% of the Druid\'s weather casts (he casts instead of visiting): Decay for 30 s, worms and flies. Tags its character was not born with (an ingot\'s Fighter tag, the Rogue\'s or Alchemist\'s Mage tag) are gone while it lasts.',
- 'wx:infest':'5% of the Druid\'s weather casts (he casts instead of visiting): Infest for 30 s, a locust swarm. Nobody visits that space.',
+  'wx:overgrowth':'Instead of a visit, the Druid makes flowers grow on a random open space for 30 s (at most 2 at once). Pink and yellow flowers bloom all around its border. Lovely, and nothing more.',
  // the Monarch
  court:'The Monarch\'s idle activity: holding court on the throne. A generous Monarch hands things out, a greedy one wants more gold, and a greedy Monarch never visits anyone. The first Monarch of a game is free; each one after that costs 150 coins to place.',
  'rq:paladin':'A Paladin next to the Monarch, the first time he visits: he asks to be knighted. Granted: he kneels in the throne room, is dubbed, and becomes "Sir Paladin".'+REQ_ODDS,
@@ -868,7 +849,7 @@ const IDLES={knight:[['prac','c'],['orc','u','nbr'],['horse','r','noRight'],['ca
  druid:[['grove','c'],['animals','c'],['weather','u'],['spirit','r','spirit']],
  blacksmith:[['forgework','c'],['smelt','c'],['coal','u'],['pour','l'],['leadgold','u','alc']],
  farmer:[['hoe','c'],['fork','c']],monarch:[['court','c']],traveler:[['wares','c']]};
-const IDLE_ANY=[['story','c','rain'],['regicide','l','grudge']]; // added to anyone's list while the condition holds
+const IDLE_ANY=[['regicide','l','grudge']]; // added to anyone's list while the condition holds
 // Visit scenes. Each arrangement in PAIRS gives one scene, or a list (VISIT_EXPAND). Anything not listed here is one common scene.
 const VISIT_EXPAND={aboveW:[['duel','c'],['craft','c']],appleshop:[['apple','c'],['feast','c']],mabove:[['fruitfall','c'],['starfruit','c']],wabove:[['imp','c'],['purplepot','c']],
  smithk:[['smithk','c'],['reforge','c']],mtrade:[['mtrade','c'],['farm','r']],sermon:[['sermon','c'],['tentacle','u']],zeal:[['crusade','r']],jokes:[['jokes','c'],['murder','l']]};
@@ -879,13 +860,11 @@ const VISIT_ANY=[['knight','wizard','spar','r'],['priest','tag:fighter','braver'
 // Group scenes in the visitor's own list (whoever the neighbor is): [visitor, key, tier]
 const VISIT_GROUP=[['priest','massprayer','r'],['alchemist','fourmage','u'],['blacksmith','adventure','u']];
 // The Druid's weather (instead of his visits)
-const WEATHER_TIERS={blizzard:'u',sandstorm:'u',sunshine:'c',rain:'c',overgrowth:'c',moonlight:'c',decay:'c',infest:'r'};
+const WEATHER_TIERS={overgrowth:'c',shift:'r'};
 // Outcome chances inside a scene, set to the same tiers (deaths and special results)
 Object.assign(ODDS,{slip:RARITY.r,horde:RARITY.r,boomDeath:RARITY.l,alchemist:RARITY.u,reveal:RARITY.r,healFarm:RARITY.r,ntradePotion:RARITY.u,
  tempt:RARITY.r,betray:RARITY.u,sickDeath:RARITY.r,twopot:RARITY.u,stone:1-RARITY.u,adventureDeath:RARITY.u,advScroll:RARITY.u,advArtifact:RARITY.r,
  storySecret:RARITY.u,dragon:RARITY.u,bronze:RARITY.l});
-// Deadly events: three times as likely for someone living in a Sandstorm
-const DEADLY={demon:1,murder:1,assassin:1,drain:1};
 // Extra rule text shown in a discovered tile's description (results that are not the scene's own chance)
 const NOTE={horde:'The Knight dies 5% of the time.',apple:'The Priest slips and dies 5% of the time.',boom:'It kills them both 0.75% of the time.',
  cobrew:'15%: the Alchemist is unlocked (once he is, a free potion instead).',pstudy:'5%: a clue (an undiscovered interaction or a secret is revealed).',
@@ -894,7 +873,7 @@ const NOTE={horde:'The Knight dies 5% of the time.',apple:'The Priest slips and 
  wdate:'It goes well 40% of the time.',crusade:'They come back with 10 coins (70%) or an artifact (30%).',rumors:'15%: rumors of a dragon instead of goblins.',
  adventure:'Each one back: 15% did not make it; 1-10 coins per Fighter, 15% a scroll per Mage, 5% an artifact per Merchant.',
  dungeon:'Loot: 50 coins 20%, an artifact 10%, 2 scrolls 25%, 3 potions 25%, a clue 20%.',wine:'Sick for 1 minute; 5% fatal.',
- stone:'85% a philosopher\'s stone, 15% the elixir of life (secret).',elixir:'15% of artifacts on the Alchemist.',story:'15%: a clue.',wolfkill:'30% when Moonlight starts, 30% when it ends.',
+ stone:'85% a philosopher\'s stone, 15% the elixir of life (secret).',elixir:'15% of artifacts on the Alchemist.',
  twopot:'15% of the potions you buy from her.',raise:'Fighters and Mages beat it; anyone else dies.',beast:'A neighbor who is only a Merchant dies; a Fighter or Mage fights back and one of the two dies.',
  farm:'The field grows for 3 minutes, then pays 30 coins.',craft:'Costs 20 coins.',assassin:'Not while he is disguised.',
  spirit:'A clue: an undiscovered interaction or a secret is revealed.',regicide:'They skip the funeral.',
@@ -905,12 +884,9 @@ const FLAVOR={zeal:'The Knight is so fired up he visits everyone more often.',cr
  adventure:'Adventure awaits! Off they go, all of them.',rsteal:'He steals from the Wizard. Your coins get a little lighter.',
  magictalk:'Is magic actually useful? A heated debate.',wine:'Poison plus wine, gifted to a neighbor. Cheers!',
  funeral:'A fallen Fighter is honored at a gravestone.',alcpotion:'Luck for his neighbors: their rarest scenes get more likely. Their spaces glitter.',
- story:'A short story read in the rain.',wolfkill:'A werewolf leaps out of the moonlight.',orc:'He spots an orc in a neighbor\'s room and charges over.',
+ orc:'He spots an orc in a neighbor\'s room and charges over.',
  massprayer:'Everyone squeezes into his room to pray together for 20 seconds.',fourmage:'He hands one of his Mage neighbors a potion. It works as if you used it.',
- 'wx:blizzard':'Snow! Whoever lives there visits less, but their rarest idle activity is more likely.','wx:rain':'Rain: whoever lives there reads short stories.',
- 'wx:moonlight':'Darkness and soft pink moonlight. Beware the werewolf.','wx:sunshine':'Warm sun: a Merchant there earns more coins, a Farmer even more.',
- 'wx:decay':'Worms and flies. Tags its character was not born with are gone while it lasts.','wx:infest':'A locust swarm. Nobody visits that space.',
- 'wx:sandstorm':'Sand everywhere. Every chance of dying there is tripled.','wx:overgrowth':'Pink and yellow flowers bloom all around the border.',
+ 'wx:shift':'He raises his staff, the wind turns, and the sky over the whole land changes.','wx:overgrowth':'Pink and yellow flowers bloom all around the border.',
  royalfuneral:'EVERYONE drops what they are doing and kneels at the coffin for 1 minute. No coins or items meanwhile.',
  spar:'Sword versus magic shield. Nobody wins, everybody sweats.',braver:'The Priest admits the Fighter is braver. The Fighter pretends not to blush.',
  forge:'They conjure a free scroll or potion out of thin air.',drain:'Black lightning drains the Druid\'s life, and he dies.',
@@ -933,8 +909,8 @@ Object.assign(HINTS,{cleanse:'A Death Knight on the board, and a Priest beside t
  twopot:'Buying potions with the Alchemist next door to the Apothecary can be a bargain.',fourmage:'Surround the Alchemist with magic on all four sides.',
  madsci:'The Alchemist in the far south-east corner gets... ideas.',tiny:'A Rogue with a little magic of his own might fit a shrinking potion.',
  graveyard:'A Rogue beside the Necromancer, both down on the bottom row.',dburied:'Even Druids are not forever.',drevive:'A buried Druid\'s sapling answers to a spell scroll.',
- ddiscount:'The Druid\'s herbs make the Apothecary\'s prices friendlier, side by side.',story:'Let the Druid\'s rain fall on someone at home.',
- wolfkill:'Moonlight on an occupied room is a dangerous thing.',bronze:'Some Knights simply shine differently. Keep placing them.',
+ ddiscount:'The Druid\'s herbs make the Apothecary\'s prices friendlier, side by side.',
+ bronze:'Some Knights simply shine differently. Keep placing them.',
  paladin:'Holy fire at the forge, with the Knight right next door.',blackwiz:'A brand new Wizard in the far north-west corner dresses darker.',
  skulls:'The Necromancer feels at home deep down, on the bottom row.',royalpatron:'A generous ruler beside the forge rewards brave adventurers.',
  royalfuneral:'Kings and Queens fall too.',regicide:'A refused request is never forgotten.',rqdeny:'Not every ruler says yes.',
@@ -997,8 +973,8 @@ const TITLES={friend:'Old Friends',learn:'Eldritch Awakening',bolt:'Thunderstruc
  alcscroll:'Torn Scroll',stone:"Philosopher's Stone",elixir:'Elixir of Life',twopot:'Two for One',madsci:'The Mad Scientist',beast:'The Beast-Man',fourmage:'Four Mages',
  assassin:'The Assassin',rbuy:'Blades for Sale',daggers:'Dagger Throwing',smokebomb:'Smoke Bomb',disguise:'Disguise',count:'Counting the Stash',spook:'Invisible Prank',
  roguemage:'Rogue Magic',tiny:'Tiny Rogue',graveyard:'The Graveyard',metalitch:'Metal Itch',grove:'Tending the Grove',animals:'Animal Friends',weather:'Weather Reading',
- dburied:'Buried in the Grove','wx:blizzard':'Blizzard','wx:sandstorm':'Sandstorm','wx:sunshine':'Sunshine','wx:rain':'Rain','wx:overgrowth':'Overgrowth','wx:moonlight':'Moonlight',
- 'wx:decay':'Decay','wx:infest':'Infestation',story:'Rainy Day Stories',wolfkill:'The Werewolf',dpotion:'Saved for Later',dscroll:'Calling the Rain',drevive:'Return from the Grove',
+ dburied:'Buried in the Grove','wx:overgrowth':'Overgrowth',
+ 'wx:shift':'Winds of Change',dpotion:'Saved for Later',dscroll:'Turning the Sky',drevive:'Return from the Grove',
  dingot:'No Metal, Please',archdruid:'The Archdruid',spirit:'The Nature Spirit',ddiscount:'Herbal Discount',forgework:'Anvil Work',smelt:'Smelting',coal:'Stoking the Furnace',
  pour:'Ingot Casting',ingotshop:'Ingot Shop',reinforce:'Reinforced',bpotion:'No Thanks',bscroll:'Uncontrollable Dance',leadgold:'Lead into Gold',
  'rq:paladin':'Knighthood','rq:blacksmith':'An Apprentice','rq:wizard':'A New Staff','rq:priest':'Holy Water Barrel','rq:alchemist':'Rare Ingredients','rq:rogue':'Royal Funds',
@@ -1073,3 +1049,10 @@ Object.assign(HINTS,{tvfizz:'Mages next to the tavern like their drinks with spa
  tvdeliver:'Shopkeepers next door keep the tavern stocked.',tvwine:'A rare bottle could fetch a good price at the bar.',tvshoo:'Something monstrous next door might not be welcome at the bar.'});
 Object.assign(WELL_PCT,{tvfizz:structPct(1-STRUCT_SECOND.tvbubbles),tvbubbles:structPct(STRUCT_SECOND.tvbubbles),tvdrink:structPct(1),tvdeliver:structPct(1-STRUCT_SECOND.tvwine),tvwine:structPct(STRUCT_SECOND.tvwine),tvshoo:structPct(1)}); // share of a neighbor's idle activities (all structures)
 NOTE.tvwine='+20 coins.';NOTE.tvdrink='Asleep for 15 seconds once home.';
+// ---------- Quests (the Quests tab): achievements with a reward, paid once when the goal is reached ----------
+// stat = the counter in S.qs that counts toward it (questStat in game.js); reward = coins and / or items (scroll, potion, artifact, ingot)
+const QUESTS=[
+ {id:'prosperity',name:'Prosperity',text:'Have a feast 3 times.',stat:'feasts',goal:3,reward:{coins:50}},
+ {id:'kingfeast',name:'Feast Fit for a King',text:'Have a feast that includes the Monarch.',stat:'royalFeasts',goal:1,reward:{artifact:1}},
+ {id:'costdisc',name:'Cost of Discovery',text:'Have the Wizard die 15 times.',stat:'wizDeaths',goal:15,reward:{scroll:5}}];
+const ITEM_WORD={scroll:['spell scroll','spell scrolls'],potion:['potion','potions'],artifact:['artifact','artifacts'],ingot:['ingot','ingots']}; // for quest rewards (one, several)
