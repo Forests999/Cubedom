@@ -66,7 +66,7 @@ weapon:id==='knight'?(weapon||pick(WEAPONS)):null,form:form||null,color:color||(
 }
 // Clear everything an interaction leaves on a character (but not the teleport flag)
 function clearFx(u){if(u.melt||u.dive||u.jy||u.diveClip){u.melt=0;u.dive=0;u.diveClip=null;u.jy=0;u.sk=1} // (the Well's melt, dive and leap)
- u.dress=null;u.paint=null;u.show2=null;u.big=null;u.gather=null;u.gatherOf=null;u.crowd=null;u.table=null;u.show=null;u.feastHost=null;u.fall=false;u.act=null;u.orc=null;u.tent=null;u.und=null;u.lite=null;u.dark=null;u.ward=null;u.kneel=false;u.after=null;u.mv=false;u.npc=null;u.def=null;u.ghost=null;u.spirit=null;u.mobs=null;u.made=null;u.swapWith=null;u.basket=null}
+ u.dress=null;u.paint=null;u.show2=null;u.big=null;u.gather=null;u.gatherOf=null;u.crowd=null;u.table=null;u.show=null;u.feastHost=null;u.fall=false;u.act=null;u.orc=null;u.tent=null;u.und=null;u.lite=null;u.dark=null;u.ward=null;u.kneel=false;u.after=null;u.mv=false;u.npc=null;u.def=null;u.ghost=null;u.spirit=null;u.mobs=null;u.made=null;u.swapWith=null;u.basket=null;u.carryInst=null}
 function toHome(u){u.fxs=[];u.npcDoor=null; // drop every doorway/stairs this character had open
  clearFx(u);u.tp=false;u.inv=false;u.sneak=false;u.thenVisit=null;for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===u.id)demons.splice(i,1);u.x=u.c*CELL+48;u.y=u.r*CELL+FY;u.path=[];u.st=u.dead?'dead':'idle';u.wait=1;u.al=1;u.sk=1;u.mood='ok';u.mt=0;u.gt=0;label(u)}
 function freeHost(h){h.hosting=null;h.st='idle';h.wait=2;h.act=null;h.kneel=false;h.ward=null;h.dress=null;h.lookAway=false;h.al=1;h.fall=false}
@@ -125,6 +125,7 @@ function kill(v){
  // a Fighter dies next to the Priest: he holds a funeral shortly after
  const P=U.priest;if(P&&P!==v&&!P.dead&&hasClass(v,'fighter')&&rel(v,P))P.funeral=1.5;
  // the Druid does not go back to the shelf: he is buried in his space (a mound with a sapling) until a spell scroll revives him
+ if(v.id==='goblin'){const n=Math.floor(v.hoard||0);markSeen('ghoard');if(n>0){addCoins(n,v.c*CELL+48,v.r*CELL+40,true);setTimeout(()=>toast('The Goblin is gone, and his stash is yours: +'+n+' coins!'),1200)}} // his cave stash pays out
  if(v.id==='bard')S.bardMon=true; // the next Bard placed may come back Monstrous (BARD_MONSTER)
  if(v.id==='druid'){bury(v);ui();save();return}
  // the Monarch lies in state for the grand funeral, then the box goes back to the shelf
@@ -243,7 +244,10 @@ const nbrs=u=>[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filte
 const weatherAt=(r,c)=>{const w=weathers.find(q=>q.r===r&&q.c===c&&q.t<WEATHER_TIME);return w?w.k:null};
 const wxOf=u=>u?weatherAt(u.r,u.c):null;
 // A chance of dying (kept as a function so death rolls stay in one place)
-const doom=p=>p;
+// The Bard's Resonance: the most tags of any Bard next to v (0 if none)
+const resOf=v=>v?Object.values(U).reduce((m,b)=>b.id==='bard'&&b!==v&&!b.dead&&rel(b,v)?Math.max(m,classesOf(b).length):m,0):0;
+// A chance of dying: 10% lower for each tag of a Bard next to any of these characters (Resonance)
+const doom=(p,...us)=>p*Math.max(0,1-RES_DEATH*Math.max(0,...us.map(resOf)));
 // ---------- the Druid's casts (instead of visiting a neighbor; WEATHER_TIERS in data.js) ----------
 // A cast that can't happen right now is left out of the roll (castOk); u.wx = what and where (or who)
 const emptyOpen=()=>{const o=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c)&&!at(r,c))o.push([r,c]);return o};
@@ -306,6 +310,10 @@ function showBorder(){$('#wrap').classList.toggle('golden',!!S.goldBorder)}
 // The Library's economics lesson: +1 coin every LIB_ECON_EVERY seconds for LIB_ECON_TIME (not saved)
 let econT=0,econClock=0;
 function stepEcon(dt){if(econT<=0)return;econT-=dt;if((econClock+=dt)>=LIB_ECON_EVERY){econClock=0;const L=U.library;addCoins(1,L?L.c*CELL+48:null,L?L.r*CELL+40:null)}}
+// The Goblin's stash grows (1 coin a minute); the Bard's Resonance: passers-by toss 1 coin a minute for each of the Bard's tags
+function stepGoblinBard(dt){const G=U.goblin,Bd=U.bard;
+ if(G&&!G.dead&&(G.hoardT=(G.hoardT||0)+dt)>=GOBLIN_HOARD_EVERY){G.hoardT=0;G.hoard=(G.hoard||0)+1;save()}
+ if(Bd&&!Bd.dead&&Bd.st!=='away'&&(Bd.resT=(Bd.resT||0)+dt)>=RES_COIN_EVERY){Bd.resT=0;const n=classesOf(Bd).length;if(n){addCoins(n,Bd.x,Bd.y-50);markSeen('bresonance')}}}
 // The weather icon in the top-right corner of the board (tap it for what it does)
 const wxIcon=document.createElement('canvas');wxIcon.id='wxIcon';wxIcon.width=wxIcon.height=24;$('#wrap').append(wxIcon);
 function showWx(){const c=wxIcon.getContext('2d');c.imageSmoothingEnabled=false;c.clearRect(0,0,24,24);drawWxIcon(c,bwx.k,0,0);wxIcon.title=BOARD_WX[bwx.k].name+': '+BOARD_WX[bwx.k].info}
@@ -343,7 +351,7 @@ function idleOk(u,c){const M=U.monarch;
 function idleList(u){const id=idOf(u);return [...(IDLES[isFarm(id)?'farmer':id]||[]),...IDLE_ANY].filter(e=>!e[2]||idleOk(u,e[2]))}
 // The board's Fae Wind: the rarest tier in a list is WX_FAE times as likely (taken from the common ones)
 function faeMult(list){const rt=boardWx()==='fae'?rarestTier(list):null;return e=>rt&&e[1]===rt?WX_FAE:1}
-function idleMult(u,list){return faeMult(list)}
+function idleMult(u,list){const fae=faeMult(list),r=resOf(u);return e=>fae(e)*(r&&e[1]==='l'?1+RES_LEGEND*r:1)*(r&&DEADLY[e[0]]?Math.max(0,1-RES_DEATH*r):1)} // (Resonance: legendary idles more likely, deadly ones less)
 // A structure next door (the Well): STRUCT_IDLE of idle rolls go to one of its activities, chosen by one of the character's tags (at random if several)
 function structIdle(u){if(!atHome(u)||u.as||u.form||Math.random()>=STRUCT_IDLE)return false;const s=[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filter(v=>isStruct(v)&&STRUCT_ACTS[v.id]&&!v.hosting&&!v.gather);if(!s.length)return false;
  const w=pick(s),SA=STRUCT_ACTS[w.id],tags=Object.keys(SA).filter(t=>t==='any'||hasClass(u,t));
@@ -384,6 +392,9 @@ function doIdle(u,k){const bx=u.c*CELL,dur=(a,d)=>{beginAct(u,a);u.dur=d};
  if(k==='advert'){dur('advert',4.5);return true}
  if(k==='sell'){visit(u,pick(nbrs(u)),'sell');return true}
  if(k==='mob'){dur('mob',7);mobEnter(u);return true}
+ if(k==='grummage'||k==='gdagger'){dur(k,{grummage:5,gdagger:4.5}[k]);u.hx=k==='grummage'?bx+70:null;return true} // the Goblin: rummaging through his junk pile, spinning his dagger
+ if(k==='gnap'){markSeen('gnap');u.st='walk';u.path=[{k:'walk',x:bx+22,y:u.r*CELL+FY}];u.after='gnap';return true} // to his bedroll, then a short nap
+ if(k==='gsteal'){const v=pick(nbrs(u).filter(v=>!isFarm(v.id)));if(!v)return false;visit(u,v,'gsteal');return true} // sneaks next door and steals something
  if(k==='bplay'||k==='bhum'||k==='bspell'){dur(k,{bplay:6,bhum:5,bspell:6.5}[k]);return true} // the Bard: plays, hums, a spell of song
  if(k==='aretire'){dur('aretire',4);return true} // the Apothecary retires
  if(k==='trip'||k==='tripbreak'||k==='abrew'||k==='herbs'){dur(k,{trip:3,tripbreak:3.4,abrew:4.4,herbs:5}[k]);u.hx=bx+64;return true}
@@ -467,6 +478,10 @@ function acting(u,dt){
  if(u.act==='stash'){once('s',.3,()=>say(u,'I will save this for a rainy day.'))}
  // the Druid casts (instead of visiting a neighbor): Overgrowth on a space, or, rarely, a change of the board's weather
  if(u.act==='wcast'){once('s',.3,()=>say(u,WX_SAY[u.wx.k]));once('w',1.6,()=>{castFx(u);u.mood='happy';u.mt=1.2})}
+ // the Goblin: rummaging (junk flies up), spinning his dagger, a nap in the bedroll (GOBLIN_NAP seconds)
+ if(u.act==='grummage'){if(walkTo(u.hx)){u.face=1;once('s',.6,()=>say(u,pick(['Shiny... shiny...','Mine. Mine. Also mine.','Ooh, half a sandwich!'])));for(let i=0;i<3;i++)once('j'+i,1+i*1.1,()=>poof(u.x+10,u.y-14,pick(['#a8a8b4','#c8a060','#f2c84a','#8a5a2a'])))}}
+ if(u.act==='gdagger'){once('s',.4,()=>say(u,pick(['Stabby stab!','Spin, spin, spin...','Hehehe. Pointy.'])))}
+ if(u.act==='gnap'){u.act=null;sleepUnit(u,GOBLIN_NAP);say(u,'*snore* ...shinies...');return}
  // the Bard: plays their instrument (notes float up), hums with magic swirling, or casts a spell of song (butterflies and pink magic, drawn by drawAct)
  if(u.act==='bplay'||u.act==='bspell'){if(Math.random()<dt*3)parts.push({k:'note',x:u.x+u.face*8+(Math.random()-.5)*6,y:u.y-34,t:0,life:1.6})}
  if(u.act==='bhum'){once('s',.3,()=>say(u,pick(['Hmm hmm hmmm...','La la laaa...','Mmm-hmm-hmm...'])));if(Math.random()<dt*1.2)parts.push({k:'note',x:u.x,y:u.y-44,t:0,life:1.6})}
@@ -860,7 +875,7 @@ function potionTeleport(u){ // (uses up the potion even if nobody is free: he ju
 // Up/down: the ROOMS decide (TR in data.js): leave by this room's stairs, arrive by the other room's.
 // Not next door (potion teleport): a pair of portals.
 // Rooms without side doors, and a room's up/down exits (the Rogue's graveyard just fades)
-const noSideDoor=id=>isFarm(id)||id==='druid'||id==='traveler'||id==='well'||id==='tree'||id==='bard'||(id==='rogue'&&graveyardOn(U.rogue));
+const noSideDoor=id=>isFarm(id)||id==='druid'||id==='traveler'||id==='well'||id==='tree'||id==='bard'||id==='goblin'||(id==='rogue'&&graveyardOn(U.rogue));
 const exitsOf=id=>id==='rogue'&&graveyardOn(U.rogue)?{up:'fade',down:'fade'}:TR[id];
 function route(u,r1,c1,r2,c2,fin){
  const ra=at(r1,c1)||u.id,rb=at(r2,c2)||u.id,dc=c2-c1,dr=r2-r1;
@@ -930,19 +945,20 @@ function visitRoll(u){const id=idOf(u),M=U.monarch;
  // Priest and Necromancer are neighbors (any side) while a Death Knight exists: the Priest goes to cleanse him
  if(Object.values(U).some(v=>v.form==='dknight')&&(u.id==='priest'||u.id==='necromancer')&&U.priest&&U.necromancer&&rel(U.priest,U.necromancer)&&freeU(U.priest)&&freeU(U.necromancer)){visit(U.priest,U.necromancer,'cleanse');return true}
  const opts=nbrs(u).filter(h=>pairKind(u,h)!=='none');if(!opts.length)return false; // 'none' pairs never visit each other
- // Haste potions: a Fighter next to the Alchemist picks Mage neighbors 50% more often
- const hasted=hasClass(u,'fighter')&&alcNext(u),h=hasted?pickW(opts,v=>hasClass(v,'mage')?1+ODDS.haste:1):pick(opts);
+ // Haste potions: a Fighter next to the Alchemist picks Mage neighbors 50% more often; the Goblin is picked far less (GOBLIN_SHY)
+ const hasted=hasClass(u,'fighter')&&alcNext(u),h=pickW(opts,v=>(hasted&&hasClass(v,'mage')?1+ODDS.haste:1)*(v.id==='goblin'?GOBLIN_SHY:1));
  if(hasted&&hasClass(h,'mage')){markSeen('haste');poof(u.x,u.y-34,'#7ae0ff')}
  if(h.id==='monarch'&&reqOf(u)&&!u.asked){visit(u,h,'request');return true} // the first visit to the Monarch is a request
  if(pairKind(u,h)==='zeal')markSeen('zeal');
  if(Math.random()<HANGOUT){visit(u,h,null);return true} // just hanging out
  // the Alchemist's luck: rare and legendary scenes 30% more likely; the Fae Wind: the rarest ones four times as likely
- const list=visitList(u,h),lk=lucky(u)||lucky(h),fae=faeMult(list);
- const kd=rollList(list,e=>(lk&&(e[1]==='r'||e[1]==='l')?1+ALC_LUCK:1)*fae(e));
+ const list=visitList(u,h),lk=lucky(u)||lucky(h),fae=faeMult(list),rs=Math.max(resOf(u),resOf(h));
+ const kd=rollList(list,e=>(lk&&(e[1]==='r'||e[1]==='l')?1+ALC_LUCK:1)*fae(e)*(rs&&DEADLY[e[0]]?Math.max(0,1-RES_DEATH*rs):1));
  if(!kd){visit(u,h,null);return true}
  playScene(u,h,kd);return true}
 // Start scene kd between u (the one who rolled) and h. Some scenes always have the same visitor, some are cast from a room.
 function playScene(u,h,kd){const N=U.necromancer,busy=()=>{u.wait=1};logScene(kd,u,h);
+ if(GOBLIN_VISITS[kd]){const G=idOf(u)==='goblin'?u:h,o=G===u?h:u;if(freeU(o)&&freeU(G))visit(G,o,kd);else busy();return} // the Goblin always comes to them
  if(BARD_HOSTED[kd]){const B=idOf(u)==='bard'?u:h,o=B===u?h:u;if(freeU(o)&&freeU(B))visit(o,B,kd);else busy();return} // the Bard's neighbor scenes: the other one always comes to the Bard
  if(kd==='massprayer'){startGather(u,four(u));return}
  if(kd==='fourmage'){visit(u,pick(four(u).filter(v=>freeU(v)&&!v.as&&ITEM_FX.potion[v.id])),'fourmage');return}
@@ -1279,7 +1295,7 @@ function talk(u,dt){
   once('c',2.2,()=>{u.show=null;merchantGain(SELL_GAIN,Mr.x,Mr.y-50);K.mood='hurt';K.mt=1;say(K,'Sour! ...Delicious, actually.')});
   once('d',3.4,()=>{K.mood=Mr.mood='happy';K.mt=Mr.mt=1.2;K.hop=.4})}
  else if(k==='rumors'){const Mr=pp.merchant;// Merchant below the Knight: goblins (90%) or a dragon (10%); the Knight vows to slay them
-  if(!u.sc2)u.sc2=luck(ODDS.dragon,u,h)?RUMOR_DRAGON:RUMOR_GOBLIN;lines(u.sc2);
+  if(!u.sc2){u.sc2=luck(ODDS.dragon,u,h)?RUMOR_DRAGON:RUMOR_GOBLIN;if(u.sc2===RUMOR_GOBLIN)questStat('goblinRumors')}lines(u.sc2); // (goblin rumors count toward the quest The Rumors are True)
   once('m',.7,()=>{Mr.mood='shock';Mr.mt=1.6});once('k',.6+3*2.3+.1,()=>{gest(K,'up',1.4);K.mood='happy';K.mt=1.6;K.hop=.4})}
  // ---------- Knight + Apothecary ----------
  else if(k==='bear'){end=4.6;const Ap=pp.apothecary;// Knight above the Apothecary: a strength tonic turns him into a grizzly bear
@@ -1603,6 +1619,74 @@ function talk(u,dt){
   once('a',.4,()=>{u.face=h.x>u.x?1:-1;say(u,'Nobody is looking...');gest(u,'fwd',1.2)});
   once('b',1.8,()=>{poof(h.x,hy+56,'#8fd0ff');thrown.push({sx:h.x,sy:hy+57,ex:u.x+u.face*8,ey:u.y-28,t:0,icon:'coin',coin:1})});
   once('c',2.4,()=>{if(h.wcoins>0)h.wcoins--;addCoins(1,u.x,u.y-50);u.mood='happy';u.mt=2;say(u,'Finders keepers!');save()})}
+ // ---------- the Goblin (u = the Goblin, always the visitor; h = the neighbor) ----------
+ else if(k==='gsteal'){end=6;// sneaks in while they look away and steals something (+2 coins to his stash)
+  once('a',.3,()=>{u.face=h.x>u.x?1:-1;h.lookAway=true;say(u,'Shhh...')});
+  once('b',1.6,()=>{u.show={icon:pick(['apple','potion','coin','scroll','bone']),x:u.x+u.face*9,y:u.y-26};poof(u.x+u.face*8,u.y-26,'#f2d070')});
+  once('c',2.4,()=>{u.hoard=(u.hoard||0)+2;u.hop=.4;u.mood='happy';u.mt=2;say(u,'Hehehe!')});
+  once('d',3.4,()=>{h.lookAway=false;h.mood='shock';h.mt=1.5;say(h,'Hey! Where did my...?')})}
+ else if(k==='galch'){end=7.6;// runs around the lab smashing potions; the Alchemist shoos him out
+  once('a',.3,()=>{say(u,'Shiny bottles! Hehehe!');u.hop=.4;u.mood='happy';u.mt=5});
+  if(u.tt>=1&&u.tt<5){const q=(u.tt-1)*3;u.x=hx+48+Math.sin(q)*30;u.face=Math.cos(q)>0?1:-1;u.mv=true;u.t+=dt}
+  for(let i=0;i<4;i++)once('s'+i,1.4+i*.9,()=>{const col=['#7ac8ff','#c890ff','#7aff7a','#ff8a5a'][i];poof(u.x,u.y-30,col);for(let j=0;j<4;j++)parts.push({k:'drop',col,x:u.x,y:u.y-30,vx:(Math.random()-.5)*60,vy:-40-Math.random()*30,t:0,life:.6})});
+  once('b',2,()=>{h.mood='mad';h.mt=4;say(h,'Out! OUT, you little pest!');gest(h,'fwd',1.4)});once('c',4,()=>say(h,'Not the blue one!'));once('d',5.2,()=>say(u,'Byeee!'))}
+ else if(k==='gherbs'||k==='gherbcoin'){end=8.4;const coin=k==='gherbcoin';// she steps out for herbs; he steps in for hers (rare: 5 coins for his stash)
+  once('a',.3,()=>say(h,'I am off to pick some herbs. Back soon!'));if(u.tt>=.8&&u.tt<1.6)h.al=1-(u.tt-.8)/.8;once('h',1.6,()=>{h.al=0});
+  once('b',2.2,()=>{gest(u,'fwd',1);poof(hx+70,hy+50,'#6aba4a');u.show={icon:'herb',x:u.x+u.face*9,y:u.y-26};say(u,'Hehehe... leafy loot!')});
+  if(coin)once('c',3.6,()=>{u.show={icon:'coin',x:u.x+u.face*9,y:u.y-26};u.hoard=(u.hoard||0)+5;u.hop=.5;say(u,'Ooh! Five shiny coins!')});
+  if(u.tt>=5.4&&u.tt<6.2)h.al=(u.tt-5.4)/.8;once('r',6.4,()=>{h.al=1;h.mood='shock';h.mt=1.5;say(h,coin?'My herbs! And my coins!':'Hm? Where did my herbs go?')})}
+ else if(k==='ginst'){end=9.6;// grabs the Bard's instrument; the Bard calmly talks him into giving it back
+  once('a',.3,()=>{u.carryInst=h.inst||'lute';u.hop=.3;u.mood='happy';u.mt=2;say(u,'Ooh, pretty music stick! Mine!')});
+  once('b',1.8,()=>say(h,'That '+INST_NAMES[h.inst||'lute']+' will not sing for you, friend.'));once('c',3.8,()=>say(h,'Give it back, and I will play you a song.'));
+  once('d',5.4,()=>{u.carryInst=null;u.mood='roll';u.mt=1;say(u,'...fine.')});once('e',6,()=>{h.act='bplay'});
+  if(u.tt>=6&&u.tt<8.6){h.at=u.tt-6;if(Math.random()<dt*3)parts.push({k:'note',x:h.x+h.face*8,y:h.y-34,t:0,life:1.6})}
+  once('f',7.2,()=>{u.mood='happy';u.mt=2;u.hop=.4;say(u,'Hehe. Nice song.')});once('g',8.6,()=>{h.act=null})}
+ else if(k==='gsword'){end=7.6;// swipes a sword and picks a fight; the Blacksmith disarms him at once
+  once('a',.3,()=>{say(u,'Ooh, a pointy one!');u.weapon='longsword';u.mood='mad';u.mt=3});once('b',1,()=>{u.act='prac';u.at=0});if(u.act==='prac')u.at=u.tt-1;
+  once('c',1.4,()=>{h.mood='mad';h.mt=2;say(h,'Hey! Put that down!')});
+  once('d',2.6,()=>{gest(h,'fwd',.6);poof(u.x,u.y-24,'#e0e0e8');u.act=null;u.weapon=null;u.mood='shock';u.mt=2;u.hop=.5;say(u,'Eep!')});
+  once('e',3.6,()=>{h.mood='happy';h.mt=1.5;say(h,'Amateur.')})}
+ else if(k==='gwild'){end=9;// distracted by the Druid's animals, he just sits and watches
+  once('a',.3,()=>say(u,'Heh. What does a tree-man have to steal?'));once('b',1.4,()=>{h.act='animals';u.kneel=true;u.mood='happy';u.mt=6;u.face=h.x>u.x?1:-1});
+  if(u.tt>=1.4&&u.tt<7.4)h.at=u.tt-1.4;once('c',3,()=>say(u,'...pretty birdie.'));once('d',5.4,()=>say(u,'Forgot what I came for.'));once('e',7.4,()=>{h.act=null;u.kneel=false})}
+ else if(k==='gapples'){end=6;// steals some apples, drops a couple as he runs
+  once('a',.3,()=>{u.face=h.x>u.x?1:-1;h.lookAway=true});once('b',1.2,()=>{u.show={icon:'apple',x:u.x+u.face*9,y:u.y-26};u.hop=.3;say(u,'Apples! Apples!')});
+  once('c',2.2,()=>{h.lookAway=false;h.mood='shock';h.mt=2;say(h,'Thief! Stop!')});
+  once('d',2.8,()=>{for(let i=0;i<2;i++)parts.push({k:'drop',col:'#d83030',x:u.x+u.face*8,y:u.y-24,vx:(i?30:-30),vy:-40,t:0,life:.7});poof(u.x,u.y-8,'#d83030');say(u,'Oops! Hehe!')})}
+ else if(k==='gknight'||k==='gknightdie'){end=k==='gknight'?6.4:5.4;let dead=false;// picks a fight with the Knight (rare: and loses for good)
+  once('a',.3,()=>{say(u,'Shiny tin man! Gimme!');u.hop=.4;u.mood='mad';u.mt=3;u.face=h.x>u.x?1:-1});once('b',1,()=>{h.act='prac';h.at=0});if(u.tt>=1&&u.tt<3.6)h.at=(u.tt-1)%1.3;
+  for(let i=0;i<3;i++)once('h'+i,1.4+i*.7,()=>{poof(u.x,u.y-20,'#cfd6e0');u.blink=.3;u.hop=.3});
+  if(k==='gknight'){once('c',3.8,()=>{h.act=null;u.mood='hurt';u.mt=2;say(u,'Ow ow ow! I go now!')});once('d',4.6,()=>{h.mood='happy';h.mt=1.5;say(h,'And stay out!')})}
+  else{once('c',3.6,()=>{h.act=null;u.mood='hurt';u.mt=3;u.blink=.8;say(u,'Urk...')});once('dk',4.4,()=>{dead=true})}
+  if(dead){kill(u);toast('The Goblin picked a fight with the Knight, and lost.');return}}
+ else if(k==='gmob'){end=9;let dead=false;// whistles up a mob of goblins that overwhelms the Knight; the Goblin keeps his helmet
+  once('a',.3,()=>{say(u,'*WHISTLE*');gest(u,'up',1);u.mobs=[]});
+  for(let i=0;i<4;i++)once('m'+i,1+i*.4,()=>{const x=hx+(i%2?10:86);if(u.mobs)u.mobs.push({id:'goblin',x,y:hy+FY,t:0,blink:0,face:x<h.x?1:-1});poof(x,hy+FY-10,'#6aaa3a')});
+  if(u.mobs)u.mobs.forEach(m=>{const d=h.x-m.x;if(Math.abs(d)>12)m.x+=Math.sign(d)*dt*40;m.face=d>0?1:-1});
+  once('b',2.4,()=>{h.mood='shock';h.mt=2;say(h,'What?! How many of you ARE there?!')});once('f',2.8,()=>{h.act='prac';h.at=0});if(u.tt>=2.8&&u.tt<5)h.at=(u.tt-2.8)%1.3;
+  once('c',5,()=>{h.act=null;h.blink=.8;h.mood='hurt';h.mt=3});once('d',5.8,()=>{dead=true});
+  if(dead){u.mobs=null;u.helm=true;setLabel(u);kill(h);toast('The goblin mob overwhelmed the Knight! The Goblin wears his helmet now.');save();return}}
+ else if(k==='groyal'){end=6;// runs through the throne room cackling, then flees
+  once('a',.3,()=>{say(u,'Hehehehe!');u.mood='happy';u.mt=5});
+  if(u.tt>=.6&&u.tt<4){const q=(u.tt-.6)*2.4;u.x=hx+48+Math.sin(q)*36;u.face=Math.cos(q)>0?1:-1;u.mv=true;u.t+=dt}
+  once('b',1.2,()=>{h.mood='shock';h.mt=2;say(h,'Guards! GUARDS!')});once('c',3,()=>say(u,'Can\'t catch me!'));once('d',4.2,()=>{h.mood='mad';h.mt=1.5})}
+ else if(k==='gskulls'){end=8;// the Necromancer shows off his skulls; the Goblin examines one
+  once('a',.3,()=>{say(h,'Ah, a visitor. Behold, my collection.');gest(h,'fwd',1.4)});
+  once('b',1.8,()=>{u.show={icon:'skull',x:u.x+u.face*9,y:u.y-28};say(u,'Ooh...')});once('c',3.4,()=>{gest(u,'up',1);say(u,'This one has nice teeth.')});
+  once('d',5,()=>{h.mood='happy';h.mt=2;say(h,'You have a good eye.')});once('e',6.4,()=>{u.show=null;u.mood='happy';u.mt=1.5})}
+ else if(k==='gpriest'){end=6;// creeps closer; divine light drives him off
+  once('a',.3,()=>{u.mood='mad';u.mt=2;say(u,'Hehe... sneaky sneaky...')});if(u.tt<2)u.x+=(h.x-u.face*24-u.x)*dt*.5;
+  once('b',2,()=>{say(h,'Begone, foul creature!');gest(h,'up',1.4)});
+  once('c',2.6,()=>{flashes.push({x:hx,y:hy,t:0,col:'255,240,160'});poof(h.x,h.y-50,'#fff6c0');u.mood='shock';u.mt=2;u.hop=.5;say(u,'HSSSSS!')})}
+ else if(k==='gbite'){end=6;// sneaks up and bites the Priest
+  once('a',.3,()=>say(u,'*sneak sneak*'));if(u.tt<1.6)u.x+=(h.x-h.face*12-u.x)*dt*1.5;
+  once('b',1.8,()=>{gest(u,'fwd',.6);h.blink=.5;h.mood='hurt';h.mt=2;h.hop=.4;poof(h.x,h.y-12,'#d03050')});once('c',2.2,()=>say(h,'OW! It BIT me!'));
+  once('d',3.2,()=>{u.mood='happy';u.mt=2;say(u,'Hehehe! Tasty!')})}
+ else if(k==='gtrinket'){end=4;// steals a magic trinket; it goes off and teleports him home
+  once('a',.3,()=>say(u,'Shhh...'));once('b',1.2,()=>{u.show={icon:'purplepotion',x:u.x+u.face*9,y:u.y-26};say(u,'Ooh, sparkly!')});
+  once('c',2.4,()=>{h.mood='mad';h.mt=2;gest(h,'fwd',1);say(h,'Hey! Put that DOWN!')});
+  once('d',3.2,()=>{poof(u.x,u.y-20,'#c890ff');poof(u.x,u.y-34,'#e8d0ff');u.show=null;freeHost(h);u.target=null;toHome(u);poof(u.x,u.y-20,'#c890ff');say(u,'...how did I get home?');say(h,'...Well. That works too.')});
+  if(u.st!=='talk')return}
  // ---------- the Bard's neighbors (h = the Bard, always the host; u = the visitor). While the Bard plays, h.act / h.at drive the drawing. ----------
  else if(k==='bwisdom'){end=9;// a Mage wants to learn elven magic; it can't be learned
   once('a',.3,()=>{say(u,'Elf! Teach me your ancient magic!');gest(u,'fwd',1)});
@@ -1762,7 +1846,7 @@ function step(dt){
  Object.values(U).forEach(s=>{if(s.id!=='library')return;const v=U[s.hosting],k=v&&v.st==='talk'&&v.target===s.id?v.kind:null;if(k!=='libbooks')s.books=null;if(k!=='libfire')s.fire=0}); // the Library's flying books and fire only during their scenes
  Object.values(U).forEach(s=>{if(s.id!=='tavern')return;const v=U[s.hosting],k=v&&v.st==='talk'&&v.target===s.id?v.kind:null;if(k!=='tvbubbles')s.bubbles=null;if(k!=='tvdeliver')s.cratesUntil=0;if(k!=='tvshoo')s.bk=null});
  refreshTags();
- stepWeather(dt);stepBoardWx(dt);stepEcon(dt);stepRoyal(dt);stepTraveler(dt);stepGroup(dt);
+ stepWeather(dt);stepBoardWx(dt);stepEcon(dt);stepGoblinBard(dt);stepRoyal(dt);stepTraveler(dt);stepGroup(dt);
  for(const id in U){const u=U[id];
   if(u.dead||isStruct(u))continue; // a buried Druid does nothing at all; nor does a structure
   if(u.id==='druid'&&!u.pet)u.pet={kind:u.fam||'bear',x:u.x,y:u.y,face:1}; // his animal: grizzly bear, eagle or wolf
@@ -1818,7 +1902,7 @@ function step(dt){
 }
 
 // ---------- render ----------
-const scl=u=>{const ry=((u.y%CELL)+CELL)%CELL;return(ry>=66?1-.3*cl((84-ry)/14,0,1):1)*u.sk};
+const scl=u=>{const ry=((u.y%CELL)+CELL)%CELL;return(ry>=66?1-.3*cl((84-ry)/14,0,1):1)*u.sk*(u.id==='goblin'&&!u.form?GOBLIN_SCALE:1)}; // (the Goblin is small)
 const poseNow=u=>u.kneel?'pray':u.gt>0?u.gp:poseOf(u.st==='cast'?'cast':u.act,u.st==='cast'?u.tt:u.at);
 function render(){
  g.clearRect(0,0,W,H);
@@ -1836,6 +1920,7 @@ function render(){
   if(isFarm(id)&&id!==dm)drawField(g,x,y,u.crop||'wheat',u.harvested?.05:cl(1-u.farmT/FARM_TIME,0,1),T); // the growing field
   if(id==='merchant'&&u.goldT>0&&id!==dm&&!(u.rotT>0))drawGold(g,x,y,T); // golden apples
   if(id==='rogue'&&id!==dm&&graveyardOn(u))drawGraveyard(g,x,y,T); // secret: next to the Necromancer on the bottom row
+  if(id==='goblin'&&id!==dm)drawHoard(g,x,y,u.hoard||0); // the Goblin's coin pile grows in his cave
   if(id!==dm)drawRoomLife(g,id,x,y,T)} // candle flames, clouds
  unicorns.forEach(q=>{if(!isOpen(q.r,q.c))return;const bx=q.c*CELL,by=q.r*CELL,p=q.t/UNICORN_TIME,ux=q.face>0?bx+8+p*80:bx+88-p*80;g.save();g.beginPath();g.rect(bx+2,by+2,CELL-4,CELL-4);g.clip();drawUnicorn(g,ux,by+FY-14,q.face,cl(q.t/.6,0,1)*cl((UNICORN_TIME-q.t)/.6,0,1),q.t);g.restore()}); // a unicorn passing through a room's background (behind its characters)
  (S.goldCells||[]).forEach(q=>{if(isOpen(q[0],q[1]))drawGoldCell(g,q[1]*CELL,q[0]*CELL,T)}); // philosopher's stones: golden spaces
@@ -1891,7 +1976,8 @@ function render(){
    g.save();g.beginPath();g.rect(s.x-24,s.y-60,48,60);g.clip();spr(g,'skeleton',hit?'hurt':'mad',s.x,s.y+(1-rise)*44,u.x>s.x?1:-1,0,hit&&Math.floor(s.blink*14)%2?.2:1,1);g.restore()}
   if(u.mobs)u.mobs.forEach(m=>drawMob(g,m));
   if(u.show)drawItem(g,u.show.icon,Math.round(u.show.x),Math.round(u.show.y),1);
-  if(u.basket!=null)drawBasket(g,Math.round(u.x+u.face*10),Math.round(u.y-12),u.basket); // the Fruit Merchant's overflowing basket (the Massive Tree)
+  if(u.basket!=null)drawBasket(g,Math.round(u.x+u.face*10),Math.round(u.y-12),u.basket);
+  if(u.carryInst)drawInstrument(g,u.carryInst,u.x+u.face*6,u.y-18,u.face,T); // the Goblin running off with the Bard's instrument // the Fruit Merchant's overflowing basket (the Massive Tree)
   if(u.show2)drawItem(g,u.show2.icon,Math.round(u.show2.x),Math.round(u.show2.y),1);
   if(u.big){const q=u.big;drawItem(g,'banana',Math.round(q.x),Math.round(q.y-6-q.s*4),Math.max(1,Math.round(q.s)))}
   if(u.beam){const Pr=U.priest;if(Pr){g.save();g.globalAlpha=cl(1-u.beam.t/.5,0,1);g.strokeStyle='rgba('+(u.beam.col||'255,236,150')+',.95)';g.lineWidth=5;g.beginPath();g.moveTo(Pr.x+Pr.face*8,Pr.y-36);g.lineTo(u.beam.x,u.beam.y);g.stroke();g.restore()}}
@@ -2069,7 +2155,7 @@ function pairListIds(a,b,rel){const u=fakeU(a),h=fakeU(b),base=(PAIRS[a+'>'+b]||
  VISIT_ANY.forEach(e=>{if(anyFits(e,u,h)&&e[2]!=='drain'&&!(e[4]&&out.some(x=>x[1]==='c')))out.push([e[2],e[3]])});return out}
 function visitPct(k){const g=VISIT_GROUP.find(e=>e[1]===k);if(g)return(1-HANGOUT)*RARITY[g[2]];const any=VISIT_ANY.find(e=>e[2]===k);
  if(any&&any[3]!=='c')return(1-HANGOUT)*RARITY[any[3]];
- if(any){const l=pairListIds(any[0],{'tag:mage':'wizard','tag:fighter':'knight','tag:merchant':'merchant','tag:monstrous':'madalc'}[any[1]]||any[1],'none');return(1-HANGOUT)*listChances(l)[l.findIndex(e=>e[0]===k)]}
+ if(any){const l=pairListIds(any[0],{'tag:mage':'wizard','tag:fighter':'knight','tag:merchant':'merchant','tag:monstrous':'goblin'}[any[1]]||any[1],'none');return(1-HANGOUT)*listChances(l)[l.findIndex(e=>e[0]===k)]}
  const w=sceneWhere(k)[0];if(!w)return null;const l=pairListIds(w.a,w.b,w.rels[0]),i=l.findIndex(e=>e[0]===k);return i<0?null:(1-HANGOUT)*listChances(l)[i]}
 const wxPct=k=>{const ks=Object.keys(WEATHER_TIERS),l=ks.map(x=>[x,WEATHER_TIERS[x]]);return listChances(l)[ks.indexOf(k)]};
 // The % shown on a tile (null = keep the tile's own label)
@@ -2114,7 +2200,7 @@ function unlockHint(k){if(HINTS[k])return HINTS[k];const p=pctOf(k),how=p==null?
  return ''}
 function hintOf(k){const f=flavorOf(k),h=unlockHint(k);return 'Not discovered yet. '+(f||'Keep exploring!')+(h?' '+h:'')}
 // Top of each tab: how this character decides
-const DECIDE_NOTE={druid:'His visits are casts instead: Overgrowth, or rarely a change of weather (and his one request to the Monarch).',monarch:'A greedy Monarch never visits.',traveler:'He never visits, and nobody visits him.',
+const DECIDE_NOTE={goblin:'Neighbors visit him far less often than anyone else (he always visits for his own scenes).',druid:'His visits are casts instead: Overgrowth, or rarely a change of weather (and his one request to the Monarch).',monarch:'A greedy Monarch never visits.',traveler:'He never visits, and nobody visits him.',
  farmer:'Farmers only hoe and carry pitchforks until the harvest.'};
 const decideText=id=>'Every 5-10 seconds a character does an activity: Idle ('+Math.round(DECIDE.idle*100)+'% chance), Visit a neighbor ('+Math.round(DECIDE.visit*100)+'% chance) or Wanders their room ('+Math.round((1-DECIDE.idle-DECIDE.visit)*100)+'% chance).'+(DECIDE_NOTE[id]?' '+DECIDE_NOTE[id]:'');
 // Hint for a tile not discovered yet: the description without where the characters must be, which item to use, or any chance (those show once discovered)
@@ -2175,7 +2261,7 @@ const PD={study:['wizard','right'],gossip:['wizard','left'],undead:['wizard','be
 REQS.forEach(q=>PD['rq:'+q]=['monarch','left',q==='paladin'?'knight':q]);
 // A tile's picture in a character's tab: a scene "with a Mage" (or Fighter, Merchant, Monstrous character) normally shows a stand-in
 // (the Wizard, Knight, Fruit Merchant, mad Alchemist); in the tab of another character with that tag, it shows that character instead.
-const TAG_STANDIN={mage:'wizard',fighter:'knight',merchant:'merchant',monstrous:'alchemist'};
+const TAG_STANDIN={mage:'wizard',fighter:'knight',merchant:'merchant',monstrous:'goblin'};
 function tileArt(make,tid,k){const pw=PAIR_WITH[k]||[],tg=pw.find(p=>String(p).startsWith('tag:')),rep=tg&&TAG_STANDIN[tg.slice(4)];
  if(!rep||rep===tid||pw.includes(tid)||!CH[tid]&&!Object.keys(CH).some(c=>c.startsWith(tid+'_'))||isStruct({id:tid}))return make();
  SWAP={[rep]:tid};try{return make()}finally{SWAP=null}}
@@ -2473,14 +2559,39 @@ function idleTile(kind,wp){
   else if(kind==='bwisdom'){const tt=t%5;box(x,'bard',0,0);spr(x,'bard_f','happy',64,FY,-1,0,1,1,tt<3?'both':'none');if(tt<3)drawAct(x,{act:'bspell',at:t,x:64,y:FY,face:-1,inst:'harp'});spr(x,'wizard_blue',tt>3.4?'hurt':'ok',26,FY,1,0,1,1,tt>3?'up':'none');if(tt>3.4&&tt<4)poofTile(x,26,FY-48,(tt-3.4)/.6,'#8a8a96')}
   else if(kind==='blisten'){box(x,'bard',0,0);spr(x,'knight','happy',26,FY+6,1,0,1,1,'pray');spr(x,'bard_m','happy',64,FY,-1,0,1,1,'both');drawAct(x,{act:'bplay',at:t,x:64,y:FY,face:-1,inst:'lute'});drawNote(x,Math.round(50+Math.sin(t*4)*3),Math.round(FY-40-(t*12)%20),1)}
   else if(kind==='bstory'){box(x,'bard',0,0);spr(x,'merchant','happy',26,FY,1,0);spr(x,'bard_f','happy',64,FY,-1,0,1,1,Math.floor(t)%2?'wave':'none')}
-  else if(kind==='bsoothe'){const tt=t%5;box(x,'bard',0,0);spr(x,'alchemist_mad',tt<1.6?'mad':tt<3.2?'ok':'sleep',26,FY,1,0);spr(x,'bard_m','happy',64,FY,-1,0,1,1,'both');drawAct(x,{act:'bplay',at:t,x:64,y:FY,face:-1,inst:'banjo'});drawNote(x,Math.round(44+Math.sin(t*4)*3),Math.round(FY-40-(t*12)%20),1)}
+  else if(kind==='bsoothe'){const tt=t%5;box(x,'bard',0,0);spr(x,'goblin',tt<1.6?'mad':tt<3.2?'ok':'sleep',26,FY,1,0,1,GOBLIN_SCALE);spr(x,'bard_m','happy',64,FY,-1,0,1,1,'both');drawAct(x,{act:'bplay',at:t,x:64,y:FY,face:-1,inst:'banjo'});drawNote(x,Math.round(44+Math.sin(t*4)*3),Math.round(FY-40-(t*12)%20),1)}
   else if(kind==='bdragon'){box(x,'bard',0,0);spr(x,'wizard_blue','happy',26,FY,1,0,1,1,'fwd');spr(x,'bard_m','happy',64,FY,-1,0,1,1,'fwd')}
   else if(kind==='bfruit'){const tt=t%4;box(x,'bard',0,0);spr(x,'merchant','happy',26,FY,1,0,1,1,tt<2?'fwd':'none');spr(x,'bard_f',tt>2?'happy':'ok',64,FY,-1,0);drawItem(x,'dragonfruit',Math.round(lerp(36,56,cl((tt-.6)/1.4,0,1))),FY-26,1)}
   else if(kind==='ss:elven'){box(x,'tavern',0,0);drawRoomLife(x,'tavern',0,0,2);spr(x,'bard_m','happy',60,FY,1,0,1,1,'fwd');drawItem(x,'scroll',70,FY-26,1);x.strokeStyle='#f2c84a';x.lineWidth=4;x.strokeRect(4,4,88,88)}
   else if(kind==='libread'||kind==='libecon'||kind==='libmartial'){box(x,'library',0,0);const who={libread:'wizard_purple',libecon:'apothecary',libmartial:'bard_f'}[kind];spr(x,who,'happy',30,FY,1,0,1,1,kind==='libmartial'&&t%4>2?'flex':'hold');drawAct(x,{act:'read',at:t,x:30,y:FY,face:1});if(kind==='libecon')drawItem(x,'coin',44,Math.round(FY-44-Math.abs(Math.sin(t*2))*4),1)}
   else if(kind==='libyawn'||kind==='libbrowse'){box(x,'library',0,0);spr(x,kind==='libyawn'?'merchant':'knight',Math.floor(t)%3===2?(kind==='libyawn'?'sleep':'roll'):'ok',30,FY,1,0)}
   else if(kind==='libbooks'){box(x,'library',0,0);spr(x,'knight','shock',30,FY,1,0,1,1,Math.floor(t*2)%2?'fwd':'none');for(let i=0;i<3;i++)drawFlyBook(x,48+i*12+Math.sin(t*3+i)*4,FY-36-i*6+Math.cos(t*4+i)*3,t+i)}
-  else if(kind==='libfire'){box(x,'library',0,0);drawFire(x,0,0,t%4+.5);spr(x,'alchemist_mad',t%4>2?'shock':'mad',30,FY,1,0)}
+  else if(kind==='libfire'){box(x,'library',0,0);drawFire(x,0,0,t%4+.5);spr(x,'goblin',t%4>2?'shock':'mad',30,FY,1,0,1,GOBLIN_SCALE)}
+  // the Goblin (small: GOBLIN_SCALE) in his cave, and with each neighbor
+  else if(kind==='grummage'||kind==='gdagger'||kind==='gnap'||kind==='ghoard'||kind==='gsteal'){const tt=t%4,gs=(m,gx,f,p)=>spr(x,'goblin',m,gx,FY,f,0,1,GOBLIN_SCALE,p);
+   if(kind==='gsteal'){box(x,'knight',0,0,'longsword');spr(x,'knight','ok',66,FY,1,0);gs('happy',30,1,'fwd');if(tt>1)drawItem(x,'coin',38,FY-22,1)}
+   else{box(x,'goblin',0,0);if(kind==='ghoard')drawHoard(x,0,0,40);
+    if(kind==='gnap'){spr(x,'goblin','sleep',22,FY-4,1,0,1,GOBLIN_SCALE);drawZ(x,32,FY-36-Math.round((t*6)%6),1)}
+    else if(kind==='gdagger'){gs('happy',40,1,'fwd');drawSpinDagger(x,48,FY-20,t)}
+    else if(kind==='grummage'){gs(tt>2?'happy':'ok',62,1,'fwd');if(tt>1&&tt<2)poofTile(x,74,66,tt-1,'#a8a8b4')}
+    else gs('happy',40,1,'both')}}
+  else if(kind.startsWith('g')&&GOBLIN_WITH[kind]){const id=GOBLIN_WITH[kind],tt=t%4,gs=(m,gx,f,p,dy)=>spr(x,kind==='gmob'?'goblin_helm':'goblin',m,gx,FY,f,dy||0,1,GOBLIN_SCALE,p);
+   box(x,id,0,0,id==='knight'?'longsword':undefined);const who={alchemist:'alchemist_m',apothecary:'apothecary',bard:'bard_f',blacksmith:'blacksmith_m',druid:'druid',merchant:'merchant',knight:'knight',monarch:'monarch_m',necromancer:'necromancer',priest:'priest_m',wizard:'wizard_blue'}[id];
+   const dead=kind==='gknightdie'&&tt>2.6,slain=kind==='gmob'&&tt>2.6,away=(kind==='gherbs'||kind==='gherbcoin')&&tt>.8&&tt<3.2;
+   if(!slain&&!away)spr(x,who,kind==='gknightdie'||kind==='gknight'?'happy':kind==='gbite'?'hurt':kind==='galch'||kind==='gsword'||kind==='groyal'?'mad':'ok',66,FY,-1,0,1,1,kind==='gpriest'?'up':kind==='gknight'||kind==='gknightdie'||kind==='gmob'?'fwd':'none');
+   if(slain)poofTile(x,66,FY-20,(tt-2.6)/1.4,'#cfd6e0');
+   if(kind==='gmob')[14,38,84].forEach((mx,i)=>spr(x,'goblin','mad',mx+Math.sin(t*6+i)*3,FY,mx<66?1:-1,0,1,GOBLIN_SCALE,'up'));
+   const gx=kind==='groyal'||kind==='galch'?48+Math.sin(t*3)*30:kind==='gbite'?52:30;
+   if(dead)poofTile(x,30,FY-14,cl((tt-2.6)/1.2,0,1),'#6aaa3a');
+   else gs(kind==='gpriest'&&tt>2?'shock':kind==='gknight'&&tt>2?'hurt':kind==='gwild'?'happy':'mad',gx,kind==='groyal'||kind==='galch'?(Math.cos(t*3)>0?1:-1):1,kind==='gwild'?'pray':'fwd',kind==='gwild'?6:0);
+   if(kind==='gpriest'&&tt>2){x.fillStyle='rgba(255,240,160,'+(.4*(1-(tt-2)/2))+')';x.fillRect(0,0,96,96)}
+   if(kind==='galch'&&Math.floor(t*3)%2)poofTile(x,gx,FY-24,(t*3)%1,'#7ac8ff');
+   if(kind==='ginst')drawInstrument(x,tt<2?'lute':'lute',tt<2?38:58,FY-18,tt<2?1:-1,t);
+   if(kind==='gsword'&&tt<2)drawSpinDagger(x,40,FY-22,t);
+   if(kind==='gwild'){drawDeer(x,82,FY,-1,1);drawBird(x,60+Math.cos(t*2)*10,30+Math.sin(t*3)*4,t,1)}
+   const icon={gherbs:'herb',gherbcoin:'coin',gapples:'apple',gskulls:'skull',gtrinket:'purplepotion'}[kind];if(icon)drawItem(x,icon,40,FY-22,1);
+   if(kind==='gtrinket'&&tt>3)poofTile(x,30,FY-20,(tt-3),'#c890ff')}
+  else if(kind==='bresonance'){box(x,'bard',0,0);spr(x,'bard_f','happy',48,FY,1,0,1,1,'both');drawAct(x,{act:'bplay',at:t,x:48,y:FY,face:1,inst:'harp'});['fighter','mage','merchant','monstrous'].forEach((g2,i)=>{TAG_ICON[g2].forEach(r=>{x.fillStyle=r[4];x.fillRect(10+i*20+r[0]*2,8+r[1]*2,r[2]*2,r[3]*2)})});drawItem(x,'coin',70,Math.round(FY-40-Math.abs(Math.sin(t*2))*4),1)}
   else if(kind==='aretire'){const tt=t%4;box(x,'apothecary',0,0);if(tt<3.4)spr(x,'apothecary','happy',48,FY,1,0,tt>2.4?cl(1-(tt-2.4),0,1):1,1,'wave');else poofTile(x,48,FY-20,(tt-3.4)/.6,'#f2d870')}
   else if(kind==='wx:shift'){const ks=Object.keys(BOARD_WX);box(x,'druid',0,0);spr(x,'druid','happy',36,FY,1,0,1,1,'both');drawWxIcon(x,ks[Math.floor(t/1.5)%ks.length],60,10,1.5)}
   else if(kind.startsWith('wx:')){box(x,'apothecary',0,0);spr(x,'apothecary','ok',48,FY,1,0);drawWeather(x,0,0,'overgrowth',t%6,1)}
@@ -2502,14 +2613,14 @@ function idleTile(kind,wp){
   else if(kind==='tvdrink'){const tt=t%5;box(x,'tavern',0,0);drawRoomLife(x,'tavern',0,0,2);spr(x,'knight',tt>3?'happy':'ok',66+(tt>3?Math.round(Math.sin(t*4)*2):0),FY,1,0,1,1,(tt>.6&&tt<1.4)||(tt>2&&tt<2.8)?'up':'none');if(tt<3)drawItem(x,'ale',75,FY-((tt>.6&&tt<1.4)||(tt>2&&tt<2.8)?36:26),1);if(tt>3.4)drawZ(x,74,40-(tt-3.4)*8,1)}
   else if(kind==='tvdeliver'){const tt=t%4;box(x,'tavern',0,0);drawRoomLife(x,'tavern',0,0,2);spr(x,'merchant','happy',64,FY,1,0,1,1,'both');[[78,76],[86,80]].forEach(q=>{x.fillStyle=O;x.fillRect(q[0]-1,q[1]-1,12,10);x.fillStyle='#8a5a2a';x.fillRect(q[0],q[1],10,8);x.fillStyle='#6a4420';x.fillRect(q[0],q[1]+3,10,1);x.fillRect(q[0]+4,q[1],1,8)})}
   else if(kind==='tvwine'){const tt=t%4;box(x,'tavern',0,0);drawRoomLife(x,'tavern',0,0,2);spr(x,'apothecary',tt>2?'happy':'ok',66,FY,1,0,1,1,tt<2?'fwd':'none');if(tt<2)drawItem(x,'wine',76,FY-26,1);else drawItem(x,'coin',66,Math.round(FY-50-(tt-2)*6),2)}
-  else if(kind==='tvshoo'){const tt=t%4,bxk=lerp(66,52,cl((tt-.5)/1.2,0,1));box(x,'tavern',0,0);spr(x,'alchemist_mad','shock',36-Math.max(0,tt-2)*8,FY,-1,tt>1.6&&tt<2?-3:0);spr(x,'barkeep','mad',bxk,FY,-1,0,1,.95,'up');x.fillStyle='#5a3a20';x.fillRect(bxk-10,FY-40,2,14);x.fillStyle='#cfd6e0';x.fillRect(bxk-15,FY-40,5,6)}
+  else if(kind==='tvshoo'){const tt=t%4,bxk=lerp(66,52,cl((tt-.5)/1.2,0,1));box(x,'tavern',0,0);spr(x,'goblin','shock',36-Math.max(0,tt-2)*8,FY,-1,tt>1.6&&tt<2?-3:0,1,GOBLIN_SCALE);spr(x,'barkeep','mad',bxk,FY,-1,0,1,.95,'up');x.fillStyle='#5a3a20';x.fillRect(bxk-10,FY-40,2,14);x.fillStyle='#cfd6e0';x.fillRect(bxk-15,FY-40,5,6)}
   else if(kind==='grp:wellchat'){box(x,'well',0,0);[['knight',14,FY,1],['wizard_blue',26,FY-3,1],['merchant',70,FY-3,-1],['priest',82,FY,-1]].forEach((q,i)=>spr(x,q[0],'happy',q[1],q[2],q[3],Math.floor(t*2+i)%4===0?-2:0,1,.9,Math.floor(t+i)%3===0?'fwd':'none'))}
   else if(kind==='grp:classic'){box(x,'tavern',0,0);drawRoomLife(x,'tavern',0,0,t);[['priest',14,FY,1],['knight',30,FY-2,1],['wizard_purple',44,FY,-1],['rogue_ninja',58,FY-2,-1]].forEach((q,i)=>{const up=Math.floor(t*1.5+i)%4===0;spr(x,q[0],'happy',q[1],q[2],q[3],0,1,.9,up?'up':'none');drawItem(x,'ale',q[1]+q[3]*8,q[2]-(up?36:22),1)})}
   else if(kind==='welllook'){const tt=t%4;box(x,'well',0,0);spr(x,'wizard_blue','ok',20,FY,1,0,1,1,tt>.6&&tt<2.6?'fwd':'none');if(tt>1.6&&tt<2.4)poofTile(x,48,57,(tt-1.6)/.8,'#c890ff')}
   else if(kind==='wellsplash'){const tt=t%6,m=tt<1.4?0:tt<2.2?(tt-1.4)/.8:tt<4?1:tt<4.8?1-(tt-4)/.8:0;box(x,'well',0,0);if(m>0)drawPuddle(x,20,FY,m);spr(x,'wizard_purple',m>0?'shock':'ok',20,FY,1,0,1,1-.85*m);if(tt<2.4)spr(x,'farmer','happy',62,FY,-1,0,1,1,tt>1&&tt<1.6?'fwd':'none');if(tt>1&&tt<1.5)for(let i=0;i<5;i++){x.fillStyle='#8fd0ff';x.fillRect(Math.round(lerp(56,24,(tt-1)/.5))+i*2,FY-28+i*2,2,3)}}
   else if(kind==='welljump'){const tt=t%4,q=cl((tt-.6)/1.4,0,1),jx=lerp(14,82,q),jy=Math.sin(Math.PI*q)*28;box(x,'well',0,0);spr(x,'knight',q>=1?'happy':'ok',jx,FY-jy,q>0&&q<1?1:q>=1?-1:1,0,1,1,q>=1?'both':'none',q>0&&q<1?1:0)}
   else if(kind==='wellwish'){const tt=t%4,k2=cl((tt-.6)/.5,0,1);box(x,'well',0,0);spr(x,'merchant',tt>1.2&&tt<2.8?'sleep':'ok',20,FY,1,0,1,1,tt>.4&&tt<1.2?'fwd':'none');if(tt>.6&&tt<1.1)drawItem(x,'coin',Math.round(lerp(28,48,k2)),Math.round(lerp(56,57,k2)-Math.sin(k2*Math.PI)*12),1);if(tt>1.2&&tt<2.4)heart(x,20,30-(tt-1.2)*10)}
-  else if(kind==='welldive'){const tt=t%5,d=tt<1?0:tt<1.4?30*(tt-1)/.4:tt<2.4?30:tt<2.8?30-26*(tt-2.4)/.4:tt<4?4:0;box(x,'well',0,0);x.save();x.beginPath();x.rect(0,0,96,tt>=1&&tt<4?57:96);x.clip();spr(x,'alchemist_mad','happy',48,FY+d,1,0);x.restore()}
+  else if(kind==='welldive'){const tt=t%5,d=tt<1?0:tt<1.4?30*(tt-1)/.4:tt<2.4?30:tt<2.8?30-26*(tt-2.4)/.4:tt<4?4:0;box(x,'well',0,0);x.save();x.beginPath();x.rect(0,0,96,tt>=1&&tt<4?57:96);x.clip();spr(x,'goblin','happy',48,FY+d,1,0,1,GOBLIN_SCALE);x.restore()}
   else if(kind==='grp:market'){drawMarketBack(x,0,0,192,96);drawMarketCrowd(x,0,0,192,96,t);spr(x,'merchant','happy',40,FY,1,0,1,1,Math.floor(t)%3===0?'up':'none');spr(x,'apothecary','happy',136,FY,-1,0,1,1,Math.floor(t+1.5)%3===0?'up':'none')}
   else if(kind==='grp:feast'){drawFeastBack(x,0,0,192,t);spr(x,'knight','happy',48,FY,1,Math.floor(t*2)%5===0?-3:0);spr(x,'wizard','happy',144,FY,-1,Math.floor(t*2+2)%5===0?-3:0,1,1,Math.floor(t)%4===0?'fwd':'none');drawFeastFront(x,0,0,192)}
   else if(kind==='ss:gold'){x.fillStyle='#1a1733';x.fillRect(0,0,96,96);for(let r=0;r<4;r++)for(let c=0;c<5;c++){x.fillStyle='#c8962a';x.fillRect(4+c*18,12+r*18,16,16);x.fillStyle='#f2c84a';x.fillRect(5+c*18,13+r*18,14,14);x.fillStyle='#fff0a8';x.fillRect(6+c*18,14+r*18,4,2);if(Math.floor(t*3+r+c*2)%7===0){x.fillStyle='#ffffff';x.fillRect(12+c*18,18+r*18,2,2)}}}
@@ -2609,6 +2720,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  REQS.forEach(q=>T['rq:'+q]=[P('rq:'+q),'80% / 10%']);
  for(const wk in WELL_PCT)T[wk]=[I(wk),WELL_PCT[wk]]; // the Well's activities (labels: share of a neighbor's idle activities)
  Object.assign(T,{bplay:[I('bplay')],bhum:[I('bhum')],bspell:[I('bspell')],bwisdom:[I('bwisdom')],blisten:[I('blisten')],bstory:[I('bstory')],bsoothe:[I('bsoothe')],bdragon:[I('bdragon')],bfruit:[I('bfruit')],'ss:elven':[I('ss:elven'),'super secret']}); // the Bard
+ ['grummage','gdagger','gnap','gsteal','ghoard','bresonance',...Object.keys(GOBLIN_WITH)].forEach(k=>{T[k]=[I(k)]});T.ghoard[1]='passive';T.bresonance[1]='passive'; // the Goblin; the Bard's Resonance
  Object.assign(T,{'grp:wellchat':[I('grp:wellchat'),'secret'],'grp:classic':[I('grp:classic'),'secret'],'grp:market':[I('grp:market'),'every 5 min'],'grp:feast':[I('grp:feast'),'every 5 min'],'ss:gold':[I('ss:gold'),'super secret'],'ss:alltags':[I('ss:alltags'),'super secret'],dingot:[I('dingot')],rqdeny:[P('rqdeny'),'20% / 90%'],drain:[P('drain'),pv*ODDS.drain],royalfuneral:[I('royalfuneral'),'on death'],regicide:[I('regicide'),'secret'],royalpatron:[I('royalpatron'),'secret'],
   wares:[I('wares'),'100%'],troad:[I('troad'),'5 min'],tshop:[I('tshop'),TRAVEL_ARTIFACT+' coins'],tscroll:[I('tscroll')],tpotion:[I('tpotion')],tingot:[I('tingot')]});
  ROGUE_SCENES.forEach(k=>{if(!T[k])T[k]=[P(k),pv]});
@@ -2679,7 +2791,7 @@ function buildQuests(){const box=$('#quests');box.textContent='';S.qDone=S.qDone
 function ui(){document.querySelectorAll('.it[data-id]').forEach(b=>b.classList.toggle('used',!!U[b.dataset.id]||(b.dataset.id==='traveler'&&!!S.travelRoam)))} // dimmed: on the board, or on the road
 function save(){if(resetting)return;try{const b={};for(const i in U)if(!isFarm(i)&&i!=='tree')b[i]=[U[i].r,U[i].c,U[i].weapon,TEMP_FORM[U[i].form]?null:U[i].form,U[i].color,U[i].backwards?1:0,U[i].skin||0,U[i].mageTag?1:0,U[i].dead?1:0,U[i].reinforced?1:0,U[i].paladin?1:0,U[i].armor?1:0,U[i].fam||0,U[i].arch?1:0,U[i].trait||0,extras(U[i])];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,spent:S.spent||0,inv:S.inv,seen:S.seen,rewarded:S.rewarded||0,cells:S.cells,bought:S.bought||0,revealed:S.revealed,goldCells:S.goldCells,ever:S.ever,tabDone:S.tabDone||{},bigRewarded:S.bigRewarded||0,monarchs:S.monarchs||0,travelRoam:!!S.travelRoam,qs:S.qs||{},qDone:S.qDone||{},wx:{k:bwx.k,t:Math.round(bwx.t)},elvenScroll:!!S.elvenScroll,goldBorder:!!S.goldBorder,bardMon:!!S.bardMon}))}catch(e){}}
 // [15] in a saved box: everything newer, by name (royal colors, requests made, grudges, the Monarch's gifts, the Traveling Merchant's time left)
-const EXTRA_KEYS=['pal','asked','grudge','sir','helper','staff','barrel','sacks','pine','minions','travelT','wcoins','inst','merchTag','fightTag','monTag'];
+const EXTRA_KEYS=['pal','asked','grudge','sir','helper','staff','barrel','sacks','pine','minions','travelT','wcoins','inst','merchTag','fightTag','monTag','hoard','helm'];
 const extras=u=>{const o={};EXTRA_KEYS.forEach(k=>{if(u[k])o[k]=k==='travelT'?Math.round(u[k]):u[k]});return o};
 function load(){let d=null;try{d=JSON.parse(localStorage.getItem(KEY))}catch(e){}
  if(d){S.un=d.un||{};S.coins=d.coins||0;S.inv=Object.assign({scroll:0,potion:0,artifact:0,ingot:0},d.inv);S.spent=d.spent||0;S.seen=d.seen||{};S.rewarded=d.rewarded!=null?d.rewarded:Math.floor(ALL_KEYS.filter(k=>S.seen[k]).length/DISCOVER_EVERY)}

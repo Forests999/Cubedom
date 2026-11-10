@@ -1192,3 +1192,71 @@ Object.assign(WELL_PCT,{libread:structPct(1),libyawn:structPct(1-RARITY.r),libec
 STRUCT_WHO.libmartial='the Bard';
 // ---------- quest: An Old Friend (every entry on the Wizard's Compendium page, secrets too) unlocks the Bard ----------
 QUESTS.push({id:'oldfriend',name:'An Old Friend',text:'Discover everything on the Wizard\'s page of the Compendium (secrets too).',tab:'wizard',reward:{unlock:'bard'}});
+
+// ---------- the Goblin (Monstrous): a little green thief in a cave camp. Unlocked by the quest The Rumors are True. ----------
+// Smaller than everyone (GOBLIN_SCALE). Neighbors visit him far less (GOBLIN_SHY: his share when they pick whom to visit). He always visits for his scenes (GOBLIN_VISITS).
+// His cave stash grows by 1 coin every GOBLIN_HOARD_EVERY seconds (u.hoard, saved); when he dies, you get it all.
+const GBC={body:'#6a5a3a',bodyD:'#52462c',pants:'#4a4030',boot:'#3a2a1a',belt:'#3a2a1a',skin:'#6aaa3a',skinD:'#4e8a2a'};
+const goblinP=[...B(GBC),[2,5,3,2,GBC.skin],[1,4,1,2,GBC.skin],[11,5,3,2,GBC.skinD],[14,4,1,2,GBC.skinD], // big pointy ears
+ [4,2,8,1,'#5a4a30'],[5,1,6,1,'#5a4a30'],[4,10,1,6,'#5a4a30'],[11,10,1,5,'#3a3020'],[6,12,1,1,'#3a3020'],[9,13,1,1,'#3a3020']]; // a ragged hood and a patched tunic
+CH.goblin={name:'Goblin',eye:'#f2d040',a:arms(GBC),p:goblinP};
+CH.goblin_helm=Object.assign({},CH.goblin,{p:[...goblinP,[4,1,4,2,'#a8acb8'],[8,0,4,2,'#a8acb8'],[4,1,4,1,'#d0d4e0'],[8,0,4,1,'#d0d4e0'],[11,2,2,1,'#8a8e98']]}); // a Knight's helmet, sitting crooked
+CLASS.goblin='monstrous';TR.goblin={up:'fade',down:'fade'};ALL_CHARS.push('goblin');NAMES.goblin='Goblin';
+SHELF_CLUE.goblin='Little green thieves, they say. Surely just a rumor... if you hear it enough times?';
+const GOBLIN_SCALE=.78,GOBLIN_SHY=.25,GOBLIN_HOARD_EVERY=60,GOBLIN_NAP=10;
+IDLES.goblin=[['grummage','c'],['gdagger','c'],['gnap','c'],['gsteal','r','nbr']];
+// his scenes with each neighbor (any side; the Goblin always visits)
+VISIT_ANY.push(['goblin','alchemist','galch','c'],['goblin','apothecary','gherbs','c'],['goblin','apothecary','gherbcoin','r'],['goblin','bard','ginst','c'],['goblin','blacksmith','gsword','c'],
+ ['goblin','druid','gwild','c'],['goblin','merchant','gapples','c'],['goblin','knight','gknight','c'],['goblin','knight','gknightdie','r'],['goblin','knight','gmob','l'],
+ ['goblin','monarch','groyal','c'],['goblin','necromancer','gskulls','c'],['goblin','priest','gpriest','c'],['goblin','priest','gbite','r'],['goblin','wizard','gtrinket','c']);
+const GOBLIN_WITH={galch:'alchemist',gherbs:'apothecary',gherbcoin:'apothecary',ginst:'bard',gsword:'blacksmith',gwild:'druid',gapples:'merchant',gknight:'knight',gknightdie:'knight',gmob:'knight',
+ groyal:'monarch',gskulls:'necromancer',gpriest:'priest',gbite:'priest',gtrinket:'wizard'},GOBLIN_VISITS=GOBLIN_WITH;
+COMP_TABS.push({id:'goblin',name:'Goblin',pairs:Object.keys(GOBLIN_WITH),idle:['grummage','gdagger','gnap','gsteal'],items:['ghoard']});
+for(const k in GOBLIN_WITH){PAIR_WITH[k]=['goblin',GOBLIN_WITH[k]];const t=COMP_TABS.find(x=>x.id===GOBLIN_WITH[k]);if(t)t.pairs.push(k)} // (also on each partner's page)
+Object.assign(NAMES,{grummage:'Rummaging through junk',gdagger:'Spinning a dagger',gnap:'A nap in the bedroll',gsteal:'Sneaking off with something',ghoard:'The goblin\'s stash',
+ galch:'Chaos in the lab',gherbs:'Stolen herbs',gherbcoin:'Stolen coins',ginst:'A borrowed instrument',gsword:'Swiping a sword',gwild:'Watching the wildlife',gapples:'Apple heist',
+ gknight:'Goblin versus Knight',gknightdie:'A goblin falls',gmob:'The goblin mob',groyal:'Laughing through the throne room',gskulls:'The skull collection',gpriest:'Driven off by holy light',gbite:'A sneaky bite',gtrinket:'A magical trinket'});
+Object.assign(TITLES,{grummage:'One Goblin\'s Trash',gdagger:'Stabby Spin',gnap:'Dirty Bedroll',gsteal:'Sticky Fingers',ghoard:'Goblin Gold',galch:'Bull in a Potion Shop',gherbs:'Herb Thief',gherbcoin:'Jackpot',
+ ginst:'Borrowed Tune',gsword:'Swiped Sword',gwild:'Pretty Birdie',gapples:'Apple Heist',gknight:'Goblin Brawl',gknightdie:'Last Stand',gmob:'Goblin Horde',groyal:'Royal Pest',gskulls:'Bone Appreciation',
+ gpriest:'Hiss!',gbite:'Ankle Biter',gtrinket:'Return to Sender'});
+Object.assign(DESC,{grummage:'The Goblin rummages through his pile of stolen goods and trash.',gdagger:'The Goblin plays with his dagger, spinning it around in his hand.',
+ gnap:'The Goblin curls up in his dirty bedroll for a 10 second nap.',gsteal:'The Goblin sneaks into a neighbor\'s room and steals something (+2 coins to his stash).',
+ ghoard:'The Goblin\'s cave stash grows by 1 coin every minute. When he dies, you get every coin in it.',
+ galch:'The Goblin and the Alchemist, any side. The Goblin runs around the lab smashing potions while the Alchemist tries to shoo him out.',
+ gherbs:'The Goblin and the Apothecary, any side. While she is out picking herbs, the Goblin sneaks in and steals some.',
+ gherbcoin:'The Goblin and the Apothecary, any side, rare. While she is out, the Goblin finds 5 coins and adds them to his stash.',
+ ginst:'The Goblin and the Bard, any side. The Goblin tries to steal an instrument; the Bard calmly talks him into giving it back.',
+ gsword:'The Goblin and the Blacksmith, any side. The Goblin steals a sword and picks a fight. The Blacksmith disarms him in a second and he flees.',
+ gwild:'The Goblin and the Druid, any side. The Goblin gets distracted by the wildlife and just sits and watches.',
+ gapples:'The Goblin and the Fruit Merchant, any side. The Goblin steals a few apples and drops a couple as he runs.',
+ gknight:'The Goblin and the Knight, any side. The Goblin picks a fight with the Knight, gets swatted and runs.',
+ gknightdie:'The Goblin and the Knight, any side, rare. The Goblin picks a fight with the Knight and does not survive it.',
+ gmob:'The Goblin and the Knight, any side, legendary. The Goblin whistles up a mob of goblins that overwhelms the Knight. The Knight is slain, and the Goblin wears his helmet, crooked, from then on.',
+ groyal:'The Goblin and the Monarch, any side. The Goblin runs through the throne room laughing, then flees.',
+ gskulls:'The Goblin and the Necromancer, any side. The Necromancer shows off his skull collection; the Goblin holds one and examines it closely.',
+ gpriest:'The Goblin and the Priest, any side. The Goblin creeps closer; the Priest calls down divine light, and the Goblin hisses and flees.',
+ gbite:'The Goblin and the Priest, any side, rare. The Goblin sneaks up and bites the Priest.',
+ gtrinket:'The Goblin and the Wizard, any side. The Goblin steals a magical trinket; when the Wizard spots him, it goes off and teleports the Goblin home.'});
+Object.assign(FLAVOR,{grummage:'A spoon, a boot, half a sandwich. Treasures, all of them.',gdagger:'Spin, spin, spin, catch. Spin, spin, oops, catch.',gnap:'The bedroll smells of old cheese. He loves it.',
+ gsteal:'Tiptoe in, grab something shiny, tiptoe out. Hehehe.',ghoard:'Coin by coin, the pile in the cave grows.',galch:'"Shiny bottles!" CRASH. "Not the blue one!" CRASH.',
+ gherbs:'She steps out for herbs. He steps in for hers.',gherbcoin:'Under the herb pot: five shiny coins. Into the sack they go.',ginst:'"That lute will not sing for you, friend. Give it back and I will play you a song."',
+ gsword:'One wild swing, one quick twist from the smith, and the goblin is running.',gwild:'A deer, a bird... the goblin forgets to steal anything at all.',gapples:'An armful of apples, and a trail of the ones that fell.',
+ gknight:'Bite, scratch, CLANG. The goblin learns about armor the hard way.',gknightdie:'The goblin fought bravely. Briefly.',gmob:'One whistle, and the goblins pour in from everywhere.',
+ groyal:'Through the throne room, cackling all the way. "Guards!"',gskulls:'"This one has nice teeth." The Necromancer is touched.',gpriest:'A flash of holy light. "HSSSS!"',
+ gbite:'Chomp. "It BIT me!"',gtrinket:'Grab, zap, poof. Back home, very confused.'});
+Object.assign(HINTS,{grummage:'A goblin and his junk are never parted.',gdagger:'Goblins love a pointy toy.',gnap:'Even thieves need sleep.',gsteal:'Rarely, he goes shopping without paying.',
+ ghoard:'His cave hides more than junk.',galch:'Goblins and fragile glass do not mix.',gherbs:'When the herbalist steps out, someone steps in.',gherbcoin:'Sometimes the herb pot hides more than herbs.',
+ ginst:'A goblin might fancy an instrument. Music might change his mind.',gsword:'A forge full of swords is very tempting to a goblin.',gwild:'Nature can calm even a goblin.',
+ gapples:'Fruit next door is not safe with a goblin around.',gknight:'Goblins and knights do not get along.',gknightdie:'A goblin should pick his fights more carefully.',
+ gmob:'Where there is one goblin, there may be many more. Once in a blue moon.',groyal:'A goblin next to royalty cannot resist a prank.',gskulls:'A goblin and a skull collector might bond.',
+ gpriest:'Holy light and goblins do not get along.',gbite:'Never turn your back on a goblin.',gtrinket:'Magic trinkets are tempting, and unpredictable.'});
+NOTE.gherbcoin='+5 coins to his stash.';NOTE.gknightdie='The Goblin dies.';NOTE.gmob='The Knight dies; the Goblin keeps the helmet.';NOTE.gsteal='+2 coins to his stash.';
+QUESTS.push({id:'rumorstrue',name:'The Rumors are True',text:'Hear the Fruit Merchant tell the Knight about goblins 5 times.',stat:'goblinRumors',goal:5,reward:{unlock:'goblin'}});
+// ---------- the Bard's Resonance: for each tag the Bard has ----------
+// neighbors' chances of dying -RES_DEATH; their legendary idle activities +RES_LEGEND; +1 coin a minute from passers-by (RES_COIN_EVERY)
+const RES_DEATH=.1,RES_LEGEND=.1,RES_COIN_EVERY=60;
+COMP_TABS.find(t=>t.id==='bard').items.push('bresonance');NAMES.bresonance='Resonance';TITLES.bresonance='Resonance';
+DESC.bresonance='Passive, for each tag the Bard has: neighbors\' chances of dying are 10% lower, their legendary idle activities 10% more likely, and passers-by toss the Bard 1 coin a minute.';
+FLAVOR.bresonance='The more the elf has lived, the richer the music. The neighbors feel it too.';HINTS.bresonance='A Bard who has picked up a tag or two plays with real power.';
+// Deadly events (a death in the roll itself): the Bard's Resonance makes them less likely for neighbors
+const DEADLY={demon:1,murder:1,assassin:1,drain:1,gknightdie:1,gmob:1};

@@ -47,6 +47,7 @@ function bg(id,w){
   [6,25,3,3,'#f4ece0'],[16,27,3,2,'#f4ece0'],[44,20,4,3,'#f4ece0'],[58,23,3,3,'#f4ece0'],[78,27,3,3,'#f4ece0'],[88,29,3,2,'#f4ece0'],
   [24,60,2,6,'#e0d8c4'],[21,57,8,3,'#c04a6a'],[36,62,2,4,'#e0d8c4'],[34,60,6,2,'#9a60d0'],[66,62,2,4,'#e0d8c4'],[64,60,6,2,'#e07a40'],[16,76,2,4,'#e0d8c4'],[14,74,6,2,'#c04a6a'],[44,84,2,4,'#e0d8c4'],[42,82,6,2,'#7ae0c0'],[76,80,2,4,'#e0d8c4'],[74,78,6,2,'#9a60d0']];
  // Traveling Merchant: a dirt road through the meadow, a tree, flowers, a covered wagon with a mule, and a stand covered in striped cloth for the wares
+ if(id==='goblin')return goblinRects(); // the Goblin's cave camp
  if(id==='bard')return bardRects(); // the Bard's peaceful wood
  if(id==='library')return libraryRects(); // the Library (a structure)
  if(id==='tree')return treeRects(); // the Druid's Massive Tree (a structure)
@@ -153,7 +154,8 @@ const sid=u=>{if(u.dress)return u.dress; // trying on a disguise (Rogue and Wiza
  if(u.id==='alchemist'&&!u.form&&u.r===ROWS-1&&u.c===COLS-1)return 'alchemist_mad'; // secret: mad scientist on the bottom-right space
  let b=u.form||(u.paladin&&u.id==='knight'?'paladin':u.color?u.id+'_'+u.color:u.id); // a Knight forged into a Paladin
  if(u.armor&&!u.form&&CH[b+'_arm'])b+='_arm'; // the Wizard's green metal mage armor
- if(u.arch&&!u.form&&u.id==='druid')b='druid_arch'; // the Archdruid's glowing staff and leaf crown
+ if(u.arch&&!u.form&&u.id==='druid')b='druid_arch';
+ if(u.helm&&!u.form&&u.id==='goblin')b='goblin_helm'; // the Goblin wears the slain Knight's helmet, crooked // the Archdruid's glowing staff and leaf crown
  if(u.id==='monarch'&&!u.form&&u.pal&&u.pal!=='red'&&CH[b+'_'+u.pal])b+='_'+u.pal; // royal colors (red and gold has no suffix)
  if(u.staff&&!u.form&&CH[b+'_st'])b+='_st'; // the Wizard's dark steel staff from the Monarch
  return u.skin&&CH[b+'~'+u.skin]?b+'~'+u.skin:b};
@@ -398,6 +400,7 @@ function drawAct(c,u){
  // the Bard: an instrument while playing; pink fae magic while humming; butterflies with a spell of song
  else if(a==='bplay'||a==='bspell'){drawInstrument(c,u.inst||'lute',x+f*7,y-22,f,t);if(a==='bspell'){swirl(c,x,y,t,5,1);drawButterflies(c,x,y,t)}}
  else if(a==='bhum'){swirl(c,x,y,t,5,.6)}
+ else if(a==='gdagger'){drawSpinDagger(c,x+f*8,y-26,t)} // the Goblin spins his dagger
  // Blacksmith: smelting in the furnace (tongs with glowing armor or a sword), shoveling coal, pouring a mold, lead turning to gold
  else if(a==='smelt'&&t>=1){const hx=Math.round(x+f*12),ex=Math.round(x+f*24),hot=cl((t-1.5)/2.5,0,1),col='rgb('+Math.round(120+135*hot)+','+Math.round(120+20*hot)+','+Math.round(130-100*hot)+')';
   stick(c,hx,Math.round(y-22),ex,Math.round(y-30),'#5a5a64');c.fillStyle=O;if(u.smeltWhat==='sword'){c.fillRect(ex-1,y-31,f*14+(f>0?2:-2),4);c.fillStyle=col;c.fillRect(f>0?ex:ex+f*14,y-30,14,2)}else{c.fillRect(ex+(f>0?0:-11),y-36,11,10);c.fillStyle=col;c.fillRect(ex+(f>0?1:-10),y-35,9,8)}}
@@ -462,6 +465,7 @@ function drawGold(c,bx,by,t){c.fillStyle='#f2c84a';[[11,42,4,4],[16,41,4,4],[21,
  if(Math.floor(t*3)%2){c.fillStyle='#fffbe0';c.fillRect(bx+10+Math.floor(t*3)%14,by+36,2,2)}}
 // Little bits of life in the rooms: flickering candle flames, a cloud drifting past the Apothecary's window
 function drawRoomLife(c,id,bx,by,t){const fl=(k)=>Math.floor(t*8+k)%3;
+ if(id==='goblin')drawGoblinLife(c,bx,by,t); // the Goblin's lantern
  if(id==='bard')drawBardLife(c,bx,by,t); // birds over the Bard's wood
  if(id==='knight'){const h=3+fl(1);c.fillStyle='#f08a20';c.fillRect(bx+88,by+34-h,3,h);c.fillStyle='#ffd040';c.fillRect(bx+89,by+35-h,1,h-1)} // the torch flame
  if(id==='wizard'){[[13,22],[41,22]].forEach((q,i)=>{const h=1+fl(i*2);c.fillStyle='#ffd060';c.fillRect(bx+q[0],by+q[1]-h,1,h)})} // candle flames on the bookshelf
@@ -515,6 +519,7 @@ function drawItem(c,kind,x,y,s){
   :kind==='artifact'?[[-2,-6,4,1,'#f2c84a'],[-3,-5,6,2,'#f2c84a'],[-4,-3,8,6,'#d8a030'],[-2,-2,4,4,'#7ae0ff'],[-1,-1,1,1,'#ffffff'],[-1,3,2,2,'#d8a030'],[-3,5,6,1,'#f2c84a']]
   :kind==='banana'?[[-4,-1,2,3,'#f2d040'],[-3,1,6,2,'#f2d040'],[2,-2,2,3,'#f2d040'],[3,-3,1,1,'#6a4420'],[-2,2,4,1,'#c8a020']]
   :kind==='starfruit'?[[-1,-4,2,8,'#f8d840'],[-4,-1,8,2,'#f8d840'],[-2,-2,4,4,'#ffe868'],[-3,2,2,2,'#f8d840'],[1,2,2,2,'#f8d840']]
+  :kind==='herb'?[[-1,-4,2,8,'#3a8a3a'],[-4,-3,3,2,'#6aba4a'],[1,-1,3,2,'#6aba4a'],[-3,1,2,2,'#6aba4a']]
   :kind==='dragonfruit'?[[-3,-3,6,7,'#e83a8a'],[-4,-1,1,3,'#e83a8a'],[3,-1,1,3,'#e83a8a'],[-2,-5,1,2,'#6aba4a'],[1,-5,1,2,'#6aba4a'],[-4,-2,1,1,'#6aba4a'],[3,1,1,1,'#6aba4a'],[-1,0,1,1,'#ff9ac8']]
   :kind==='durian'?[[-3,-3,6,6,'#8a9a3a'],[-4,-1,1,2,'#6a7a2a'],[3,-1,1,2,'#6a7a2a'],[-1,-4,2,1,'#6a7a2a'],[-1,3,2,1,'#6a7a2a'],[-2,-2,1,1,'#aaba5a'],[1,0,1,1,'#aaba5a']]
   :kind==='bloodorange'?[[-3,-2,6,5,'#f06a20'],[-2,-3,4,1,'#f06a20'],[-1,-1,3,3,'#a01828'],[0,-4,1,1,'#4a9a3a'],[-2,-1,1,1,'#ffc080']]
@@ -648,6 +653,7 @@ function drawMob(c,m){
  if(m.al!=null&&m.al<=0)return;const hit=m.blink>0,fl=hit&&Math.floor(m.blink*14)%2?.2:1,face=m.face||-1;
  if(m.id==='ghost'){spr(c,'ghost',hit?'hurt':'ok',m.x,m.y-8-Math.sin(m.t*3+m.x)*3,face,0,.75*fl*(m.al==null?cl(m.t/.5,0,1):m.al),1);return}
  if(m.id==='plant'){c.save();c.globalAlpha=fl*(m.al==null?1:m.al);drawPlant(c,m.x,m.y,m.t,hit);c.restore();return}
+ if(m.id==='goblin'){spr(c,'goblin',hit?'hurt':'mad',m.x,m.y-Math.abs(Math.sin(m.t*7))*2,face,0,fl*(m.al==null?cl(m.t/.4,0,1):m.al),GOBLIN_SCALE,'up',Math.floor(m.t*6)%2);return} // the Goblin's mob
  if(m.id==='imp'){spr(c,'demon',hit?'hurt':'mad',m.x,m.y-Math.abs(Math.sin(m.t*6))*3,face,0,fl*(m.al==null?cl(m.t/.4,0,1):m.al),.6);return} // a small hopping demon
  if(m.id==='golem'){spr(c,'golem','ok',m.x,m.y,face,0,(m.al==null?1:m.al)*cl(m.t/.6,0,1),m.sc||1.35);return}
  if(m.id==='fairy'){const p=fairyPos(m),fx=Math.round(p.x),fy=Math.round(p.y),up=Math.floor(m.t*12)%2;c.save();c.globalAlpha=fl*(m.al==null?cl(m.t/.4,0,1):m.al); // a good fairy: pink glow, flapping wings
@@ -1065,3 +1071,24 @@ function drawFire(c,bx,by,t){const k=cl(t/1.2,0,1);c.save();c.beginPath();c.rect
 function drawFlyBook(c,x,y,ph){const o=Math.floor(ph*8)%2;x=Math.round(x);y=Math.round(y);c.fillStyle=O;c.fillRect(x-5,y-3,11,o?5:7);
  if(o){c.fillStyle='#a83a3a';c.fillRect(x-4,y-2,4,3);c.fillRect(x+1,y-2,4,3);c.fillStyle='#f4ecd8';c.fillRect(x,y-2,1,3)}else{c.fillStyle='#a83a3a';c.fillRect(x-4,y-2,9,5);c.fillStyle='#f4ecd8';c.fillRect(x-4,y+2,9,1)}
  c.fillStyle='#ffd040';c.fillRect(x-2,y-1,1,1);c.fillRect(x+2,y-1,1,1)}
+
+// ---------- the Goblin's cave camp: rock walls, a tunnel, a dirty bedroll, a lantern on a crate, food scraps, a junk pile (his coin pile is drawn on top by drawHoard) ----------
+WALL.goblin=['#3a3438','#3a2e24'];ROOM_STYLE.goblin={wall:'plaster',floor:'dirt'}; // rough rock, not bricks
+function goblinRects(){const R=[],p=(x,y,w,h,c)=>R.push([x,y,w,h,c]);
+ p(0,0,96,8,'#2a2428');[[12,8,3,6],[13,14,1,3],[40,8,4,8],[41,16,2,3],[70,8,3,5],[86,8,2,7],[60,8,2,4]].forEach(q=>p(q[0],q[1],q[2],q[3],'#2a2428')); // the ceiling and stalactites
+ [[20,22,14,6],[56,26,18,8],[4,38,12,10],[78,40,14,6],[30,48,10,6]].forEach(q=>p(q[0],q[1],q[2],q[3],'#4a4248')); // lighter rock
+ p(38,30,22,32,'#141014');p(41,27,16,3,'#141014');p(44,25,10,2,'#141014'); // a dark tunnel at the back
+ p(0,62,96,1,'#2a2018');p(0,63,96,33,'#3a2e24');[[10,86,8,2],[48,90,10,2],[80,88,8,2]].forEach(q=>p(q[0],q[1],q[2],q[3],'#2e241c')); // the dirt floor
+ p(6,72,28,7,'#8a3a30');p(6,74,28,1,'#a85040');p(6,70,8,4,'#c8b898');p(16,73,2,1,'#5a2a20');p(26,76,2,1,'#5a2a20');p(30,72,4,7,'#6a2a22'); // a dirty bedroll and pillow
+ p(42,70,10,8,'#7a5228');p(42,70,10,1,'#9a6a40');p(46,74,2,1,'#5a3a20');p(45,61,6,9,'#3a3a40');p(46,63,4,5,'#f2c060');p(47,60,2,1,'#3a3a40'); // a lantern on a crate
+ p(36,84,6,2,'#e8e4d0');p(35,83,2,2,'#e8e4d0');p(41,85,2,2,'#e8e4d0');p(56,82,2,3,'#c8b060');p(56,81,2,1,'#6a4a2a'); // a gnawed bone, an apple core
+ p(20,86,8,1,'#c8c8d0');[21,23,25].forEach(x=>p(x,84,1,5,'#c8c8d0'));p(28,85,2,3,'#c8c8d0'); // a fish skeleton
+ p(64,72,28,10,'#5a5048');p(68,69,20,4,'#5a5048');p(66,68,4,3,'#3a2a1a');p(76,64,1,6,'#a8a8b4');p(75,63,3,1,'#a8a8b4');p(82,69,4,3,'#c87a3a');p(70,72,6,2,'#3a6aa8');p(86,74,3,3,'#8a8a96');p(72,66,3,3,'#a83a3a'); // the junk pile
+ return R}
+// The Goblin's coin stash, piling up beside his junk (n coins; drawn up to 48)
+function drawHoard(c,bx,by,n){const m=Math.min(Math.floor(n),48);for(let i=0;i<m;i++){const row=Math.floor(i/8),col=i%8,x=bx+56+col*3+(row%2)+row,y=by+90-row*2;if(col>=8-row)continue;
+ c.fillStyle=O;c.fillRect(x-1,y-1,4,3);c.fillStyle=i%3?'#f2c84a':'#d8a830';c.fillRect(x,y,2,1)}}
+// The Goblin's lantern flickers
+function drawGoblinLife(c,bx,by,t){const f=Math.floor(t*8)%3;c.fillStyle='rgba(255,200,90,'+(.07+f*.02)+')';c.beginPath();c.arc(bx+48,by+64,16+f,0,Math.PI*2);c.fill()}
+// A dagger spinning in the Goblin's hand
+function drawSpinDagger(c,x,y,t){c.save();c.translate(Math.round(x),Math.round(y));c.rotate(Math.floor(t*10)*Math.PI/4);c.fillStyle=O;c.fillRect(-2,-7,4,11);c.fillStyle='#d0d4e0';c.fillRect(-1,-6,2,6);c.fillStyle='#5a3a20';c.fillRect(-1,0,2,3);c.restore()}
