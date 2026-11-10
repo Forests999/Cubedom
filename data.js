@@ -1195,15 +1195,15 @@ QUESTS.push({id:'oldfriend',name:'An Old Friend',text:'Discover everything on th
 
 // ---------- the Goblin (Monstrous): a little green thief in a cave camp. Unlocked by the quest The Rumors are True. ----------
 // Smaller than everyone (GOBLIN_SCALE). Neighbors visit him far less (GOBLIN_SHY: his share when they pick whom to visit). He always visits for his scenes (GOBLIN_VISITS).
-// His cave stash grows by 1 coin every GOBLIN_HOARD_EVERY seconds (u.hoard, saved); when he dies, you get it all.
+// His cave stash grows by 1 coin every GOBLIN_HOARD_EVERY seconds (3 minutes) (u.hoard, saved); when he dies, you get it all.
 const GBC={body:'#6a5a3a',bodyD:'#52462c',pants:'#4a4030',boot:'#3a2a1a',belt:'#3a2a1a',skin:'#6aaa3a',skinD:'#4e8a2a'};
 const goblinP=[...B(GBC),[2,5,3,2,GBC.skin],[1,4,1,2,GBC.skin],[11,5,3,2,GBC.skinD],[14,4,1,2,GBC.skinD], // big pointy ears
  [4,2,8,1,'#5a4a30'],[5,1,6,1,'#5a4a30'],[4,10,1,6,'#5a4a30'],[11,10,1,5,'#3a3020'],[6,12,1,1,'#3a3020'],[9,13,1,1,'#3a3020']]; // a ragged hood and a patched tunic
 CH.goblin={name:'Goblin',eye:'#f2d040',a:arms(GBC),p:goblinP};
 CH.goblin_helm=Object.assign({},CH.goblin,{p:[...goblinP,[4,1,4,2,'#a8acb8'],[8,0,4,2,'#a8acb8'],[4,1,4,1,'#d0d4e0'],[8,0,4,1,'#d0d4e0'],[11,2,2,1,'#8a8e98']]}); // a Knight's helmet, sitting crooked
 CLASS.goblin='monstrous';TR.goblin={up:'fade',down:'fade'};ALL_CHARS.push('goblin');NAMES.goblin='Goblin';
-SHELF_CLUE.goblin='Little green thieves, they say. Surely just a rumor... if you hear it enough times?';
-const GOBLIN_SCALE=.78,GOBLIN_SHY=.25,GOBLIN_HOARD_EVERY=60,GOBLIN_NAP=10;
+SHELF_CLUE.goblin="You've been warning about the goblins coming.";
+const GOBLIN_SCALE=.78,GOBLIN_SHY=.25,GOBLIN_HOARD_EVERY=180,GOBLIN_NAP=10;
 IDLES.goblin=[['grummage','c'],['gdagger','c'],['gnap','c'],['gsteal','r','nbr']];
 // his scenes with each neighbor (any side; the Goblin always visits)
 VISIT_ANY.push(['goblin','alchemist','galch','c'],['goblin','apothecary','gherbs','c'],['goblin','apothecary','gherbcoin','r'],['goblin','bard','ginst','c'],['goblin','blacksmith','gsword','c'],
@@ -1221,7 +1221,7 @@ Object.assign(TITLES,{grummage:'One Goblin\'s Trash',gdagger:'Stabby Spin',gnap:
  gpriest:'Hiss!',gbite:'Ankle Biter',gtrinket:'Return to Sender'});
 Object.assign(DESC,{grummage:'The Goblin rummages through his pile of stolen goods and trash.',gdagger:'The Goblin plays with his dagger, spinning it around in his hand.',
  gnap:'The Goblin curls up in his dirty bedroll for a 10 second nap.',gsteal:'The Goblin sneaks into a neighbor\'s room and steals something (+2 coins to his stash).',
- ghoard:'The Goblin\'s cave stash grows by 1 coin every minute. When he dies, you get every coin in it.',
+ ghoard:'The Goblin\'s cave stash grows by 1 coin every 3 minutes (the count is in the corner of his room). When he dies, you get every coin in it.',
  galch:'The Goblin and the Alchemist, any side. The Goblin runs around the lab smashing potions while the Alchemist tries to shoo him out.',
  gherbs:'The Goblin and the Apothecary, any side. While she is out picking herbs, the Goblin sneaks in and steals some.',
  gherbcoin:'The Goblin and the Apothecary, any side, rare. While she is out, the Goblin finds 5 coins and adds them to his stash.',
@@ -1260,3 +1260,5 @@ DESC.bresonance='Passive, for each tag the Bard has: neighbors\' chances of dyin
 FLAVOR.bresonance='The more the elf has lived, the richer the music. The neighbors feel it too.';HINTS.bresonance='A Bard who has picked up a tag or two plays with real power.';
 // Deadly events (a death in the roll itself): the Bard's Resonance makes them less likely for neighbors
 const DEADLY={demon:1,murder:1,assassin:1,drain:1,gknightdie:1,gmob:1};
+// Passive abilities: shown in their own group at the top of a character's Compendium tab (not under Items and shops)
+const PASSIVES=['ghoard','bresonance'];

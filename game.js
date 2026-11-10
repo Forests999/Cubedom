@@ -82,7 +82,7 @@ function relocate(id,r,c){
  const cells=[[u.r,u.c],[r,c]];u.r=r;u.c=c;toHome(u);clearRooms(cells,[u,oid&&U[oid]].filter(Boolean));checkUnlocks();
 }
 // (the Monarch leaving the board ends every grudge: no more revenge)
-function removeUnit(id,quiet){const u=U[id];if(id==='monarch')Object.values(U).forEach(v=>{v.grudge=false});detach(u);clearRooms([[u.r,u.c]],[u]);for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===id)demons.splice(i,1);if(!quiet)poof(u.c*CELL+48,u.r*CELL+48);dropBub(u);u.lb.remove();delete U[id];ui()}
+function removeUnit(id,quiet){const u=U[id];if(id==='monarch')Object.values(U).forEach(v=>{v.grudge=false});detach(u);clearRooms([[u.r,u.c]],[u]);for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===id)demons.splice(i,1);if(!quiet)poof(u.c*CELL+48,u.r*CELL+48);dropBub(u);u.lb.remove();if(u.hoardEl)u.hoardEl.remove();delete U[id];ui()}
 function poof(x,y,c){parts.push({x,y,t:0,life:.5,c:c||'#eadcb4'})}
 function hearts(u){parts.push({x:u.x,y:u.y-44,t:0,life:1.3,k:'h'})}
 // Speech bubbles: each character has their own, so several conversations can show at the same time
@@ -132,7 +132,7 @@ function kill(v){
  if(v.id==='monarch'){royalFuneral(v);return}
  // the Traveling Merchant goes back to the shelf when he dies (not on the road)
  if(v.id==='traveler'){S.travelRoam=false;setTimeout(buildShelf,0)}
- dropBub(v);v.lb.remove();delete U[v.id];
+ dropBub(v);v.lb.remove();if(v.hoardEl)v.hoardEl.remove();delete U[v.id];
  // a fallen Priest may unlock the Necromancer (once)
  if(v.id==='priest'&&!S.un.necromancer&&Math.random()<ODDS.necro){S.un.necromancer=true;buildShelf();toast('Something dark stirs... a Necromancer box has appeared on the shelf.')}
  ui();save();
@@ -311,6 +311,8 @@ function showBorder(){$('#wrap').classList.toggle('golden',!!S.goldBorder)}
 let econT=0,econClock=0;
 function stepEcon(dt){if(econT<=0)return;econT-=dt;if((econClock+=dt)>=LIB_ECON_EVERY){econClock=0;const L=U.library;addCoins(1,L?L.c*CELL+48:null,L?L.r*CELL+40:null)}}
 // The Goblin's stash grows (1 coin a minute); the Bard's Resonance: passers-by toss 1 coin a minute for each of the Bard's tags
+// The Goblin's stash count, in the bottom-right corner of his room (HTML, so it stays sharp)
+function showHoard(u,hide){let e=u.hoardEl;if(!e){e=u.hoardEl=document.createElement('div');e.className='lb hoardlb';$('#labels').append(e)} const n=String(Math.floor(u.hoard||0));if(e.dataset.n!==n){e.dataset.n=n;e.innerHTML='<img class="tag" alt="coins" src="'+iconURL('coin')+'"> '+n} e.style.left=((u.c+1)*CELL-5)/W*100+'%';e.style.top=((u.r+1)*CELL-5)/H*100+'%';e.style.opacity=hide||u.dead?0:1}
 function stepGoblinBard(dt){const G=U.goblin,Bd=U.bard;
  if(G&&!G.dead&&(G.hoardT=(G.hoardT||0)+dt)>=GOBLIN_HOARD_EVERY){G.hoardT=0;G.hoard=(G.hoard||0)+1;save()}
  if(Bd&&!Bd.dead&&Bd.st!=='away'&&(Bd.resT=(Bd.resT||0)+dt)>=RES_COIN_EVERY){Bd.resT=0;const n=classesOf(Bd).length;if(n){addCoins(n,Bd.x,Bd.y-50);markSeen('bresonance')}}}
@@ -1920,7 +1922,7 @@ function render(){
   if(isFarm(id)&&id!==dm)drawField(g,x,y,u.crop||'wheat',u.harvested?.05:cl(1-u.farmT/FARM_TIME,0,1),T); // the growing field
   if(id==='merchant'&&u.goldT>0&&id!==dm&&!(u.rotT>0))drawGold(g,x,y,T); // golden apples
   if(id==='rogue'&&id!==dm&&graveyardOn(u))drawGraveyard(g,x,y,T); // secret: next to the Necromancer on the bottom row
-  if(id==='goblin'&&id!==dm)drawHoard(g,x,y,u.hoard||0); // the Goblin's coin pile grows in his cave
+  if(id==='goblin'){if(id!==dm)drawHoard(g,x,y,u.hoard||0);showHoard(u,id===dm)} // the Goblin's coin pile grows in his cave; the count in the corner
   if(id!==dm)drawRoomLife(g,id,x,y,T)} // candle flames, clouds
  unicorns.forEach(q=>{if(!isOpen(q.r,q.c))return;const bx=q.c*CELL,by=q.r*CELL,p=q.t/UNICORN_TIME,ux=q.face>0?bx+8+p*80:bx+88-p*80;g.save();g.beginPath();g.rect(bx+2,by+2,CELL-4,CELL-4);g.clip();drawUnicorn(g,ux,by+FY-14,q.face,cl(q.t/.6,0,1)*cl((UNICORN_TIME-q.t)/.6,0,1),q.t);g.restore()}); // a unicorn passing through a room's background (behind its characters)
  (S.goldCells||[]).forEach(q=>{if(isOpen(q[0],q[1]))drawGoldCell(g,q[1]*CELL,q[0]*CELL,T)}); // philosopher's stones: golden spaces
@@ -2572,7 +2574,7 @@ function idleTile(kind,wp){
    if(kind==='gsteal'){box(x,'knight',0,0,'longsword');spr(x,'knight','ok',66,FY,1,0);gs('happy',30,1,'fwd');if(tt>1)drawItem(x,'coin',38,FY-22,1)}
    else{box(x,'goblin',0,0);if(kind==='ghoard')drawHoard(x,0,0,40);
     if(kind==='gnap'){spr(x,'goblin','sleep',22,FY-4,1,0,1,GOBLIN_SCALE);drawZ(x,32,FY-36-Math.round((t*6)%6),1)}
-    else if(kind==='gdagger'){gs('happy',40,1,'fwd');drawSpinDagger(x,48,FY-20,t)}
+    else if(kind==='gdagger'){gs('happy',40,1,'fwd');drawSpinDagger(x,51,FY-19,t)}
     else if(kind==='grummage'){gs(tt>2?'happy':'ok',62,1,'fwd');if(tt>1&&tt<2)poofTile(x,74,66,tt-1,'#a8a8b4')}
     else gs('happy',40,1,'both')}}
   else if(kind.startsWith('g')&&GOBLIN_WITH[kind]){const id=GOBLIN_WITH[kind],tt=t%4,gs=(m,gx,f,p,dy)=>spr(x,kind==='gmob'?'goblin_helm':'goblin',m,gx,FY,f,dy||0,1,GOBLIN_SCALE,p);
@@ -2753,13 +2755,15 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
    d.append(tile)});return d};
  const count=keys=>keys.filter(k=>S.seen[k]).length+' / '+keys.length;
  const head=(text,keys)=>{const h=document.createElement('h2');h.className='sec';h.textContent=text+'  '+count(keys);return h};
+ // Passive abilities: their own group at the top (PASSIVES)
+ const pas=tab.items.filter(k=>PASSIVES.includes(k)&&!EGGS.includes(k));if(pas.length)b.append(head('Passive abilities',pas),grid(pas,1));
  // With neighbors: one sub-section per neighbor, in alphabetical order
  if(pairs.length)b.append(head('With neighbors',pairs));
  // (tag:mage etc. = "with a Mage": scenes that go by tag, not by character)
  const other=k=>{const w=PAIR_WITH[k]||[];return w.find(c=>c!==tab.id)||w[0]},nameOf=id=>id==='anyone'?'anyone':TAG_NAMES[id]?TAG_NAMES[id].slice(2):(COMP_TABS.find(t=>t.id===id)||{name:id}).name;
  [...new Set(pairs.map(other))].sort((a,c)=>nameOf(a).localeCompare(nameOf(c))).forEach(id=>{const keys=pairs.filter(k=>other(k)===id),h=document.createElement('h3');
   h.className='sub';h.innerHTML='with '+(id==='anyone'?'anyone':TAG_NAMES[id]?TAG_NAMES[id]+tagOf(id.slice(4)):'the '+nameOf(id)+tagImg(id))+' <small>'+count(keys)+'</small>';b.append(h,grid(keys))});
- const items=tab.items.filter(k=>!EGGS.includes(k)),eggs=tab.items.filter(k=>EGGS.includes(k));
+ const items=tab.items.filter(k=>!EGGS.includes(k)&&!PASSIVES.includes(k)),eggs=tab.items.filter(k=>EGGS.includes(k));
  if(tab.idle.length)b.append(head(tab.id==='group'?'Events':'Idle activities',tab.idle),grid(tab.idle));if(items.length)b.append(head('Items and shops',items),grid(items,1)); // (empty groups are left out)
  // Secrets: their own group at the bottom; hidden until found but counted
  if(eggs.length){b.append(head('Secrets',eggs));if(eggs.some(k=>S.seen[k]||S.revealed[k]))b.append(grid(eggs,1));

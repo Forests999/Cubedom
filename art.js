@@ -166,6 +166,7 @@ function poseOf(act,at){
  if(act==='wares')return at>1.2&&at<3.2?'fwd':'none';
  if(act==='wcast'||act==='ascend')return 'both';
  if(act==='bplay'||act==='bspell')return 'both'; // the Bard holds the instrument
+ if(act==='gdagger')return 'fwd'; // the Goblin holds his dagger out, spinning it
  if(act==='court')return at>1.6&&at<3.4?'up':'none';
  if(act==='magic')return Math.floor(at*3)%2?'up':'fwd';
  if(act==='sprinkle')return Math.floor(at*4)%2?'up':'fwd';     // shaking holy water
@@ -400,7 +401,7 @@ function drawAct(c,u){
  // the Bard: an instrument while playing; pink fae magic while humming; butterflies with a spell of song
  else if(a==='bplay'||a==='bspell'){drawInstrument(c,u.inst||'lute',x+f*7,y-22,f,t);if(a==='bspell'){swirl(c,x,y,t,5,1);drawButterflies(c,x,y,t)}}
  else if(a==='bhum'){swirl(c,x,y,t,5,.6)}
- else if(a==='gdagger'){drawSpinDagger(c,x+f*8,y-26,t)} // the Goblin spins his dagger
+ else if(a==='gdagger'){drawSpinDagger(c,x+f*11,y-19,t)} // the Goblin spins his dagger in his outstretched hand (his hand, at his small size)
  // Blacksmith: smelting in the furnace (tongs with glowing armor or a sword), shoveling coal, pouring a mold, lead turning to gold
  else if(a==='smelt'&&t>=1){const hx=Math.round(x+f*12),ex=Math.round(x+f*24),hot=cl((t-1.5)/2.5,0,1),col='rgb('+Math.round(120+135*hot)+','+Math.round(120+20*hot)+','+Math.round(130-100*hot)+')';
   stick(c,hx,Math.round(y-22),ex,Math.round(y-30),'#5a5a64');c.fillStyle=O;if(u.smeltWhat==='sword'){c.fillRect(ex-1,y-31,f*14+(f>0?2:-2),4);c.fillStyle=col;c.fillRect(f>0?ex:ex+f*14,y-30,14,2)}else{c.fillRect(ex+(f>0?0:-11),y-36,11,10);c.fillStyle=col;c.fillRect(ex+(f>0?1:-10),y-35,9,8)}}
