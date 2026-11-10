@@ -47,6 +47,8 @@ function bg(id,w){
   [6,25,3,3,'#f4ece0'],[16,27,3,2,'#f4ece0'],[44,20,4,3,'#f4ece0'],[58,23,3,3,'#f4ece0'],[78,27,3,3,'#f4ece0'],[88,29,3,2,'#f4ece0'],
   [24,60,2,6,'#e0d8c4'],[21,57,8,3,'#c04a6a'],[36,62,2,4,'#e0d8c4'],[34,60,6,2,'#9a60d0'],[66,62,2,4,'#e0d8c4'],[64,60,6,2,'#e07a40'],[16,76,2,4,'#e0d8c4'],[14,74,6,2,'#c04a6a'],[44,84,2,4,'#e0d8c4'],[42,82,6,2,'#7ae0c0'],[76,80,2,4,'#e0d8c4'],[74,78,6,2,'#9a60d0']];
  // Traveling Merchant: a dirt road through the meadow, a tree, flowers, a covered wagon with a mule, and a stand covered in striped cloth for the wares
+ if(id==='bard')return bardRects(); // the Bard's peaceful wood
+ if(id==='library')return libraryRects(); // the Library (a structure)
  if(id==='tree')return treeRects(); // the Druid's Massive Tree (a structure)
  if(id==='well')return wellRects(); // the Well (a structure: nobody lives here)
  if(id==='tavern')return tavernRects(); // the Tavern (a structure)
@@ -161,6 +163,7 @@ function poseOf(act,at){
  if(act==='prisoners')return at>2.4&&at<4.6?'both':'none';
  if(act==='wares')return at>1.2&&at<3.2?'fwd':'none';
  if(act==='wcast'||act==='ascend')return 'both';
+ if(act==='bplay'||act==='bspell')return 'both'; // the Bard holds the instrument
  if(act==='court')return at>1.6&&at<3.4?'up':'none';
  if(act==='magic')return Math.floor(at*3)%2?'up':'fwd';
  if(act==='sprinkle')return Math.floor(at*4)%2?'up':'fwd';     // shaking holy water
@@ -392,6 +395,9 @@ function drawAct(c,u){
  else if(a==='spirit'){const k=cl((t-.6)/.8,0,1)*cl((6-t)/.8,0,1);swirl(c,x,y,t,3,1);if(k>0){c.save();c.globalAlpha=.6*k;spr(c,'ghost','happy',x+f*24,y-10+Math.sin(t*2)*3,-f,0,1,1);c.fillStyle='rgba(120,255,140,.3)';c.fillRect(x+f*24-10,y-46,20,40);c.restore()}}
  else if(a==='stash'){if(t<1.4)drawItem(c,'potion',Math.round(x+f*9),Math.round(y-38+cl((t-.8)/.6,0,1)*24),1);c.fillStyle=O;c.fillRect(Math.round(x+f*8)-4,Math.round(y-16),9,8);c.fillStyle='#8a5a2a';c.fillRect(Math.round(x+f*8)-3,Math.round(y-15),7,6)}
  else if(a==='storm'){swirl(c,x,y,t,4,1)}
+ // the Bard: an instrument while playing; pink fae magic while humming; butterflies with a spell of song
+ else if(a==='bplay'||a==='bspell'){drawInstrument(c,u.inst||'lute',x+f*7,y-22,f,t);if(a==='bspell'){swirl(c,x,y,t,5,1);drawButterflies(c,x,y,t)}}
+ else if(a==='bhum'){swirl(c,x,y,t,5,.6)}
  // Blacksmith: smelting in the furnace (tongs with glowing armor or a sword), shoveling coal, pouring a mold, lead turning to gold
  else if(a==='smelt'&&t>=1){const hx=Math.round(x+f*12),ex=Math.round(x+f*24),hot=cl((t-1.5)/2.5,0,1),col='rgb('+Math.round(120+135*hot)+','+Math.round(120+20*hot)+','+Math.round(130-100*hot)+')';
   stick(c,hx,Math.round(y-22),ex,Math.round(y-30),'#5a5a64');c.fillStyle=O;if(u.smeltWhat==='sword'){c.fillRect(ex-1,y-31,f*14+(f>0?2:-2),4);c.fillStyle=col;c.fillRect(f>0?ex:ex+f*14,y-30,14,2)}else{c.fillRect(ex+(f>0?0:-11),y-36,11,10);c.fillStyle=col;c.fillRect(ex+(f>0?1:-10),y-35,9,8)}}
@@ -456,6 +462,7 @@ function drawGold(c,bx,by,t){c.fillStyle='#f2c84a';[[11,42,4,4],[16,41,4,4],[21,
  if(Math.floor(t*3)%2){c.fillStyle='#fffbe0';c.fillRect(bx+10+Math.floor(t*3)%14,by+36,2,2)}}
 // Little bits of life in the rooms: flickering candle flames, a cloud drifting past the Apothecary's window
 function drawRoomLife(c,id,bx,by,t){const fl=(k)=>Math.floor(t*8+k)%3;
+ if(id==='bard')drawBardLife(c,bx,by,t); // birds over the Bard's wood
  if(id==='knight'){const h=3+fl(1);c.fillStyle='#f08a20';c.fillRect(bx+88,by+34-h,3,h);c.fillStyle='#ffd040';c.fillRect(bx+89,by+35-h,1,h-1)} // the torch flame
  if(id==='wizard'){[[13,22],[41,22]].forEach((q,i)=>{const h=1+fl(i*2);c.fillStyle='#ffd060';c.fillRect(bx+q[0],by+q[1]-h,1,h)})} // candle flames on the bookshelf
  if(id==='tavern')drawTavernLife(c,bx,by,t); // the barkeep and a patron now and then
@@ -508,6 +515,7 @@ function drawItem(c,kind,x,y,s){
   :kind==='artifact'?[[-2,-6,4,1,'#f2c84a'],[-3,-5,6,2,'#f2c84a'],[-4,-3,8,6,'#d8a030'],[-2,-2,4,4,'#7ae0ff'],[-1,-1,1,1,'#ffffff'],[-1,3,2,2,'#d8a030'],[-3,5,6,1,'#f2c84a']]
   :kind==='banana'?[[-4,-1,2,3,'#f2d040'],[-3,1,6,2,'#f2d040'],[2,-2,2,3,'#f2d040'],[3,-3,1,1,'#6a4420'],[-2,2,4,1,'#c8a020']]
   :kind==='starfruit'?[[-1,-4,2,8,'#f8d840'],[-4,-1,8,2,'#f8d840'],[-2,-2,4,4,'#ffe868'],[-3,2,2,2,'#f8d840'],[1,2,2,2,'#f8d840']]
+  :kind==='dragonfruit'?[[-3,-3,6,7,'#e83a8a'],[-4,-1,1,3,'#e83a8a'],[3,-1,1,3,'#e83a8a'],[-2,-5,1,2,'#6aba4a'],[1,-5,1,2,'#6aba4a'],[-4,-2,1,1,'#6aba4a'],[3,1,1,1,'#6aba4a'],[-1,0,1,1,'#ff9ac8']]
   :kind==='durian'?[[-3,-3,6,6,'#8a9a3a'],[-4,-1,1,2,'#6a7a2a'],[3,-1,1,2,'#6a7a2a'],[-1,-4,2,1,'#6a7a2a'],[-1,3,2,1,'#6a7a2a'],[-2,-2,1,1,'#aaba5a'],[1,0,1,1,'#aaba5a']]
   :kind==='bloodorange'?[[-3,-2,6,5,'#f06a20'],[-2,-3,4,1,'#f06a20'],[-1,-1,3,3,'#a01828'],[0,-4,1,1,'#4a9a3a'],[-2,-1,1,1,'#ffc080']]
   :kind==='bone'?[[-5,-1,10,2,'#e8e4d0'],[-6,-2,2,2,'#e8e4d0'],[-6,0,2,2,'#e8e4d0'],[4,-2,2,2,'#e8e4d0'],[4,0,2,2,'#e8e4d0']]
@@ -1013,3 +1021,47 @@ function drawFertile(c,bx,by,t,a){if(a<=0)return;c.save();c.globalAlpha=a;c.fill
 function drawBasket(c,x,y,n){const F=[[-4,-2],[-1,-2],[2,-2],[-3,-4],[0,-4],[3,-4],[-1,-6],[1,-8]].slice(0,Math.min(n,8));
  c.fillStyle=O;c.fillRect(x-6,y-1,13,7);F.forEach(f=>c.fillRect(x+f[0]-1,y+f[1]-1,4,4));
  c.fillStyle='#a87838';c.fillRect(x-5,y,11,5);c.fillStyle='#7a5228';c.fillRect(x-5,y+2,11,1);F.forEach((f,i)=>{c.fillStyle=i%3?'#d83030':'#f08a20';c.fillRect(x+f[0],y+f[1],2,2)})}
+
+// ---------- the Bard: a peaceful wood (outdoor), birds now and then, instruments, butterflies ----------
+WALL.bard=['#9ac8e8','#5a9a4a'];OUTDOOR.bard={sky:['#6aaad8','#d8eef4']};SWIRL.push(['#ff7ad0','#ffd0f0','#c850a0']); // SWIRL[5]: pink fae magic
+function bardRects(){const R=[],p=(x,y,w,h,c)=>R.push([x,y,w,h,c]);
+ p(0,62,96,34,'#5a9a3a');p(0,62,96,2,'#7ab858');p(10,80,16,3,'#4e8a32');p(60,88,22,3,'#4e8a32'); // soft grass
+ p(36,30,5,34,'#5a4030');p(52,34,4,30,'#5a4030');p(30,22,18,12,'#3a7a3a');p(46,26,16,12,'#3a7a3a');p(32,22,10,3,'#4a8a4a'); // small trees far back
+ p(78,8,9,58,'#6a4a2a');p(80,8,2,58,'#8a6a3a');p(64,0,32,20,'#2f7a2a');p(70,2,20,6,'#4a9a3a');p(74,16,22,4,'#22601e'); // a big tree on the right
+ p(8,30,7,36,'#6a4a2a');p(9,30,2,36,'#8a6a3a');p(0,22,26,12,'#2f7a2a');p(4,24,14,4,'#4a9a3a'); // a tree on the left (the top-left stays clear for the name label)
+ p(26,72,26,6,'#7a5a3a');p(26,72,26,1,'#6aba4a');p(28,74,2,2,'#5a3a20');p(48,73,2,2,'#5a3a20'); // a mossy log
+ p(62,74,1,4,'#e8e0c8');p(60,72,5,2,'#d83030');p(61,72,1,1,'#ffffff');p(68,76,1,3,'#e8e0c8');p(67,75,3,1,'#d83030'); // mushrooms
+ [[6,70,'#f080c0'],[18,84,'#f2e060'],[44,86,'#c890ff'],[86,78,'#f080c0'],[56,82,'#f2e060'],[90,90,'#c890ff']].forEach(q=>{p(q[0],q[1],2,2,q[2]);p(q[0],q[1]+2,1,2,'#3a8a3a')}); // wildflowers
+ return R}
+// Birds fly across the top of the wood now and then (about every 9 s)
+function drawBardLife(c,bx,by,t){const ph=(t+((bx*7+by*3)%9))%9;if(ph>=3)return;c.save();c.beginPath();c.rect(bx+2,by+2,CELL-4,CELL-4);c.clip();
+ drawBird(c,bx-6+ph/3*108,by+14+Math.sin(ph*4)*3,t,1);if(ph>.6)drawBird(c,bx-16+(ph-.6)/3*108,by+20+Math.sin(ph*4+1)*3,t+.2,.8);c.restore()}
+// The Bard's instrument, held in front (x,y = where the hands are; f = facing)
+const INST_ART={lute:[[-4,-2,7,6,'#b07a3a'],[-3,-3,5,1,'#b07a3a'],[-3,4,5,1,'#b07a3a'],[-1,0,2,2,'#3a2410'],[3,-3,4,2,'#7a5228'],[6,-5,3,2,'#7a5228'],[8,-7,2,3,'#5a3a20']],
+ harp:[[-4,-12,2,13,'#d8b040'],[-4,-13,10,2,'#d8b040'],[5,-12,2,13,'#8a5a2a'],[-4,0,11,2,'#8a5a2a'],[-1,-11,1,11,'#f4f0e0'],[1,-11,1,11,'#f4f0e0'],[3,-11,1,11,'#f4f0e0']],
+ banjo:[[-4,-3,8,8,'#e8e0c8'],[-5,-2,1,6,'#8a6a3a'],[4,-2,1,6,'#8a6a3a'],[-3,-4,6,1,'#8a6a3a'],[-3,5,6,1,'#8a6a3a'],[4,-3,6,2,'#7a5228'],[9,-5,3,2,'#7a5228'],[11,-7,2,3,'#5a3a20']],
+ bagpipes:[[-4,-3,8,6,'#b03040'],[-4,-1,8,1,'#2a6a3a'],[-1,-3,1,6,'#2a6a3a'],[-3,-12,1,9,'#3a2a1a'],[0,-14,1,11,'#3a2a1a'],[3,-11,1,8,'#3a2a1a'],[-3,-13,1,1,'#e8e0c8'],[0,-15,1,1,'#e8e0c8'],[3,-12,1,1,'#e8e0c8'],[2,3,1,6,'#3a2a1a']],
+ triangle:[[-4,4,9,1,'#c8ccd8'],[-4,2,1,2,'#c8ccd8'],[-3,0,1,2,'#c8ccd8'],[-2,-2,1,2,'#c8ccd8'],[-1,-4,1,2,'#c8ccd8'],[0,-5,1,1,'#c8ccd8'],[1,-4,1,2,'#c8ccd8'],[2,-2,1,2,'#c8ccd8'],[3,0,1,2,'#c8ccd8'],[4,2,1,2,'#c8ccd8']]};
+function drawInstrument(c,k,x,y,f,t){const R=INST_ART[k]||INST_ART.lute;c.save();c.translate(Math.round(x),Math.round(y+(Math.floor(t*4)%2)));c.scale(f,1);
+ c.fillStyle=O;R.forEach(r=>c.fillRect(r[0]-1,r[1]-1,r[2]+2,r[3]+2));R.forEach(r=>{c.fillStyle=r[4];c.fillRect(r[0],r[1],r[2],r[3])});
+ if(k==='triangle'){const b=Math.floor(t*6)%2;c.fillStyle='#8a8a96';c.fillRect(5,-6+b*2,1,6)}c.restore()}
+// Butterflies fluttering around (the Bard's spell of song)
+function drawButterflies(c,x,y,t){const C=['#ff7ad0','#f2e060','#9ad8ff','#c890ff','#ff9a6a'];for(let i=0;i<5;i++){const a=t*1.4+i*1.26,bx=Math.round(x+Math.cos(a)*22),by=Math.round(y-40+Math.sin(a*1.3+i)*14),w=Math.floor(t*10+i)%2;
+ c.fillStyle=O;c.fillRect(bx-1,by-1,3,4);c.fillStyle=C[i];if(w){c.fillRect(bx-3,by-1,3,2);c.fillRect(bx+1,by-1,3,2)}else{c.fillRect(bx-2,by-2,2,3);c.fillRect(bx+1,by-2,2,3)}c.fillStyle='#2a2a3a';c.fillRect(bx,by,1,2)}}
+// ---------- the Library (a structure): tall bookshelves, a ladder, a reading table with a candle, the back door on the left ----------
+WALL.library=['#4a4258','#3a3448'];ROOM_STYLE.library={wall:'stone',floor:'plank'};
+DOOR_STYLE.library={wood:'#5a3a24',dark:'#3a2414',band:'#3a3a40',rivet:'#8a8a96',knob:'#f2c84a',frame:'#2a1a10'};
+function libraryRects(){const R=[...backDoor('library',1)],p=(x,y,w,h,c)=>R.push([x,y,w,h,c]),BK=['#a83a3a','#3a6aa8','#3a8a4a','#c8a040','#7a4a9a','#d87a3a','#5a5a6a'];
+ p(34,12,60,52,'#4a2e18');p(34,12,60,2,'#6a4426'); // the bookshelf
+ for(let s=0;s<4;s++){const y=15+s*12;p(36,y+9,56,2,'#6a4426');for(let x=37,i=0;x<90;i++){const w=2+((s*5+i*3)%3),h=6+((s+i*2)%3);p(x,y+9-h,w,h,BK[(s*3+i)%BK.length]);p(x,y+9-h,w,1,'#ffffff30');x+=w+((i%5)?0:1)}}
+ p(32,14,2,52,'#8a6a3a');p(38,14,2,52,'#8a6a3a');for(let y=20;y<64;y+=8)p(32,y,8,1,'#8a6a3a'); // a ladder
+ p(50,70,34,3,'#7a5030');p(52,73,2,10,'#5a3a20');p(80,73,2,10,'#5a3a20');p(58,67,12,3,'#f4ecd8');p(64,67,1,3,'#c8bca0'); // a reading table with an open book
+ p(76,64,3,6,'#f4ecd8');p(77,62,1,2,'#f2d070'); // a candle
+ return R}
+// The Library on fire (t = seconds since it started)
+function drawFire(c,bx,by,t){const k=cl(t/1.2,0,1);c.save();c.beginPath();c.rect(bx+2,by+2,CELL-4,CELL-4);c.clip();c.fillStyle='rgba(40,20,10,'+(.3*k)+')';c.fillRect(bx,by,CELL,CELL);
+ for(let i=0;i<10;i++){const fx=bx+6+i*9,h=Math.round((10+((i*7+Math.floor(t*10))%5)*5)*k);c.fillStyle='#d83a1a';c.fillRect(fx,by+84-h,7,h);c.fillStyle='#f08a20';c.fillRect(fx+1,by+84-h*.75,5,h*.75);c.fillStyle='#ffd040';c.fillRect(fx+2,by+84-h*.4,3,h*.4)}c.restore()}
+// An animated book flapping its covers (the Library's attack)
+function drawFlyBook(c,x,y,ph){const o=Math.floor(ph*8)%2;x=Math.round(x);y=Math.round(y);c.fillStyle=O;c.fillRect(x-5,y-3,11,o?5:7);
+ if(o){c.fillStyle='#a83a3a';c.fillRect(x-4,y-2,4,3);c.fillRect(x+1,y-2,4,3);c.fillStyle='#f4ecd8';c.fillRect(x,y-2,1,3)}else{c.fillStyle='#a83a3a';c.fillRect(x-4,y-2,9,5);c.fillStyle='#f4ecd8';c.fillRect(x-4,y+2,9,1)}
+ c.fillStyle='#ffd040';c.fillRect(x-2,y-1,1,1);c.fillRect(x+2,y-1,1,1)}

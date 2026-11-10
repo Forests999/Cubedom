@@ -134,3 +134,5 @@ h1 .ver{font-size:13px;color:#b8b0d8;text-shadow:2px 2px 0 #000;vertical-align:m
 /* four tabs fit on a phone */
 .tabs{flex-wrap:wrap;justify-content:center}
 @media (max-width:480px){.tab{padding:3px 8px;font-size:14px}.tab.gear{padding:4px}}
+/* The elven scroll's super secret: a golden border around the whole board, for good */
+#wrap.golden{border-color:#f2c84a;outline-color:#c8a030;box-shadow:0 0 16px rgba(242,200,74,.55)}

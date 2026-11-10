@@ -1121,3 +1121,74 @@ const MSG_NOTES=['A note from the Druid: "The oaks say hello."','A note! "Water 
 const HEAL_SAY=['I feel wonderful!','Huh? I feel much better.','What a lovely green light.','Thank you, Druid!'];
 const UNICORN_SAY=['Was that... a unicorn?!','Did anyone else see that?','A unicorn! Nobody will believe me.'];
 NOTE['wx:tree']='It stands for 1 minute and cannot be moved.';NOTE['wx:heal']='Only while someone is asleep or poisoned.';NOTE['wx:blessing']='Only while there is room for another Farmer.';
+
+// ---------- the Bard (no tags of its own): an elf, ancient and magical, of the fae. Unlocked by the quest An Old Friend (the Wizard's whole Compendium page) ----------
+// A man or a woman (50/50, saved in color). Instrument picked when placed (BARD_INST tiers, saved in u.inst). Room: a peaceful wood with birds now and then.
+// Tags it can gain: Merchant (the Fruit Merchant's dragon fruit, u.merchTag), Fighter (a book of martial combat in the Library, u.fightTag),
+// Mage (while BARD_MAGE_AT Compendium discoveries are found), Monstrous (after dying, 50% when it next comes back, BARD_MONSTER; u.monTag). Lost when it goes back to the shelf.
+const BDC={body:'#3a8a6a',bodyD:'#2a6a50',pants:'#5a4a30',boot:'#4a3020',belt:'#8a6a2a',skin:'#f6dcc4',skinD:'#e2c2a2'};
+const bardCH=f=>({name:'Bard',eye:'#1a6a4a',a:arms(BDC),p:[...B(BDC),
+ ...(f?[[4,1,8,2,'#f0d880'],[4,3,1,8,'#f0d880'],[11,3,1,8,'#e0c060'],[5,3,6,1,'#f0d880']]:[[5,1,6,2,'#f0d880'],[5,3,6,1,'#f0d880'],[10,3,1,2,'#e0c060']]), // long or short golden hair
+ [3,5,2,1,BDC.skin],[3,4,1,1,BDC.skin],[11,5,2,1,BDC.skinD],[12,4,1,1,BDC.skinD], // pointed elven ears
+ [7,10,2,4,'#e8e0b0'],[3,10,1,7,'#7a3a6a'],[12,10,1,7,'#5a2a4a'],[5,2,1,1,'#9ae0c0'],[10,2,1,1,'#9ae0c0']]}); // laced tunic, a short purple cape, a silver-green circlet
+CH.bard_m=bardCH(0);CH.bard_f=bardCH(1);CH.bard=CH.bard_m;TR.bard={up:'fade',down:'fade'};ALL_CHARS.push('bard');NAMES.bard='Bard';
+const BARD_INST={lute:'c',harp:'c',banjo:'u',bagpipes:'u',triangle:'r'},INST_NAMES={lute:'lute',harp:'harp',banjo:'banjo',bagpipes:'bagpipes',triangle:'triangle'};
+const BARD_MAGE_AT=200,BARD_MONSTER=.5,LIB_ECON_TIME=300,LIB_ECON_EVERY=30;
+IDLES.bard=[['bplay','c'],['bhum','c'],['bspell','r']];
+// neighbor scenes: whoever has the tag comes to the Bard (BARD_HOSTED: the Bard is always the host)
+VISIT_ANY.push(['bard','tag:mage','bwisdom','c'],['bard','tag:fighter','blisten','c'],['bard','tag:merchant','bstory','c'],['bard','tag:monstrous','bsoothe','c'],['bard','wizard','bdragon','r'],['bard','merchant','bfruit','u']);
+const BARD_HOSTED={bwisdom:1,blisten:1,bstory:1,bsoothe:1,bdragon:1,bfruit:1};
+COMP_TABS.push({id:'bard',name:'Bard',pairs:['bwisdom','blisten','bstory','bsoothe','bdragon','bfruit'],idle:['bplay','bhum','bspell'],items:[]});
+Object.assign(PAIR_WITH,{bwisdom:['bard','tag:mage'],blisten:['bard','tag:fighter'],bstory:['bard','tag:merchant'],bsoothe:['bard','tag:monstrous'],bdragon:['bard','wizard'],bfruit:['bard','merchant']});
+Object.assign(NAMES,{bplay:'Playing a tune',bhum:'Humming a magic tune',bspell:'A spell of song',bwisdom:'Seeking elven wisdom',blisten:'Listening to the music',bstory:'Tales of the road',bsoothe:'Soothed by music',bdragon:'The dragon of Mount Ember',bfruit:'A dragon fruit for the Bard'});
+Object.assign(TITLES,{bplay:'A Merry Tune',bhum:'Humming Magic',bspell:'Song of the Fae',bwisdom:'Elven Wisdom',blisten:'Music Most Fair',bstory:'Tales of the Road',bsoothe:'Music Soothes the Beast',bdragon:'Old Friends, Old Dragon',bfruit:'Dragon Fruit'});
+Object.assign(DESC,{bplay:'The Bard plays their instrument. Notes float through the woods.',bhum:'The Bard hums an old elven tune, and soft magic swirls around them.',
+ bspell:'The Bard casts a spell with their instrument: butterflies appear and pink magic swirls through the room.',
+ bwisdom:'A Mage next to the Bard comes to learn elven magic. The Bard shows it gladly, but no mortal can learn it.',
+ blisten:'A Fighter next to the Bard sits down and listens, awed by the magical music.',bstory:'A Merchant next to the Bard asks about their travels, and the elf tells one of three short stories.',
+ bsoothe:'Something Monstrous next to the Bard storms in, hostile. The music calms it: it goes home and sleeps for 1 minute.',
+ bdragon:'The Wizard next to the Bard (any side), a rare visit. They remember a legendary fight against a dragon and how they barely escaped.',
+ bfruit:'The Fruit Merchant next to the Bard gives them a dragon fruit. The Bard gains the Merchant tag (until it goes back to the shelf).'});
+Object.assign(FLAVOR,{bplay:'A bright tune drifts between the trees. Even the birds stop to listen.',bhum:'An old, old tune, and the air begins to shimmer.',
+ bspell:'One chord, and the air fills with butterflies and pink magic.',bwisdom:'"Teach me!" The elf shows them. The spell will not come. Elven magic is older than words.',
+ blisten:'They sit, they listen, and for once they forget about swords.',bstory:'"Tell me of the road!" The elf smiles and begins a tale.',
+ bsoothe:'It came in snarling. It leaves yawning.',bdragon:'"Remember Mount Ember?" "How could I forget? Your beard caught fire."',
+ bfruit:'A dragon fruit, bright pink and very rare. "For your travels, friend!"'});
+Object.assign(HINTS,{bplay:'An elf with an instrument rarely sits in silence.',bhum:'Elves hum, and the air listens.',bspell:'Sometimes the music itself becomes a spell.',
+ bwisdom:'Magic folk next door will want to learn the elf\'s secrets.',blisten:'Warriors next door have soft hearts for good music.',bstory:'Traders next door love a good travel story.',
+ bsoothe:'Even a monster next door can be calmed by a song.',bdragon:'Two old friends who once faced a dragon together.',bfruit:'A fruit seller next door might share something exotic.'});
+NOTE.bsoothe='It goes home and sleeps for 1 minute.';NOTE.bfruit='The Bard gains the Merchant tag.';
+const BARD_STORIES=[['I once crossed a desert of glass. Every step sang a different note.','I wrote a song with the desert. It was very crunchy.'],
+ ['In the north, I played for a giant who could not sleep.','He snores now. The mountains shake every night. You are welcome.'],
+ ['I traded a song to a river spirit for safe passage.','She still hums it. Listen to any river, you will hear it.']];
+const BARD_DRAGON=[['wizard','Remember the red dragon of Mount Ember?'],['bard','How could I forget? Your beard caught fire.'],['wizard','We barely made it out alive!'],['bard','I still have scorch marks on my instrument.']];
+const BARD_SOOTHE=['Grrr! RAAAH!','...grr?','So... sleepy...'];
+// the Bard at the Tavern: if the Traveling Merchant left the elven scroll there (S.elvenScroll), the elf collects it: super secret, a golden border around the board for good (S.goldBorder)
+COMP_TABS.find(t=>t.id==='super').items.push('ss:elven');EGGS.push('ss:elven');
+NAMES['ss:elven']='Super secret: the elven scroll returns';TITLES['ss:elven']='The Right Adventurer';
+DESC['ss:elven']='Super secret: a Bard next to the Tavern, after the Traveling Merchant left the elven scroll there, collects it and thanks the barkeep. The whole board gets a golden border for good.';
+FLAVOR['ss:elven']='"I believe you have been keeping something for me." The scroll goes home at last, and the land shines gold.';
+SHELF_CLUE.bard='An old friend remembers every page of their story.';
+// ---------- the Library (a structure). Unlocked by finding a super secret. ----------
+CH.library={name:'Library',eye:O,p:[]};CLASS.library='structure';TR.library={up:'backdoorL',down:'backdoorL'};ALL_CHARS.push('library');NAMES.library='Library';
+SHELF_CLUE.library='A place of knowledge, found only by those that know the greatest secrets.';
+STRUCT_ACTS.library={mage:['libread'],merchant:['libyawn','libecon'],fighter:['libbrowse','libbooks'],monstrous:['libfire']};
+Object.assign(STRUCT_SECOND,{libecon:RARITY.r,libbooks:RARITY.r});
+COMP_TABS.push({id:'library',name:'Library',pairs:['libread','libyawn','libecon','libbrowse','libbooks','libfire','libmartial'],idle:[],items:[]});
+Object.assign(PAIR_WITH,{libread:['library','tag:mage'],libyawn:['library','tag:merchant'],libecon:['library','tag:merchant'],libbrowse:['library','tag:fighter'],libbooks:['library','tag:fighter'],libfire:['library','tag:monstrous'],libmartial:['library','bard']});
+Object.assign(NAMES,{libread:'Reading in the library',libyawn:'A boring library',libecon:'Studying economics',libbrowse:'Nothing to read',libbooks:'Attack of the books',libfire:'The library burns',libmartial:'A book of martial combat'});
+Object.assign(TITLES,{libread:'Quiet Study',libyawn:'Snooze Fest',libecon:'Economics 101',libbrowse:'Nothing About Swords',libbooks:'Hostile Literature',libfire:'Burning Knowledge',libmartial:'The Art of the Blade'});
+Object.assign(DESC,{libread:'A Mage next to the Library goes in and reads for a while.',libyawn:'A Merchant next to the Library browses, yawns from boredom and leaves.',
+ libecon:'A Merchant next to the Library studies economics. For the next 5 minutes you get 1 coin every 30 seconds.',libbrowse:'A Fighter next to the Library browses the shelves, finds nothing of interest and leaves.',
+ libbooks:'A Fighter next to the Library is attacked by animated books and fights them off.',libfire:'Something Monstrous next to the Library smashes the shelves and sets the place on fire. The Library is destroyed and goes back to the shelf.',
+ libmartial:'The Bard next to the Library finds a book of martial combat and gains the Fighter tag (until it goes back to the shelf).'});
+Object.assign(FLAVOR,{libread:'Old pages, a candle, and a long quiet afternoon.',libyawn:'"Seven hundred pages on moss? I... *yawn*... see."',libecon:'Supply, demand, and suddenly the coins add up.',
+ libbrowse:'"Poetry. Herbs. More poetry. Nothing about swords." Out they go.',libbooks:'The books fly off the shelves, flapping and snapping. Chop chop!',
+ libfire:'Smash, crash, and then... fire. So much fire.',libmartial:'"The Art of the Blade, by Someone Very Stabby." The elf reads it twice.'});
+Object.assign(HINTS,{libread:'Mages love a library next door.',libyawn:'Not every shopkeeper is a reader.',libecon:'A rare shopkeeper might actually learn something useful.',
+ libbrowse:'Warriors next door may not find much to read.',libbooks:'Some books do not like to be disturbed.',libfire:'Keep monsters away from old paper.',libmartial:'An elf might find more than poetry on those shelves.'});
+NOTE.libecon='+1 coin every 30 s for 5 minutes.';NOTE.libfire='The Library goes back to the shelf.';
+Object.assign(WELL_PCT,{libread:structPct(1),libyawn:structPct(1-RARITY.r),libecon:structPct(RARITY.r),libbrowse:structPct(1-RARITY.r),libbooks:structPct(RARITY.r),libfire:structPct(1),libmartial:structPct(RARITY.u)});
+STRUCT_WHO.libmartial='the Bard';
+// ---------- quest: An Old Friend (every entry on the Wizard's Compendium page, secrets too) unlocks the Bard ----------
+QUESTS.push({id:'oldfriend',name:'An Old Friend',text:'Discover everything on the Wizard\'s page of the Compendium (secrets too).',tab:'wizard',reward:{unlock:'bard'}});

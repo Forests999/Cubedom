@@ -40,9 +40,11 @@ const LAYERS={
  traveler:[(s,c,t,b)=>{if(s%2===1)c.forEach(n=>tone(b,'sawtooth',mf(n),t,.1,.07))},-.5], // accordion off-beats
  farmer:[(s,c,t,b)=>{if(WHISTLE[s])tone(b,'sine',mf(WHISTLE[s]),t,STEP*1.6,.3)},.7], // whistling
  well:[(s,c,t,b)=>{if(s%16===6)tone(b,'sine',mf(c[1]+12),t,.25,.2,mf(c[1]+14))},-.7], // one soft, low water drip every two bars
- tavern:[(s,c,t,b)=>{if(JIG[s])tone(b,'square',mf(JIG[s]),t,.11,.17)},.1]}; // a jig
+ tavern:[(s,c,t,b)=>{if(JIG[s])tone(b,'square',mf(JIG[s]),t,.11,.17)},.1], // a jig
+ bard:[(s,c,t,b)=>{if(s%4===0||s%8===6)tone(b,'triangle',mf(c[(s>>1)%3]+19),t,.3,.3)},.55], // lute plucks, up high
+ library:[(s,c,t,b)=>{if(s%16===0)tone(b,'sine',mf(c[0]-12),t,STEP*15,.25)},-.1]}; // one soft, low hum every two bars (a quiet place)
 // Mixing levels: each part's loudness evened out (measured), so every room you add is clearly heard
-const MIX={knight:.42,rogue:2,merchant:.85,necromancer:1.5,priest:.8,wizard:.85,apothecary:.65,alchemist:2,druid:.85,blacksmith:2,monarch:1.2,traveler:4,farmer:1.35,well:.45,tavern:1.5}; // (the Well is kept quiet on purpose)
+const MIX={knight:.42,rogue:2,merchant:.85,necromancer:1.5,priest:.8,wizard:.85,apothecary:.65,alchemist:2,druid:.85,blacksmith:2,monarch:1.2,traveler:4,farmer:1.35,well:.45,tavern:1.5,bard:1,library:.6}; // (the Well is kept quiet on purpose)
 // ---------- group event themes: while a group event runs, the room parts fade down and the event plays its own tune ----------
 // Each theme has its own chords (one bar each) and parts; it starts and stops at the beginning of a bar. Levels in THEME_MIX (measured).
 const THEMES={
