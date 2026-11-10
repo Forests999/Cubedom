@@ -52,7 +52,7 @@ function label(u){u.lb.style.left=(u.c*CELL+6)/W*100+'%';u.lb.style.top=(u.r*CEL
 // A new Rogue's outfit (ODDS.rogueOutfit: ninja 40%, bandit 40%, con man 20%)
 const rogueOutfit=()=>{const o=ODDS.rogueOutfit;return pickW(Object.keys(o),k=>o[k])};
 // Spending coins (counted in S.spent: spending SMITH_UNLOCK coins in total unlocks the Blacksmith)
-function spend(n){S.coins-=n;S.spent=(S.spent||0)+n;checkUnlocks()}
+function spend(n){S.coins-=n;S.spent=(S.spent||0)+n;checkUnlocks();questStat('spent',n)}
 function addUnit(id,r,c,quiet,weapon,form,color,skin){
  const lb=document.createElement('div');lb.className='lb';$('#labels').appendChild(lb);
  U[id]={id,r,c,lb,skin:skin!=null?skin:SKIN_CHARS.includes(id)?Math.floor(Math.random()*SKINS.length):0, // skin tone (new Knights, Merchants, Priests: random)
@@ -122,6 +122,7 @@ function kill(v){
   if(inRoom){w.st='back';w.path=route(w,v.r,v.c,w.r,w.c,home(w))}else toHome(w)}}
  for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===v.id)demons.splice(i,1);
  if(v.id==='wizard')questStat('wizDeaths'); // quest: Cost of Discovery
+ questStat('deaths'); // quest: They Will Be Missed
  // a Fighter dies next to the Priest: he holds a funeral shortly after
  const P=U.priest;if(P&&P!==v&&!P.dead&&hasClass(v,'fighter')&&rel(v,P))P.funeral=1.5;
  // the Druid does not go back to the shelf: he is buried in his space (a mound with a sapling) until a spell scroll revives him
@@ -176,12 +177,13 @@ const grpReady=v=>v&&!v.dead&&atHome(v)&&!isFarm(v.id)&&!isStruct(v)&&v.id!=='dr
 function groupOptions(){const ok=(r,c)=>{const v=U[at(r,c)];return grpReady(v)?v:null},out=[];
  for(let r=0;r<ROWS-1;r++)for(let c=0;c<COLS-1;c++){const q=[[r,c],[r,c+1],[r+1,c],[r+1,c+1]].map(p=>ok(p[0],p[1]));if(q.every(v=>v&&hasClass(v,'merchant')))out.push({kind:'market',us:q})} // four Merchants in a 2x2 square
  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS-2;c++){const q=[0,1,2].map(d=>ok(r,c+d));if(q.every(Boolean))out.push({kind:'feast',us:q})} // three side by side in a row
- if(S.dragonReady&&dragonHP()>0&&!U.dragon&&!S.un.dragon){const team=dragonTeam();if(team)out.push({kind:'dragon',us:team})} // the dragon battle: 3 Fighters, 2 Mages, 1 Merchant anywhere on the board
+ if(S.dragonReady&&!S.dragonSlain&&dragonHP()>0&&!U.dragon&&!S.un.dragon&&!(S.ever&&S.ever.dragon)){const team=dragonTeam();if(team)out.push({kind:'dragon',us:team})} // the dragon battle: 3 Fighters, 2 Mages, 1 Merchant anywhere on the board
  return [...out,...travelOptions()]} // (plus the travelling ones: the Well, the Tavern)
 function startGroup(o){if(o.kind==='dragon'){startDragon(o);return}const rs=o.us.map(v=>v.r),cs=o.us.map(v=>v.c);logEv(titleOf('grp:'+o.kind),o.us.map(v=>CH[idOf(v)].name).join(', '));
  grp={kind:o.kind,ids:o.us.map(v=>v.id),pos:o.us.map(v=>[v.r,v.c]),t:0,box:[Math.min(...rs),Math.min(...cs),Math.max(...rs)-Math.min(...rs)+1,Math.max(...cs)-Math.min(...cs)+1]};
  o.us.forEach((v,i)=>{stopIdle(v);v.path=[];v.act=null;v.gx=null;v.st='grp';v.gwait=.5+Math.random()*2;v.mood='happy';v.mt=2;
   if(o.kind==='feast'){v.x=v.c*CELL+48;v.y=v.r*CELL+FY;v.face=i===0?1:i===2?-1:pick([1,-1])}});
+ if(o.kind==='market')questStat('markets'); // quest: Market Day
  if(o.kind==='feast'){questStat('feasts');if(o.us.some(v=>v.id==='monarch'))questStat('royalFeasts')} // quests: Prosperity, Feast Fit for a King
  markSeen('grp:'+o.kind);toast(o.kind==='market'?'Market day! The merchants put up their tents and a crowd pours in.':'A feast! Three neighbors sit down at one long table.')}
 function endGroup(done){if(!grp)return;const g0=grp;grp=null;if(g0.kind==='dragon'){dragon=null;dshots=[];showDragonBar()}g0.ids.forEach(id=>{const v=U[id];if(v&&v.st==='grp'){v.st='idle';v.wait=1+Math.random()*2;v.mv=false;v.gx=null}});
@@ -275,7 +277,7 @@ function startWeather(u){const ks=Object.keys(WEATHER_TIERS).filter(k=>castOk(u,
  if(k==='unicorn'){const v=pick(unicornRooms(u));wx.r=v.r;wx.c=v.c}
  beginAct(u,'wcast',true);u.dur=3;u.wx=wx;return true}
 // The cast takes effect (1.6 s into his spell). Uncommon and rarer casts go in the event log.
-function castFx(u){const w=u.wx,k=w.k;markSeen('wx:'+k);if(WEATHER_TIERS[k]!=='c')logScene('wx:'+k,u);
+function castFx(u){const w=u.wx,k=w.k;markSeen('wx:'+k);if(WEATHER_TIERS[k]!=='c')logScene('wx:'+k,u);if(WEATHER_TIERS[k]==='r'||WEATHER_TIERS[k]==='l')questStat('rare');
  if(k==='overgrowth'){addWeather(w.r,w.c,'overgrowth',u.id);return}
  if(k==='shift'){druidWx();return}
  if(k==='messenger'){const v=U[w.to];if(!v||!u.pet)return;u.pet.away=true;poof(u.pet.x,u.pet.y-10,'#c8f0c0');const bx=v.c*CELL,from=v.x<bx+48?bx+86:bx+10;
@@ -353,7 +355,7 @@ function dragonBurn(r,c){const who=Object.values(U).filter(v=>at(r,c)===v.id&&!i
  if(!who.length){toast('Its fire scorches an empty space.');return}
  const names=who.map(v=>'the '+CH[idOf(v)].name);who.forEach(v=>kill(v));toast('The dragon\'s fire engulfs '+names.join(' and ')+'!')}
 // Beaten: the dragon joins you (a Dragon box on the shelf)
-function beatDragon(){S.dragonHP=0;S.un.dragon=true;endGroup(true);buildShelf();save();toast('The dragon is defeated! It bows its great head... A Dragon box has appeared on the shelf.')}
+function beatDragon(){S.dragonHP=0;S.dragonSlain=true;S.un.dragon=true;endGroup(true);buildShelf();save();toast('The dragon is defeated! It bows its great head... A Dragon box has appeared on the shelf.')}
 // The dragon's health bar at the top of the board (only during a battle)
 function showDragonBar(){let e=$('#dragonbar');if(!grp||grp.kind!=='dragon'){if(e)e.hidden=true;return}
  if(!e){e=document.createElement('div');e.id='dragonbar';e.innerHTML='<span class="dn">Dragon</span><div class="hp"><i></i></div><span class="hv"></span>';$('#wrap').append(e)}
@@ -419,7 +421,7 @@ function structIdle(u){if(!atHome(u)||u.as||u.form||Math.random()>=STRUCT_IDLE)r
  if(w.id==='well'&&u.id==='rogue'&&(w.wcoins||0)>0&&Math.random()<RARITY.u)k='wellsteal'; // the Rogue fishes out a coin someone wished on
  if(u.id==='traveler'&&(k==='tvdeliver'||k==='tvwine'))k='tvelven'; // the Traveling Merchant brings the elven scroll instead
  visit(u,w,k);return true}
-function startAct(u){u.path=[];if(structIdle(u))return true;const list=idleList(u);if(!list.length)return false;const k=rollList(list,idleMult(u,list));if(!k)return false;const ok=doIdle(u,k),e=list.find(e=>e[0]===k);if(ok&&e&&e[1]!=='c')logScene(k,u);return ok} // (uncommon and rarer idle activities go in the event log)
+function startAct(u){u.path=[];if(structIdle(u))return true;const list=idleList(u);if(!list.length)return false;const k=rollList(list,idleMult(u,list));if(!k)return false;const ok=doIdle(u,k),e=list.find(e=>e[0]===k);if(ok&&e&&e[1]!=='c')logScene(k,u);if(ok&&e&&(e[1]==='r'||e[1]==='l'))questStat('rare');return ok} // (uncommon and rarer idle activities go in the event log)
 // Start the idle activity k (returns false if it could not start: the character wanders instead)
 function doIdle(u,k){const bx=u.c*CELL,dur=(a,d)=>{beginAct(u,a);u.dur=d};
  if(k==='regicide'){visit(u,U.monarch,'regicide');return true}
@@ -533,6 +535,11 @@ function acting(u,dt){
  if(u.act==='stash'){once('s',.3,()=>say(u,'I will save this for a rainy day.'))}
  // the Druid casts (instead of visiting a neighbor): Overgrowth on a space, or, rarely, a change of the board's weather
  if(u.act==='wcast'){once('s',.3,()=>say(u,WX_SAY[u.wx.k]));once('w',1.6,()=>{castFx(u);u.mood='happy';u.mt=1.2})}
+ // the Goblin with a potion (sniffs it, pours it out) or a spell scroll (can't read it, tosses it on his junk pile)
+ if(u.act==='gpour'){if(u.at<2.6)u.show={icon:'potion',x:u.x+u.face*9,y:u.y-24};once('a',.2,()=>say(u,'Huh? Smelly juice?'));once('b',1.4,()=>{u.mood='roll';u.mt=1.4;say(u,'...What does it DO?')});
+  once('c',2.6,()=>{u.show=null;gest(u,'fwd',1);for(let i=0;i<8;i++)parts.push({k:'drop',col:'#c890ff',x:u.x+u.face*10,y:u.y-22,vx:u.face*(10+Math.random()*30),vy:-10-Math.random()*20,t:0,life:.7})});once('d',3.4,()=>{u.mood='happy';u.mt=1.5;say(u,'Bad juice.')})}
+ if(u.act==='gtoss'){if(u.at<2.8)u.show={icon:'scroll',x:u.x+u.face*9,y:u.y-24};once('a',.2,()=>say(u,'Ooh! A treasure map?'));once('b',1.5,()=>{u.mood='roll';u.mt=1.4;say(u,'...Squiggles.')});
+  once('c',2.8,()=>{u.show=null;gest(u,'up',.8);thrown.push({sx:u.x+u.face*8,sy:u.y-28,ex:u.c*CELL+76,ey:u.r*CELL+70,t:0,icon:'scroll',star:1})});once('d',3.6,()=>{u.mood='happy';u.mt=1.5;say(u,'Junk pile!')})}
  // the Goblin: rummaging (junk flies up), spinning his dagger, a nap in the bedroll (GOBLIN_NAP seconds)
  if(u.act==='grummage'){if(walkTo(u.hx)){u.face=1;once('s',.6,()=>say(u,pick(['Shiny... shiny...','Mine. Mine. Also mine.','Ooh, half a sandwich!'])));for(let i=0;i<3;i++)once('j'+i,1+i*1.1,()=>poof(u.x+10,u.y-14,pick(['#a8a8b4','#c8a060','#f2c84a','#8a5a2a'])))}}
  if(u.act==='gdagger'){once('s',.4,()=>say(u,pick(['Stabby stab!','Spin, spin, spin...','Hehehe. Pointy.'])))}
@@ -728,7 +735,7 @@ function checkUnlocks(){checkEggs();
  if(!S.un.apothecary&&Object.values(U).some(m=>CLASS[m.id]==='merchant'&&Object.values(U).some(v=>v!==m&&CLASS[v.id]==='mage'&&rel(v,m)))){S.un.apothecary=true;buildShelf();save();toast('Word of trade reaches the mages... an Apothecary box has appeared on the shelf.')}}
 // ---- Compendium: remember every interaction/idle/item effect that has happened (gold border) ----
 const SEEN_ALIAS={sleepc:'sleep',swapc:'swap',fruitdrop:'fruitfall',winegift:'wine'};
-function markSeen(k){k=SEEN_ALIAS[k]||k;if(!k||S.seen[k])return;S.seen[k]=1;save();
+function markSeen(k){k=SEEN_ALIAS[k]||k;if(!k||S.seen[k])return;S.seen[k]=1;save();if(ALL_KEYS.includes(k)&&!k.startsWith('grp:')&&!EGGS.includes(k))questStat('discover');showRenown();
  document.querySelectorAll('.tile[data-k="'+k+'"]').forEach(t=>t.classList.add('seen'));checkDiscoveries();
  if(!tabRef.hidden&&(EGGS.includes(k)||ALL_KEYS.includes(k)))buildRef(compTab)} // refresh the open Compendium (counts, newly found easter eggs)
 // Every DISCOVER_EVERY different things discovered (easter eggs included) pays DISCOVER_REWARD coins
@@ -738,7 +745,7 @@ const foundCount=()=>ALL_KEYS.filter(k=>S.seen[k]).length;
 const compUnl=id=>id==='anyone'||id==='super'||id==='group'||(id==='tree'&&compUnl('druid'))||!!TAG_NAMES[id]||SHELF_CHARS.includes(id)||!!S.un[id]||!!(S.ever&&S.ever[id]);
 const tabPairs=t=>t.pairs.filter(k=>(PAIR_WITH[k]||[]).every(compUnl)),tabKeys=t=>[...tabPairs(t),...t.idle,...t.items];
 // Does this box's Compendium tab still have entries to find (secrets and super secrets don't count)? Used for the faint blue glow while dragging a box.
-const hasLeft=id=>{const t=COMP_TABS.find(x=>x.id===(isFarm(id)?'farmer':id));return !!t&&tabKeys(t).some(k=>!EGGS.includes(k)&&!S.seen[k])};
+const hasLeft=id=>{const t=COMP_TABS.find(x=>x.id===(isFarm(id)?'farmer':id));return !!t&&tabKeys(t).some(k=>!EGGS.includes(k)&&!k.startsWith('grp:')&&!S.seen[k])}; // (group events don't count either)
 // The Bard has the Mage tag while BARD_MAGE_AT discoveries are found (kept here so hasClass stays quick)
 let bardMageOn=false;
 function checkDiscoveries(){const n=foundCount(),due=Math.floor(n/DISCOVER_EVERY);
@@ -852,6 +859,8 @@ Object.assign(ITEM_FX.scroll,{traveler:(u)=>tSell(u,'scroll')});Object.assign(IT
 ITEM_FX.ingot.druid=u=>{u.mood='roll';u.mt=1.5;gest(u,'fwd',1);say(u,pick(['Metal? On me? Absolutely not.','I would rather wear a beehive.','Take it back. It is cold and it clanks.']));return 'keep'};
 ITEM_KEY.scroll.traveler='tscroll';ITEM_KEY.potion.traveler='tpotion';ITEM_KEY.ingot={'*':'reinforce',traveler:'tingot',druid:'dingot'};
 ITEM_KEY.scroll.druid='dscroll';ITEM_KEY.artifact.druid='archdruid';ITEM_KEY.scroll.blacksmith='bscroll';ITEM_KEY.potion.blacksmith='bpotion';
+// the Goblin: a potion is poured out, a spell scroll goes on his junk pile (both used up)
+Object.assign(ITEM_FX.potion,{goblin:u=>{beginAct(u,'gpour',1);u.dur=4.2}});Object.assign(ITEM_FX.scroll,{goblin:u=>{beginAct(u,'gtoss',1);u.dur=4.6}});ITEM_KEY.potion.goblin='gpotion';ITEM_KEY.scroll.goblin='gscroll';
 // ---- items on the Alchemist ----
 function alcLuck(u){u.luckT=ALC_LUCK_TIME;poof(u.x,u.y-24,'#f2c84a');u.hop=.5;u.mood='happy';u.mt=1.5;say(u,'Luck for my neighbors! For one minute.')}
 function alcScroll(u){beginAct(u,'tear');u.dur=2.2;u.mood='shock';u.mt=.8;say(u,'What is this gibberish? *rip*')}
@@ -1012,6 +1021,7 @@ function visitRoll(u){const id=idOf(u),M=U.monarch;
  const list=visitList(u,h),lk=lucky(u)||lucky(h),fae=faeMult(list),rs=Math.max(resOf(u),resOf(h));
  const kd=rollList(list,e=>(lk&&(e[1]==='r'||e[1]==='l')?1+ALC_LUCK:1)*fae(e)*(rs&&DEADLY[e[0]]?Math.max(0,1-RES_DEATH*rs):1));
  if(!kd){visit(u,h,null);return true}
+ {const te=list.find(e=>e[0]===kd);if(te&&(te[1]==='r'||te[1]==='l'))questStat('rare')} // quest: Blink and You'll Miss It
  playScene(u,h,kd);return true}
 // Start scene kd between u (the one who rolled) and h. Some scenes always have the same visitor, some are cast from a room.
 function playScene(u,h,kd){const N=U.necromancer,busy=()=>{u.wait=1};logScene(kd,u,h);
@@ -1903,7 +1913,7 @@ function step(dt){
  Object.values(U).forEach(s=>{if(s.id!=='library')return;const v=U[s.hosting],k=v&&v.st==='talk'&&v.target===s.id?v.kind:null;if(k!=='libbooks')s.books=null;if(k!=='libfire')s.fire=0}); // the Library's flying books and fire only during their scenes
  Object.values(U).forEach(s=>{if(s.id!=='tavern')return;const v=U[s.hosting],k=v&&v.st==='talk'&&v.target===s.id?v.kind:null;if(k!=='tvbubbles')s.bubbles=null;if(k!=='tvdeliver')s.cratesUntil=0;if(k!=='tvshoo')s.bk=null});
  refreshTags();
- stepWeather(dt);stepBoardWx(dt);stepEcon(dt);stepGoblinBard(dt);stepRoyal(dt);stepTraveler(dt);stepGroup(dt);
+ stepWeather(dt);stepBoardWx(dt);stepEcon(dt);stepGoblinBard(dt);autoSave(dt);stepRoyal(dt);stepTraveler(dt);stepGroup(dt);
  for(const id in U){const u=U[id];
   if(u.dead||isStruct(u)||u.id==='dragon')continue; // (the Dragon has no idles or scenes yet) a buried Druid does nothing at all; nor does a structure
   if(u.id==='druid'&&!u.pet)u.pet={kind:u.fam||'bear',x:u.x,y:u.y,face:1}; // his animal: grizzly bear, eagle or wolf
@@ -2146,6 +2156,7 @@ function draggable(b,canStart,onDrop,onTap,isBox){
 function buildShelf(){
  tray.querySelectorAll('.it').forEach(b=>b.remove());
  ALL_CHARS.forEach(id=>{if(S.un[id])S.ever[id]=1}); // remember every character ever unlocked (its Compendium tab stays)
+ showRenown(); // (renown: +10 for each character unlocked for the first time)
  const have=ALL_CHARS.filter(id=>SHELF_CHARS.includes(id)||S.un[id]);
  tray.querySelector('.lbl').textContent='Shelf: drag a box up to the board ('+have.length+'/'+ALL_CHARS.length+' unlocked)';
  // unlocked characters first, in alphabetical order, as boxes (dimmed while on the board, or the Traveling Merchant on the road); then the locked ones as a blank box with a clue (SHELF_CLUE)
@@ -2189,8 +2200,10 @@ const showSpeed=()=>{$('#speedBtn').textContent='Speed: '+SPEED+'x';$('#speedBtn
 $('#speedBtn').onclick=()=>{SPEED=SPEED>1?1:2;try{localStorage.setItem('sq-speed',String(SPEED))}catch(e){}showSpeed()};
 $('#helpBtn').onclick=()=>{$('#help').hidden=false;$('#helpClose').focus({preventScroll:true});$('#help .hbox').scrollTop=0};
 $('#helpClose').onclick=()=>{$('#help').hidden=true};
+$('#awayOk').onclick=()=>{$('#away').hidden=true};$('#away').onclick=e=>{if(e.target.id==='away')$('#away').hidden=true}; // the time-away report
+$('#renown').onclick=()=>toast('Renown '+renownOf()+': your kingdom'+"'"+'s score. +1 for each Compendium discovery, +'+RENOWN_CHAR+' for each new character, and more from quests.');
 $('#help').onclick=e=>{if(e.target.id==='help')$('#help').hidden=true}; // tap outside the box to close
-document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#help').hidden=true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#help').hidden=true;$('#away').hidden=true}});
 let resetArm=0,resetting=false;
 $('#reset').onclick=()=>{const b=$('#reset');
  if(Date.now()-resetArm>4000){resetArm=Date.now();b.textContent='Tap again to reset';b.classList.add('arm');setTimeout(()=>{if(Date.now()-resetArm>=4000){b.textContent='Reset game';b.classList.remove('arm')}},4100);return}
@@ -2633,6 +2646,7 @@ function idleTile(kind,wp){
   else if(kind==='libbooks'){box(x,'library',0,0);spr(x,'knight','shock',30,FY,1,0,1,1,Math.floor(t*2)%2?'fwd':'none');for(let i=0;i<3;i++)drawFlyBook(x,48+i*12+Math.sin(t*3+i)*4,FY-36-i*6+Math.cos(t*4+i)*3,t+i)}
   else if(kind==='libfire'){box(x,'library',0,0);drawFire(x,0,0,t%4+.5);spr(x,'goblin',t%4>2?'shock':'mad',30,FY,1,0,1,GOBLIN_SCALE)}
   // the Goblin (small: GOBLIN_SCALE) in his cave, and with each neighbor
+  else if(kind==='gpotion'||kind==='gscroll'){const tt=t%4;box(x,'goblin',0,0);spr(x,'goblin',tt>2.6?'happy':tt>1.4?'roll':'ok',40,FY,1,0,1,GOBLIN_SCALE,tt<2.6?'hold':'none');if(tt<2.6)drawItem(x,kind==='gpotion'?'potion':'scroll',47,FY-18,1);else if(kind==='gpotion')poofTile(x,50,FY-6,(tt-2.6)/1.4,'#c890ff');else drawItem(x,'scroll',Math.round(lerp(48,76,(tt-2.6)/1.4)),Math.round(FY-20+(tt-2.6)*8),1)} // the Goblin and a potion or a scroll
   else if(kind==='grummage'||kind==='gdagger'||kind==='gnap'||kind==='ghoard'||kind==='gsteal'){const tt=t%4,gs=(m,gx,f,p)=>spr(x,'goblin',m,gx,FY,f,0,1,GOBLIN_SCALE,p);
    if(kind==='gsteal'){box(x,'knight',0,0,'longsword');spr(x,'knight','ok',66,FY,1,0);gs('happy',30,1,'fwd');if(tt>1)drawItem(x,'coin',38,FY-22,1)}
    else{box(x,'goblin',0,0);if(kind==='ghoard')drawHoard(x,0,0,40);
@@ -2729,7 +2743,7 @@ function idleTile(kind,wp){
 // Things a scene gives you, shown as small icons in the bottom-left of its Compendium tile
 const GAINS={tshop:['artifact'],tscroll:['coin'],tpotion:['coin'],tingot:['coin'],royalpatron:['artifact'],'rq:alchemist':['potion'],'rq:druid':['coin'],pour:['ingot'],leadgold:['coin'],adventure:['coin','scroll','artifact'],ingotshop:['ingot'],nefarious:['coin'],poisons:['coin'],wine:['coin'],promo:['coin'],twopot:['potion'],dungeon:['coin','artifact','scroll','potion'],bloodorange:['coin'],ntrade:['potion'],heal:['coin'],roguemage:['artifact'],stone:['coin'],greenapple:['coin'],cobrew:['potion'],mcust:['coin'],acust:['coin'],farm:['coin'],apcoins:['coin'],appotion:['potion'],starfruit:['coin'],durian:['coin'],advertW:['coin'],tithe:['coin'],crusade:['coin','artifact'],craft:['scroll'],forge:['scroll','potion'],brew:['potion'],sell:['coin'],apple:['coin'],apoth:['potion'],desk:['scroll'],'wx:messenger':['coin'],'wx:fertile':['coin'],'wx:blessing':['coin'],wellsteal:['coin'],libecon:['coin']};
 const ICONURL={};function iconURL(k){if(!ICONURL[k]){const c=document.createElement('canvas');c.width=16;c.height=16;const x=c.getContext('2d');drawItem(x,k,8,9,1);ICONURL[k]=c.toDataURL()}return ICONURL[k]}
-const ITEMLBL={dingot:'ingot',tscroll:'scroll',tpotion:'potion',tingot:'ingot',archdruid:'artifact',bpotion:'potion',bscroll:'scroll',dpotion:'potion',dscroll:'scroll',drevive:'scroll',reinforce:'ingot',nscroll:'scroll',alcpotion:'potion',alcscroll:'scroll',stone:'artifact 80%',elixir:'artifact 20%',spook:'potion',roguemage:'scroll',apcoins:'potion',appotion:'scroll',monkey:'scroll',backwards:'potion',fireball:'scroll',glow:'scroll',banish:'scroll',raise:'scroll',teleport:'potion',flex:'potion',wings:'potion',sniff:'potion',relic:'artifact'};
+const ITEMLBL={gpotion:'potion',gscroll:'scroll',dingot:'ingot',tscroll:'scroll',tpotion:'potion',tingot:'ingot',archdruid:'artifact',bpotion:'potion',bscroll:'scroll',dpotion:'potion',dscroll:'scroll',drevive:'scroll',reinforce:'ingot',nscroll:'scroll',alcpotion:'potion',alcscroll:'scroll',stone:'artifact 80%',elixir:'artifact 20%',spook:'potion',roguemage:'scroll',apcoins:'potion',appotion:'scroll',monkey:'scroll',backwards:'potion',fireball:'scroll',glow:'scroll',banish:'scroll',raise:'scroll',teleport:'potion',flex:'potion',wings:'potion',sniff:'potion',relic:'artifact'};
 function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  const b=$('#refs');b.innerHTML='';
  // % chance (or a short label) in the top right corner
@@ -2786,7 +2800,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  REQS.forEach(q=>T['rq:'+q]=[P('rq:'+q),'80% / 10%']);
  for(const wk in WELL_PCT)T[wk]=[I(wk),WELL_PCT[wk]]; // the Well's activities (labels: share of a neighbor's idle activities)
  Object.assign(T,{bplay:[I('bplay')],bhum:[I('bhum')],bspell:[I('bspell')],bwisdom:[I('bwisdom')],blisten:[I('blisten')],bstory:[I('bstory')],bsoothe:[I('bsoothe')],bdragon:[I('bdragon')],bfruit:[I('bfruit')],'ss:elven':[I('ss:elven'),'super secret']}); // the Bard
- ['grummage','gdagger','gnap','gsteal','ghoard','bresonance',...Object.keys(GOBLIN_WITH)].forEach(k=>{T[k]=[I(k)]});T.ghoard[1]='passive';T.bresonance[1]='passive'; // the Goblin; the Bard's Resonance
+ ['grummage','gdagger','gnap','gsteal','ghoard','bresonance','gpotion','gscroll',...Object.keys(GOBLIN_WITH)].forEach(k=>{T[k]=[I(k)]});T.ghoard[1]='passive';T.bresonance[1]='passive'; // the Goblin; the Bard's Resonance
  Object.assign(T,{'grp:wellchat':[I('grp:wellchat'),'secret'],'grp:classic':[I('grp:classic'),'secret'],'grp:market':[I('grp:market'),'every 5 min'],'grp:dragon':[I('grp:dragon'),'boss'],'grp:feast':[I('grp:feast'),'every 5 min'],'ss:gold':[I('ss:gold'),'super secret'],'ss:alltags':[I('ss:alltags'),'super secret'],dingot:[I('dingot')],rqdeny:[P('rqdeny'),'20% / 90%'],drain:[P('drain'),pv*ODDS.drain],royalfuneral:[I('royalfuneral'),'on death'],regicide:[I('regicide'),'secret'],royalpatron:[I('royalpatron'),'secret'],
   wares:[I('wares'),'100%'],troad:[I('troad'),'5 min'],tshop:[I('tshop'),TRAVEL_ARTIFACT+' coins'],tscroll:[I('tscroll')],tpotion:[I('tpotion')],tingot:[I('tingot')]});
  ROGUE_SCENES.forEach(k=>{if(!T[k])T[k]=[P(k),pv]});
@@ -2839,26 +2853,70 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
  const t=b.dataset.t;['board','ref','quest','log','set'].forEach(k=>{$('#tab-'+k).hidden=t!==k});
  hideTip();if(t==='ref')buildRef(compTab);else if(t==='quest')buildQuests();else if(t==='log')buildLog();else if(t==='board')fitLabels()});
 
-// ---------- Quests (QUESTS in data.js) ----------
-// A quest's counter goes up (S.qs); when it reaches the goal the reward is paid once (S.qDone), even during the grand funeral
-function questStat(stat,n){S.qs=S.qs||{};S.qs[stat]=(S.qs[stat]||0)+(n||1);checkQuests();save();if(!$('#tab-quest').hidden)buildQuests()}
-const rewardText=r=>Object.keys(r).map(k=>k==='coins'?r[k]+' coins':k==='unlock'?'unlocks the '+NAMES[r[k]]:k==='event'?'the dragon may now attack':r[k]+' '+ITEM_WORD[k][r[k]===1?0:1]).join(' and ');
-// A quest's progress [done, goal]: a counter (stat) or a whole Compendium page found (tab)
-const questProg=q=>{if(q.prog)return q.prog();if(q.tab){const t=COMP_TABS.find(x=>x.id===q.tab),ks=t?[...new Set([...t.pairs,...t.idle,...t.items])]:[]; // (every entry of that page in the whole game, also ones with characters not unlocked yet)
- return[ks.filter(k=>S.seen[k]).length,ks.length||1]}return[Math.min((S.qs||{})[q.stat]||0,q.goal),q.goal]};
-function checkQuests(){S.qDone=S.qDone||{};QUESTS.forEach(q=>{const[n,g]=questProg(q);if(S.qDone[q.id]||n<g)return;S.qDone[q.id]=1;
- for(const k in q.reward){if(k==='coins')addCoins(q.reward[k],null,null,true);else if(k==='unlock'){S.un[q.reward[k]]=true;buildShelf()}else if(k==='event'){}else addItem(k,q.reward[k],null,null,true)}
- save();toast('Quest complete: '+q.name+'! '+(q.reward.unlock?'A '+NAMES[q.reward.unlock]+' box has appeared on the shelf!':q.reward.event?'A huge shadow passes over the kingdom... The dragon may now attack.':'+'+rewardText(q.reward)))})}
-function buildQuests(){const box=$('#quests');box.textContent='';S.qDone=S.qDone||{};
- QUESTS.forEach(q=>{const[n0,g]=questProg(q),n=Math.min(n0,g),done=!!S.qDone[q.id],d=document.createElement('div');d.className='quest'+(done?' done':'');q.goal=g;
-  d.innerHTML='<h3></h3><p class="qt"></p><div class="qbar"><i></i></div><p class="qr"></p>';
-  d.querySelector('h3').textContent=q.name+(done?' ✓':'');d.querySelector('.qt').textContent=q.text;
-  d.querySelector('.qbar i').style.width=(100*n/q.goal)+'%';d.querySelector('.qbar').title=n+' / '+q.goal;
-  d.querySelector('.qr').textContent=(done?'Complete! Reward paid: ':n+' / '+q.goal+'   Reward: ')+rewardText(q.reward);box.append(d)})}
+// ---------- Quests: story quests (QUESTS, paid once) and daily quests (DAILY_QUESTS, 3 a day); both in data.js ----------
+// Helpers the quests' show / avail checks use: the characters you have unlocked (not structures), undiscovered interactions you can see, the whole Wizard page showing
+const unlockedChars=()=>ALL_CHARS.filter(id=>CLASS[id]!=='structure'&&(SHELF_CHARS.includes(id)||S.un[id]||(S.ever&&S.ever[id])));
+const undiscoveredScenes=()=>[...new Set(COMP_TABS.filter(t=>compUnl(t.id)).flatMap(tabKeys))].filter(k=>!EGGS.includes(k)&&!k.startsWith('grp:')&&!S.seen[k]);
+const wizardAllShown=()=>{const t=COMP_TABS.find(x=>x.id==='wizard');return tabKeys(t).length===new Set([...t.pairs,...t.idle,...t.items]).size};
+// The day's quests: picked once a day (local date), at random among the available ones; their counters start over each day
+function dailyRefresh(){const today=new Date().toDateString();if(S.daily&&S.daily.date===today)return false;
+ const pool=DAILY_QUESTS.filter(q=>{try{return q.avail()}catch(e){return false}}).map(q=>q.id),ids=[];while(ids.length<DAILY_COUNT&&pool.length)ids.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+ const first=!S.daily;S.daily={date:today,ids,qs:{},done:{}};save();if(!first)setTimeout(()=>toast('A new day: new daily quests! Check the Quests tab.'),2500);return true}
+// A counter goes up: for story quests (S.qs, for good) and for today's daily quests (S.daily.qs)
+function questStat(stat,n){n=n||1;S.qs=S.qs||{};S.qs[stat]=(S.qs[stat]||0)+n;dailyRefresh();S.daily.qs[stat]=(S.daily.qs[stat]||0)+n;checkQuests();save();if(!$('#tab-quest').hidden)buildQuests()}
+const rewardText=r=>Object.keys(r).map(k=>k==='coins'?r[k]+' coins':k==='unlock'?'unlocks the '+NAMES[r[k]]:k==='renown'?r[k]+' renown':k==='reveal'?'a clue to an undiscovered interaction':k==='event'?'the dragon may now attack':r[k]+' '+ITEM_WORD[k][r[k]===1?0:1]).join(' and ');
+// A quest's progress [done, goal]: a counter, a whole Compendium page found (tab: every entry of that page in the whole game), or its own check (prog)
+const questProg=(q,daily)=>{if(q.prog)return q.prog();if(q.tab){const t=COMP_TABS.find(x=>x.id===q.tab),ks=t?[...new Set([...t.pairs,...t.idle,...t.items])]:[];return[ks.filter(k=>S.seen[k]).length,ks.length||1]}
+ const c=daily?((S.daily||{}).qs||{}):(S.qs||{});return[Math.min(c[q.stat]||0,q.goal),q.goal]};
+const questShown=q=>!q.show||q.show();
+function payQuest(q){for(const k in q.reward){const v=q.reward[k];if(k==='coins')addCoins(v,null,null,true);else if(k==='unlock'){S.un[v]=true;buildShelf()}else if(k==='renown')S.renownBonus=(S.renownBonus||0)+v;else if(k==='reveal')revealScene('Quest reward:');else if(k!=='event')addItem(k,v,null,null,true)}
+ save();showRenown();toast('Quest complete: '+q.name+'! '+(q.reward.unlock?'A '+NAMES[q.reward.unlock]+' box has appeared on the shelf!':q.reward.reveal?'':'+'+rewardText(q.reward)))}
+// Pays every finished quest once; a story quest that has just become available gets a little pop-up (S.qShown)
+function checkQuests(){S.qDone=S.qDone||{};S.qShown=S.qShown||{};
+ QUESTS.forEach(q=>{if(!questShown(q))return;if(!S.qShown[q.id]){S.qShown[q.id]=1;save();setTimeout(()=>toast('New quest: '+q.name+'! Check the Quests tab.'),1800)}const[n,g]=questProg(q);if(S.qDone[q.id]||n<g)return;S.qDone[q.id]=1;payQuest(q)});
+ if(S.daily)S.daily.ids.forEach(id=>{const q=DAILY_QUESTS.find(x=>x.id===id);if(!q||S.daily.done[id])return;const[n,g]=questProg(q,true);if(n<g)return;S.daily.done[id]=1;payQuest(q)})}
+function questCard(q,daily){const[n0,g]=questProg(q,daily),n=Math.min(n0,g),done=daily?!!S.daily.done[q.id]:!!S.qDone[q.id],d=document.createElement('div');d.className='quest'+(done?' done':'');
+ d.innerHTML='<h3></h3><p class="qt"></p><div class="qbar"><i></i></div><p class="qr"></p>';d.querySelector('h3').textContent=q.name+(done?' ✓':'');d.querySelector('.qt').textContent=q.text;
+ d.querySelector('.qbar i').style.width=(100*n/g)+'%';d.querySelector('.qbar').title=n+' / '+g;d.querySelector('.qr').textContent=(done?'Complete! Reward paid: ':n+' / '+g+'   Reward: ')+rewardText(q.reward);return d}
+function buildQuests(){const box=$('#quests');box.textContent='';dailyRefresh();
+ const story=QUESTS.filter(questShown);if(story.length)story.forEach(q=>box.append(questCard(q,false)));else{const p=document.createElement('p');p.className='cinfo';p.textContent='No story quests yet. Keep exploring: they appear as your kingdom grows.';box.append(p)}
+ const h=document.createElement('h2');h.className='sec';h.textContent='Daily quests';const now=new Date(),mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1),mins=Math.ceil((mid-now)/60000);
+ const p=document.createElement('p');p.className='cinfo';p.textContent='Three new quests every day. New ones in '+Math.floor(mins/60)+' h '+(mins%60)+' min.';box.append(h,p);
+ S.daily.ids.forEach(id=>{const q=DAILY_QUESTS.find(x=>x.id===id);if(q)box.append(questCard(q,true))})}
+// ---------- Renown: your kingdom's score (next to the Event Log tab): 1 per Compendium discovery, RENOWN_CHAR per character unlocked for the first time, plus quest rewards ----------
+const renownOf=()=>ALL_KEYS.filter(k=>S.seen[k]).length+RENOWN_CHAR*Object.keys(S.ever||{}).filter(id=>S.ever[id]&&CLASS[id]!=='structure').length+(S.renownBonus||0);
+let renownShown=null;
+function showRenown(){const e=$('#renown');if(!e)return;const n=renownOf();if(n===renownShown)return;const up=renownShown!=null&&n>renownShown;renownShown=n;e.querySelector('b').textContent=n;
+ if(up){e.classList.remove('up');void e.offsetWidth;e.classList.add('up')}}
+// ---------- Time away: what happened while the game was closed or hidden (AWAY_* in data.js) ----------
+// Coins are halved; nothing is unlocked and no scenes or events play; each hour away may reveal an undiscovered interaction; a little flavor text about the kingdom
+function revealScene(intro){const pool=undiscoveredScenes().filter(k=>!S.revealed[k]);if(!pool.length)return null;const k=pick(pool);S.revealed[k]=1;save();if(intro)toast(intro+' an undiscovered interaction is now shown in the Compendium.');return k}
+function awayReport(sec){if(sec<AWAY_MIN)return;const s=Math.min(sec,AWAY_MAX),mins=Math.floor(s/60),lines=[];let coins=0;
+ const fmt=x=>{const h=Math.floor(x/3600),m=Math.floor((x%3600)/60);return(h?h+' h ':'')+m+' min'};
+ // coins (halved): the Bard's passers-by; the Goblin's stash grows too (his, not yours)
+ const Bd=U.bard;if(Bd&&!Bd.dead){const n=Math.floor(classesOf(Bd).length*mins*AWAY_COIN);if(n>0){coins+=n;lines.push('Passers-by tossed the Bard '+n+' coins for the music.')}}
+ const G=U.goblin;if(G&&!G.dead){const n=Math.floor(s/GOBLIN_HOARD_EVERY*AWAY_COIN);if(n>0){G.hoard=(G.hoard||0)+n;lines.push('The Goblin stashed '+n+' coins in his cave. He is not sharing.')}}
+ // the weather kept changing (one roll every WX_EVERY seconds)
+ const rolls=Math.floor(s/WX_EVERY),w0=bwx.k;let k=w0,changes=0;for(let i=0;i<rolls;i++){const k2=rollList(Object.keys(BOARD_WX).map(q=>[q,BOARD_WX[q].tier]));if(k2&&k2!==k){k=k2;changes++}}
+ if(k!==w0){bwx={k,t:0};showWx()}lines.push(changes?'The weather changed '+changes+(changes>1?' times':' time')+'. Now it is '+BOARD_WX[k].name+'.':'The sky stayed '+BOARD_WX[k].name.toLowerCase()+' the whole time.');
+ // what everyone got up to (up to AWAY_LINES_MAX of them)
+ const who=Object.values(U).filter(v=>!v.dead&&AWAY_LINES[isFarm(v.id)?'farmer':v.id]);for(let i=who.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[who[i],who[j]]=[who[j],who[i]]}
+ who.slice(0,AWAY_LINES_MAX).forEach(v=>{const n=Math.max(2,Math.round(s/7.5*.5*(.3+Math.random()*.25)));lines.push(AWAY_LINES[isFarm(v.id)?'farmer':v.id].replace('{n}',n))});
+ if(!who.length)lines.push(pick(AWAY_IDLE));
+ // each hour away: AWAY_REVEAL chance of a clue
+ let reveals=0;const hours=s/3600;for(let i=0;i<Math.ceil(hours);i++)if(Math.random()<AWAY_REVEAL*Math.min(1,hours-i)&&revealScene(null))reveals++;
+ if(reveals)lines.push('Rumors reached your ears: '+(reveals>1?reveals+' undiscovered interactions are':'an undiscovered interaction is')+' now shown in the Compendium.');
+ if(coins){S.coins=(S.coins||0)+coins;showCoins()} // (added directly: nothing unlocks while you are away)
+ save();const box=$('#away');box.querySelector('h2').textContent='While you were away ('+fmt(sec)+')';
+ const ul=box.querySelector('ul');ul.textContent='';lines.forEach(t=>{const li=document.createElement('li');li.textContent=t;ul.append(li)});
+ box.querySelector('.tot').textContent=(coins?'+'+coins+' coins (half of what you would earn while playing). ':'')+(sec>AWAY_MAX?'Only the last 8 hours count.':'');box.hidden=false;
+ logEv('While you were away ('+fmt(sec)+')',coins?'+'+coins+' coins':'')}
+let hiddenAt=0;
+document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=Date.now();save()}else if(hiddenAt){const a=(Date.now()-hiddenAt)/1000;hiddenAt=0;awayReport(a);dailyRefresh();checkQuests()}});
 
 // ---------- state ----------
 function ui(){document.querySelectorAll('.it[data-id]').forEach(b=>b.classList.toggle('used',!!U[b.dataset.id]||(b.dataset.id==='traveler'&&!!S.travelRoam)))} // dimmed: on the board, or on the road
-function save(){if(resetting)return;try{const b={};for(const i in U)if(!isFarm(i)&&i!=='tree')b[i]=[U[i].r,U[i].c,U[i].weapon,TEMP_FORM[U[i].form]?null:U[i].form,U[i].color,U[i].backwards?1:0,U[i].skin||0,U[i].mageTag?1:0,U[i].dead?1:0,U[i].reinforced?1:0,U[i].paladin?1:0,U[i].armor?1:0,U[i].fam||0,U[i].arch?1:0,U[i].trait||0,extras(U[i])];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,spent:S.spent||0,inv:S.inv,seen:S.seen,rewarded:S.rewarded||0,cells:S.cells,bought:S.bought||0,revealed:S.revealed,goldCells:S.goldCells,ever:S.ever,tabDone:S.tabDone||{},bigRewarded:S.bigRewarded||0,monarchs:S.monarchs||0,travelRoam:!!S.travelRoam,qs:S.qs||{},qDone:S.qDone||{},wx:{k:bwx.k,t:Math.round(bwx.t)},elvenScroll:!!S.elvenScroll,goldBorder:!!S.goldBorder,bardMon:!!S.bardMon,dragonRumor:!!S.dragonRumor,dragonReady:!!S.dragonReady,dragonHP:S.dragonHP==null?DRAGON_HP:S.dragonHP}))}catch(e){}}
+function save(){if(resetting)return;try{const b={};for(const i in U)if(!isFarm(i)&&i!=='tree')b[i]=[U[i].r,U[i].c,U[i].weapon,TEMP_FORM[U[i].form]?null:U[i].form,U[i].color,U[i].backwards?1:0,U[i].skin||0,U[i].mageTag?1:0,U[i].dead?1:0,U[i].reinforced?1:0,U[i].paladin?1:0,U[i].armor?1:0,U[i].fam||0,U[i].arch?1:0,U[i].trait||0,extras(U[i])];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,spent:S.spent||0,inv:S.inv,seen:S.seen,rewarded:S.rewarded||0,cells:S.cells,bought:S.bought||0,revealed:S.revealed,goldCells:S.goldCells,ever:S.ever,tabDone:S.tabDone||{},bigRewarded:S.bigRewarded||0,monarchs:S.monarchs||0,travelRoam:!!S.travelRoam,qs:S.qs||{},qDone:S.qDone||{},wx:{k:bwx.k,t:Math.round(bwx.t)},elvenScroll:!!S.elvenScroll,goldBorder:!!S.goldBorder,bardMon:!!S.bardMon,dragonRumor:!!S.dragonRumor,dragonReady:!!S.dragonReady,dragonSlain:!!S.dragonSlain,dragonHP:S.dragonHP==null?DRAGON_HP:S.dragonHP,daily:S.daily||null,qShown:S.qShown||{},renownBonus:S.renownBonus||0,lastSeen:Date.now()}))}catch(e){}}
 // [15] in a saved box: everything newer, by name (royal colors, requests made, grudges, the Monarch's gifts, the Traveling Merchant's time left)
 const EXTRA_KEYS=['pal','asked','grudge','sir','helper','staff','barrel','sacks','pine','minions','travelT','wcoins','inst','merchTag','fightTag','monTag','hoard','helm'];
 const extras=u=>{const o={};EXTRA_KEYS.forEach(k=>{if(u[k])o[k]=k==='travelT'?Math.round(u[k]):u[k]});return o};
@@ -2866,14 +2924,17 @@ function load(){let d=null;try{d=JSON.parse(localStorage.getItem(KEY))}catch(e){
  if(d){S.un=d.un||{};S.coins=d.coins||0;S.inv=Object.assign({scroll:0,potion:0,artifact:0,ingot:0},d.inv);S.spent=d.spent||0;S.seen=d.seen||{};S.rewarded=d.rewarded!=null?d.rewarded:Math.floor(ALL_KEYS.filter(k=>S.seen[k]).length/DISCOVER_EVERY)}
  // Bought board spaces. An older save made before spaces were locked: any space that already holds a box stays open, free.
  S.cells=(d&&d.cells)||[];S.bought=(d&&d.bought)||0;S.revealed=(d&&d.revealed)||{};S.goldCells=(d&&d.goldCells)||(d&&d.goldCell?[d.goldCell]:[]);S.ever=(d&&d.ever)||{};S.tabDone=(d&&d.tabDone)||{};S.bigRewarded=(d&&d.bigRewarded)||0;S.travelRoam=!!(d&&d.travelRoam);
- S.qs=(d&&d.qs)||{};S.qDone=(d&&d.qDone)||{};S.elvenScroll=!!(d&&d.elvenScroll);S.goldBorder=!!(d&&d.goldBorder);S.bardMon=!!(d&&d.bardMon);S.dragonRumor=!!(d&&d.dragonRumor);S.dragonReady=!!(d&&d.dragonReady);S.dragonHP=d&&d.dragonHP!=null?d.dragonHP:DRAGON_HP;showBorder();if(d&&d.wx&&BOARD_WX[d.wx.k])bwx={k:d.wx.k,t:d.wx.t||0};showWx(); // quests; the board's weather
+ S.qs=(d&&d.qs)||{};S.qDone=(d&&d.qDone)||{};S.elvenScroll=!!(d&&d.elvenScroll);S.goldBorder=!!(d&&d.goldBorder);S.bardMon=!!(d&&d.bardMon);S.dragonRumor=!!(d&&d.dragonRumor);S.dragonReady=!!(d&&d.dragonReady);S.dragonSlain=!!(d&&(d.dragonSlain||(d.un&&d.un.dragon)||(d.ever&&d.ever.dragon)));S.dragonHP=d&&d.dragonHP!=null?d.dragonHP:DRAGON_HP;S.daily=(d&&d.daily)||null;S.qShown=(d&&d.qShown)||{};S.renownBonus=(d&&d.renownBonus)||0;showBorder();if(d&&d.wx&&BOARD_WX[d.wx.k])bwx={k:d.wx.k,t:d.wx.t||0};showWx(); // quests; the board's weather
  S.monarchs=d&&d.monarchs!=null?d.monarchs:d&&d.boxes&&d.boxes.monarch?1:0; // (an older save with a Monarch on the board: that one was the free one)
  if(d&&d.boxes&&!d.cells)for(const i in d.boxes){const q=d.boxes[i],k=q[0]+','+q[1];if(!isOpen(q[0],q[1]))S.cells.push(k)}
  showCoins();showItems();checkUnlocks();
  buildShelf();checkDiscoveries(); // (pays any Compendium reward already earned, e.g. a tab completed before these rewards existed)
  if(d&&d.boxes){for(const i in d.boxes)if(CH[i]&&!(i==='monarch'&&d.boxes[i][8])){const q=d.boxes[i];addUnit(i,q[0],q[1],true,q[2],q[3],q[4],q[6]!=null?q[6]:0);const v=U[i];if(q[5])v.backwards=true;if(q[7])v.mageTag=true;if(q[9])v.reinforced=true;if(q[10])v.paladin=true;if(q[11])v.armor=true;if(i==='druid')v.fam=q[12]||'bear';if(q[13])v.arch=true;if(q[14])v.trait=q[14];if(q[15])Object.assign(v,q[15]);if(i==='monarch'&&!(q[15]&&q[15].pal))v.pal='red';if(q[8]){v.dead=true;v.st='dead'}setLabel(v)}} // [8] buried Druid, [9] ingot, [10] Paladin, [11] green mage armor, [12] Druid's animal, [13] Archdruid, [14] generous / greedy Monarch, [15] newer extras (a Monarch saved before royal colors stays red and gold)
  else{addUnit('knight',1,1,true);addUnit('wizard',1,3,true)}
- save();ui()}
+ save();ui();dailyRefresh();checkQuests();showRenown();if(d&&d.lastSeen)setTimeout(()=>awayReport((Date.now()-d.lastSeen)/1000),600)} // today's quests, quests now available, renown; what happened while you were away
+// Saved every 30 s of play and when the page is put away, so the time-away report knows when you left (lastSeen)
+let autoSaveT=0;function autoSave(dt){if((autoSaveT+=dt)>=30){autoSaveT=0;save()}}
+window.addEventListener('pagehide',()=>save());
 load();requestAnimationFrame(frame);
 // The Tavern's barkeep, as something that can speak (a speech bubble at his spot behind the bar, or wherever he chased someone to)
 function barkeepOf(h){const b=h.bkT||(h.bkT={talker:1,id:'barkeep'});b.x=h.bk?h.bk.x:(h.bkx||h.c*CELL+74);b.y=h.r*CELL+64;return b}

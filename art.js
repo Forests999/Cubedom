@@ -166,6 +166,7 @@ function poseOf(act,at){
  if(act==='wares')return at>1.2&&at<3.2?'fwd':'none';
  if(act==='wcast'||act==='ascend')return 'both';
  if(act==='bplay'||act==='bspell')return 'both'; // the Bard holds the instrument
+ if(act==='gpour'||act==='gtoss')return at<2.6?'hold':'none'; // the Goblin holding a potion or a scroll
  if(act==='gdagger')return 'fwd'; // the Goblin holds his dagger out, spinning it
  if(act==='court')return at>1.6&&at<3.4?'up':'none';
  if(act==='magic')return Math.floor(at*3)%2?'up':'fwd';
@@ -1165,22 +1166,50 @@ function lairBack(){const cv=document.createElement('canvas');cv.width=192;cv.he
 function drawDragonLair(c,x,y,t){x=Math.round(x);y=Math.round(y);if(!LAIR_BG)LAIR_BG=lairBack();c.save();c.translate(x,y);c.beginPath();c.rect(0,0,192,96);c.clip();c.drawImage(LAIR_BG,0,0);
  [[70,80],[98,88],[126,84],[84,93],[146,92]].forEach((q,i)=>{const k=(t*.7+i*.21)%1;if(k<.2){const a=1-Math.abs(k-.1)*10;c.fillStyle='rgba(255,255,240,'+a.toFixed(2)+')';c.fillRect(q[0],q[1]-1,1,3);c.fillRect(q[0]-1,q[1],3,1)}}); // sparkles twinkling on the gold
  drawDragonRest(c,t);c.restore()}
-// The dragon asleep on its hoard, head resting on its paws (lair coordinates)
-function drawDragonRest(c,t){const C=DRAGON_C,br=Math.sin(t*1.4)>0?1:0;
- pxTube(c,[78,64],[34,66],[42,86],7,2,C);pxPoly(c,[[36,84],[46,82],[42,91]],C.o);pxPoly(c,[[37,84],[45,83],[42,89]],C.wingD); // its tail curls around the front of the hoard
- pxShade(c,78,64,12,9,C);[[69,72],[73,73],[77,73]].forEach(q=>{c.fillStyle=C.hornD;c.fillRect(q[0],q[1],1,2);c.fillStyle=C.horn;c.fillRect(q[0],q[1],1,1)}); // a hind leg and claws
- pxShade(c,102,58-br,34,13+br,C); // the body (breathing)
- c.save();c.beginPath();c.rect(64,63,80,12);c.clip();pxEll(c,102,58-br,31,12+br,'#b8683c');pxEll(c,102,57-br,29,11+br,'#cc8048');c.fillStyle='#9a5430';for(let k=0;k<9;k++)c.fillRect(77+k*6,65,1,4);c.restore(); // the belly: one curved band along the bottom of the body, with faint plate lines
- for(let k=0;k<26;k++){const sx=78+((k*13)%46),sy=50+((k*7)%10);c.fillStyle=C.d;c.fillRect(sx,sy,2,1)} // scales
- pxPoly(c,[[125,48],[85,39],[94,29],[112,24],[130,40]],C.o);pxPoly(c,[[123,47],[88,39],[96,31],[112,26],[127,41]],C.wing); // a folded wing on its back
- [[96,31],[112,26],[88,39]].forEach(q=>pxLine(c,124,46,q[0],q[1],C.wingD));pxLine(c,96,31,112,26,C.wingL);
- for(let k=0;k<7;k++)pxSpike(c,76+k*7,45+Math.abs(k-3)*.7-br,4,4,C.horn); // spines along the back
- pxTube(c,[130,52],[146,46],[152,58],8,6,C); // the neck
- pxShade(c,150,69,7,5,C);[[145,73],[149,74],[153,74]].forEach(q=>{c.fillStyle=C.hornD;c.fillRect(q[0],q[1],1,2);c.fillStyle=C.horn;c.fillRect(q[0],q[1],1,1)}); // front paws
- pxShade(c,162,60,10,7,C);pxShade(c,175,63,8,4,C); // the head and snout, resting
- pxPoly(c,[[154,55],[146,42],[143,38],[150,46],[158,54]],C.horn);pxPoly(c,[[158,54],[154,42],[153,38],[157,46],[161,53]],C.hornD); // horns
- c.fillStyle=C.d;c.fillRect(158,56,8,1);c.fillRect(166,67,16,1); // brow, mouth line
- c.fillStyle=C.teeth;[170,174,178].forEach(tx=>c.fillRect(tx,66,1,1));c.fillStyle=O;c.fillRect(181,61,1,1); // teeth, nostril
- if((t%9)<1.2){c.fillStyle=C.eye;c.fillRect(162,58,5,2);c.fillStyle=O;c.fillRect(164,58,1,2)}else{c.fillStyle='#3a0c0a';c.fillRect(162,59,5,1)} // asleep... or is it?
- for(let i=0;i<3;i++){const k=(t*.6+i/3)%1;c.fillStyle='rgba(170,160,160,'+((1-k)*.45).toFixed(2)+')';c.beginPath();c.arc(184+k*6,58-k*24,2+k*4,0,Math.PI*2);c.fill()} // smoke from its nose
- drawZ(c,168,34-Math.round((t*6)%8),.8)}
+// The dragon asleep on its hoard (lair coordinates). It is painted once per breath (2 frames, DRAGON_REST) on its own canvas:
+// every part first, then scales, belly, wing, spines and horns, then light from above and a warm glow from the gold,
+// and ONE outline around the whole silhouette (so the parts read as one creature), then the face details.
+const DRAGON_REST=[];
+function dragonRestLayer(br){const cv=document.createElement('canvas');cv.width=192;cv.height=96;const c=cv.getContext('2d');c.translate(-12,0); // (drawn 12 px further left, so the head has room)
+ const R='#a82a22',RD='#741a14',RL='#cc4434',HORN='#e8dcc0',HORND='#a89474',BELLY='#d8955a',BELLYD='#a8683a',MEM='#86221c',MEMD='#5e1610',BONE='#4a100c';
+ const E=(x,y,rx,ry,col)=>pxEll(c,x,y,rx,ry,col);
+ // a part, shaded: dark underneath, the body color, a lit top (light from the top-left)
+ const P=(x,y,rx,ry)=>{E(x,y,rx,ry,RD);E(x-rx*.04,y-ry*.18,rx*.96,ry*.8,R);E(x-rx*.2,y-ry*.5,rx*.62,ry*.32,RL)};
+ const tube=(p0,p1,p2,r0,r1,shade)=>{const pts=[];for(let i=0;i<=36;i++){const k=i/36,a=(1-k)*(1-k),b=2*(1-k)*k,d=k*k;pts.push([a*p0[0]+b*p1[0]+d*p2[0],a*p0[1]+b*p1[1]+d*p2[1],r0+(r1-r0)*k])}
+  if(shade){pts.forEach(p=>E(p[0],p[1],p[2],p[2],RD));pts.forEach(p=>E(p[0]-p[2]*.05,p[1]-p[2]*.2,p[2]*.9,p[2]*.78,R));pts.forEach(p=>{if(p[2]>2.5)E(p[0]-p[2]*.2,p[1]-p[2]*.55,p[2]*.5,p[2]*.28,RL)})}
+  else{pts.forEach(p=>E(p[0],p[1],p[2]+1,p[2]+1,O));pts.forEach(p=>E(p[0],p[1],p[2],p[2],shade===false?HORN:HORND))}}; // (horns get their own dark outline)
+ // 1) the body, in red: the tail wrapping round the front of the hoard, haunch and hind foot, torso, chest, the arched neck, the head on its paws
+ tube([76,68],[28,62],[42,88],8,1.5,true);pxPoly(c,[[36,85],[46,84],[42,92]],RD);
+ P(80,62,14,11);P(78,74,9,3);
+ P(102,58-br,34,13+br);P(130,55-br,15,12);
+ tube([134,50],[148,38],[158,55],8.5,7,true);
+ P(150,70,8,5);P(163,59,13,9);
+ pxPoly(c,[[167,52],[186,57],[192,61],[191,67],[169,69]],R);pxPoly(c,[[169,63],[191,64],[191,67],[169,69]],RD);pxPoly(c,[[169,53],[185,57],[180,58],[169,57]],RL); // the long snout, lit along the top
+ // 2) scales: a fine pattern of darker marks on the red (only on what is drawn so far)
+ c.globalCompositeOperation='source-atop';c.fillStyle='rgba(50,0,0,.28)';for(let y=0;y<96;y+=3)for(let x=(y%6?2:0);x<192;x+=4)c.fillRect(x,y,2,1);c.globalCompositeOperation='source-over';
+ // 3) the belly: pale plates along the underside of the torso and up the throat
+ c.save();c.beginPath();c.rect(64,65,96,12);c.clip();E(103,57-br,31,12+br,BELLYD);E(103,56-br,30,11+br,BELLY);c.fillStyle=BELLYD;for(let k=0;k<11;k++)c.fillRect(76+k*6,66,1,5);c.restore();
+ for(let k=0;k<5;k++){const q=.15+k*.15,x=(1-q)*(1-q)*134+2*(1-q)*q*148+q*q*158+5,y=(1-q)*(1-q)*50+2*(1-q)*q*38+q*q*55+5;E(x,y,2.5,1.5,BELLY);c.fillStyle=BELLYD;c.fillRect(Math.round(x)-2,Math.round(y)+1,4,1)}
+ // 4) the wing, folded along its back: a strong arm bone, two finger bones, darker membrane in between
+ pxPoly(c,[[130,46],[114,22],[106,24],[72,40],[94,49]],MEMD);pxPoly(c,[[126,46],[112,26],[98,42]],MEM);pxPoly(c,[[110,27],[104,27],[80,40],[96,42]],MEM);
+ pxLine(c,130,46,114,22,BONE);pxLine(c,129,46,113,22,BONE);pxLine(c,114,22,74,40,BONE);pxLine(c,114,22,96,47,BONE);pxLine(c,113,23,108,22,HORN);pxLine(c,112,25,100,27,'#b03a2c');
+ // 5) spines down its back and neck, the horns sweeping back, a frill on the cheek
+ [[66,52],[72,50],[78,49],[134,43],[139,38],[144,35],[149,34]].forEach(([x,y])=>pxSpike(c,x,y-br,4,5,HORN));
+ tube([162,52],[155,43],[146,40],2.4,.8,null);tube([158,53],[150,45],[141,43],2.8,.8,false);
+ pxPoly(c,[[154,61],[146,66],[156,65]],RD);pxPoly(c,[[156,64],[150,70],[158,67]],RD);
+ // 6) claws on the paws and the hind foot
+ [[143,73],[147,74],[151,74],[155,74],[71,76],[75,77],[79,77]].forEach(([x,y])=>{c.fillStyle=HORND;c.fillRect(x,y,1,2);c.fillStyle=HORN;c.fillRect(x,y,1,1)});
+ // 7) light: a little brighter on top, darker underneath, warm light from the gold below
+ c.globalCompositeOperation='source-atop';[[0,40,'rgba(255,230,200,.16)'],[40,48,'rgba(255,230,200,.07)'],[66,72,'rgba(0,0,0,.10)'],[72,96,'rgba(0,0,0,.18)']].forEach(b=>{c.fillStyle=b[2];c.fillRect(0,b[0],192,b[1]-b[0])});
+ c.fillStyle='rgba(255,170,60,.16)';c.fillRect(0,68,192,28);c.globalCompositeOperation='source-over';
+ // 8) one outline around the whole dragon
+ const sil=document.createElement('canvas');sil.width=192;sil.height=96;const s=sil.getContext('2d');s.drawImage(cv,0,0);s.globalCompositeOperation='source-in';s.fillStyle=O;s.fillRect(0,0,192,96);
+ const fin=document.createElement('canvas');fin.width=192;fin.height=96;const f=fin.getContext('2d');[[-1,0],[1,0],[0,-1],[0,1]].forEach(d=>f.drawImage(sil,d[0],d[1]));f.drawImage(cv,0,0);
+ // 9) the face: brow ridge, mouth line with fangs, nostril, a lit cheekbone
+ f.translate(-12,0);f.fillStyle=RD;f.fillRect(157,54,10,1);f.fillStyle='#4a0e0a';f.fillRect(168,65,22,1);f.fillStyle='#fff8e8';[172,178,184].forEach(x=>f.fillRect(x,66,1,2));f.fillStyle=O;f.fillRect(188,60,2,1);
+ f.fillStyle=RL;f.fillRect(155,62,7,1);
+ return fin}
+function drawDragonRest(c,t){const br=Math.sin(t*1.4)>0?1:0;if(!DRAGON_REST[br])DRAGON_REST[br]=dragonRestLayer(br);c.drawImage(DRAGON_REST[br],0,0);c.save();c.translate(-12,0);
+ if((t%9)<1.2){c.fillStyle=O;c.fillRect(161,57,6,3);c.fillStyle='#ffd040';c.fillRect(162,58,4,1);c.fillStyle=O;c.fillRect(164,58,1,1)}else{c.fillStyle='#3a0c0a';c.fillRect(161,58,6,1);c.fillRect(162,59,4,1)} // asleep... or is it? (now and then an eye opens)
+ for(let i=0;i<3;i++){const k=(t*.6+i/3)%1;c.fillStyle='rgba(170,160,160,'+((1-k)*.45).toFixed(2)+')';c.beginPath();c.arc(190+k*3,58-k*24,1.5+k*4,0,Math.PI*2);c.fill()} // smoke from its nose
+ drawZ(c,170,32-Math.round((t*6)%8),.8);c.restore()}

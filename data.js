@@ -1049,12 +1049,18 @@ Object.assign(HINTS,{tvfizz:'Mages next to the tavern like their drinks with spa
  tvdeliver:'Shopkeepers next door keep the tavern stocked.',tvwine:'A rare bottle could fetch a good price at the bar.',tvshoo:'Something monstrous next door might not be welcome at the bar.'});
 Object.assign(WELL_PCT,{tvfizz:structPct(1-STRUCT_SECOND.tvbubbles),tvbubbles:structPct(STRUCT_SECOND.tvbubbles),tvdrink:structPct(1),tvdeliver:structPct(1-STRUCT_SECOND.tvwine),tvwine:structPct(STRUCT_SECOND.tvwine),tvshoo:structPct(1)}); // share of a neighbor's idle activities (all structures)
 NOTE.tvwine='+20 coins.';NOTE.tvdrink='Asleep for 15 seconds once home.';
-// ---------- Quests (the Quests tab): achievements with a reward, paid once when the goal is reached ----------
-// stat = the counter in S.qs that counts toward it (questStat in game.js); reward = coins and / or items (scroll, potion, artifact, ingot)
-const QUESTS=[
- {id:'prosperity',name:'Prosperity',text:'Have a feast 3 times.',stat:'feasts',goal:3,reward:{coins:50}},
- {id:'kingfeast',name:'Feast Fit for a King',text:'Have a feast that includes the Monarch.',stat:'royalFeasts',goal:1,reward:{artifact:1}},
- {id:'costdisc',name:'Cost of Discovery',text:'Have the Wizard die 15 times.',stat:'wizDeaths',goal:15,reward:{scroll:5}}];
+// Story quests (QUESTS): shown once available (show), paid once. Daily quests (DAILY_QUESTS): DAILY_COUNT of them picked each real-world day
+// among the ones that can happen with what you have unlocked (avail); their counters start over each day (S.daily).
+const QUESTS=[];
+const DAILY_COUNT=3,DAILY_QUESTS=[
+ {id:'prosperity',name:'Prosperity',text:'Have a feast 3 times.',stat:'feasts',goal:3,reward:{coins:50},avail:()=>unlockedChars().length>=3},
+ {id:'kingfeast',name:'Feast Fit for a King',text:'Have a feast that includes the Monarch.',stat:'royalFeasts',goal:1,reward:{artifact:1},avail:()=>unlockedChars().includes('monarch')},
+ {id:'costdisc',name:'Cost of Discovery',text:'Have the Wizard die 15 times.',stat:'wizDeaths',goal:15,reward:{scroll:5},avail:()=>unlockedChars().includes('wizard')},
+ {id:'bigspender',name:'Big Spender',text:'Spend 50 coins.',stat:'spent',goal:50,reward:{renown:1},avail:()=>true},
+ {id:'blink',name:'Blink and You\'ll Miss It',text:'Have a rare event happen (a chance of 5% or less).',stat:'rare',goal:1,reward:{coins:15},avail:()=>true},
+ {id:'missed',name:'They Will Be Missed',text:'Have a character die.',stat:'deaths',goal:1,reward:{coins:5},avail:()=>true},
+ {id:'lore',name:'Lore Gatherer',text:'Discover 10 new interactions in the Compendium.',stat:'discover',goal:10,reward:{reveal:1},avail:()=>undiscoveredScenes().length>=10},
+ {id:'marketday',name:'Market Day',text:'Have a market day.',stat:'markets',goal:1,reward:{coins:30},avail:()=>unlockedChars().filter(id=>hasClass({id},'merchant')).length>=4}];
 const ITEM_WORD={scroll:['spell scroll','spell scrolls'],potion:['potion','potions'],artifact:['artifact','artifacts'],ingot:['ingot','ingots']}; // for quest rewards (one, several)
 
 // ---------- the Druid's casts (instead of a visit; WEATHER_TIERS above, castOk / castFx in game.js) ----------
@@ -1191,7 +1197,7 @@ NOTE.libecon='+1 coin every 30 s for 5 minutes.';NOTE.libfire='The Library goes 
 Object.assign(WELL_PCT,{libread:structPct(1),libyawn:structPct(1-RARITY.r),libecon:structPct(RARITY.r),libbrowse:structPct(1-RARITY.r),libbooks:structPct(RARITY.r),libfire:structPct(1),libmartial:structPct(RARITY.u)});
 STRUCT_WHO.libmartial='the Bard';
 // ---------- quest: An Old Friend (every entry on the Wizard's Compendium page, secrets too) unlocks the Bard ----------
-QUESTS.push({id:'oldfriend',name:'An Old Friend',text:'Discover everything on the Wizard\'s page of the Compendium (secrets too).',tab:'wizard',reward:{unlock:'bard'}});
+QUESTS.push({id:'oldfriend',name:'An Old Friend',text:'Discover everything on the Wizard\'s page of the Compendium (secrets too).',tab:'wizard',reward:{unlock:'bard'},show:()=>wizardAllShown()}); // (shown once every entry of the Wizard's page can show: every partner unlocked)
 
 // ---------- the Goblin (Monstrous): a little green thief in a cave camp. Unlocked by the quest The Rumors are True. ----------
 // Smaller than everyone (GOBLIN_SCALE). Neighbors visit him far less (GOBLIN_SHY: his share when they pick whom to visit). He always visits for his scenes (GOBLIN_VISITS).
@@ -1251,7 +1257,7 @@ Object.assign(HINTS,{grummage:'A goblin and his junk are never parted.',gdagger:
  gmob:'Where there is one goblin, there may be many more. Once in a blue moon.',groyal:'A goblin next to royalty cannot resist a prank.',gskulls:'A goblin and a skull collector might bond.',
  gpriest:'Holy light and goblins do not get along.',gbite:'Never turn your back on a goblin.',gtrinket:'Magic trinkets are tempting, and unpredictable.'});
 NOTE.gherbcoin='+5 coins to his stash.';NOTE.gknightdie='The Goblin dies.';NOTE.gmob='The Knight dies; the Goblin keeps the helmet.';NOTE.gsteal='+2 coins to his stash.';
-QUESTS.push({id:'rumorstrue',name:'The Rumors are True',text:'Hear the Fruit Merchant tell the Knight about goblins 5 times.',stat:'goblinRumors',goal:5,reward:{unlock:'goblin'}});
+QUESTS.push({id:'rumorstrue',name:'The Rumors are True',text:'Hear the Fruit Merchant tell the Knight about goblins 5 times.',stat:'goblinRumors',goal:5,reward:{unlock:'goblin'},show:()=>compUnl('merchant')}); // (shown once the Fruit Merchant is unlocked)
 // ---------- the Bard's Resonance: for each tag the Bard has ----------
 // neighbors' chances of dying -RES_DEATH; their legendary idle activities +RES_LEGEND; +1 coin a minute from passers-by (RES_COIN_EVERY)
 const RES_DEATH=.1,RES_LEGEND=.1,RES_COIN_EVERY=60;
@@ -1279,3 +1285,23 @@ DESC['grp:dragon']='Once the dragon has been heard of (the Fruit Merchant\'s rum
 FLAVOR['grp:dragon']='A shadow falls over the whole kingdom. Then a roar. Swords up, spells ready!';
 HINTS['grp:dragon']='A merchant\'s rumor, an old friends\' tale and a heavy purse... something huge may come looking. It takes a kingdom united to bring it down.';
 const DRAGON_SAY={fighter:['For the kingdom!','Have at you!','Take that, overgrown lizard!'],mage:['Feel my power!','Lightning, strike!','Arcane bolt!'],merchant:['Here, have some fruit! HARD fruit!','Catch this!','No refunds!'],other:['Run!','Hide!','A DRAGON?!','Eek!']};
+
+// ---------- the Goblin and items: a potion is poured out, a spell scroll ends up on his junk pile (both used up) ----------
+COMP_TABS.find(t=>t.id==='goblin').items.push('gpotion','gscroll');
+Object.assign(NAMES,{gpotion:'Potion on Goblin: poured out',gscroll:'Scroll on Goblin: onto the junk pile'});Object.assign(TITLES,{gpotion:'Not Thirsty',gscroll:'Can\'t Read'});
+Object.assign(DESC,{gpotion:'Potion on the Goblin: he sniffs it, shakes it, looks very confused and pours it all out on the floor.',gscroll:'Spell scroll on the Goblin: he tries to read it, can\'t, and tosses it onto his junk pile.'});
+Object.assign(FLAVOR,{gpotion:'Sniff. Shake. Squint. Splash. "Bad juice."',gscroll:'He holds it upside down, then sideways, then gives up. "Pretty paper. Junk pile."'});
+Object.assign(HINTS,{gpotion:'A goblin might not know what to do with a potion.',gscroll:'Can goblins read? Give him something to find out.'});
+// ---------- Renown: your kingdom's score (renownOf in game.js): 1 per Compendium discovery, RENOWN_CHAR per character unlocked for the first time, plus quest rewards (S.renownBonus) ----------
+const RENOWN_CHAR=10;
+// ---------- Time away (awayReport in game.js): when you come back after AWAY_MIN seconds or more, up to AWAY_MAX seconds count ----------
+// Coins are halved (AWAY_COIN); nothing is unlocked and no scenes or events play; each hour away has AWAY_REVEAL chance to reveal an undiscovered interaction.
+const AWAY_MIN=300,AWAY_MAX=8*3600,AWAY_COIN=.5,AWAY_REVEAL=.02;
+// What each character did meanwhile ({n} = about how many times; one line each for up to AWAY_LINES_MAX of them)
+const AWAY_LINES_MAX=4,AWAY_LINES={knight:'The Knight practiced with his weapon about {n} times.',wizard:'The Wizard read about {n} books. Some twice.',
+ priest:'The Priest said about {n} prayers for the kingdom.',necromancer:'The Necromancer chatted with about {n} spirits.',merchant:'The Fruit Merchant shouted about his apples about {n} times.',
+ apothecary:'The Apothecary brewed about {n} remedies.',alchemist:'The Alchemist set off about {n} small explosions. Small ones.',rogue:'The Rogue counted his stash about {n} times. It never adds up.',
+ druid:'The Druid tended his grove and talked to about {n} animals.',blacksmith:'The Blacksmith struck his anvil about {n} times.',monarch:'The Monarch held court about {n} times.',
+ traveler:'The Traveling Merchant rearranged the wares about {n} times.',bard:'The Bard played about {n} songs for nobody in particular.',goblin:'The Goblin rummaged through his junk about {n} times.',
+ dragon:'The Dragon snored about {n} times. The cave shook.',farmer:'The Farmer hoed about {n} rows.',well:'Someone tossed a coin in the Well and made a wish.',tavern:'The Tavern served about {n} ales.',library:'The Library gathered a little more dust.'};
+const AWAY_IDLE=['Nobody noticed you were gone. Mostly.','The kingdom carried on without you, a little bored.','A cat wandered across the whole board and left again.'];
