@@ -1146,7 +1146,7 @@ function drawDragonLair(c,x,y,t){x=Math.round(x);y=Math.round(y);c.save();c.tran
  const top=hx=>{const H=[[34,96],[46,82],[66,72],[96,66],[128,70],[150,78],[168,96]];for(let i=0;i<H.length-1;i++)if(hx>=H[i][0]&&hx<=H[i+1][0])return H[i][1]+(H[i+1][1]-H[i][1])*(hx-H[i][0])/(H[i+1][0]-H[i][0]);return 96};
  pxPoly(c,[[33,96],[45,81],[66,71],[96,65],[128,69],[151,77],[169,96]],'#7a5410');pxPoly(c,[[34,96],[46,82],[66,72],[96,66],[128,70],[150,78],[168,96]],'#b8862a');pxPoly(c,[[46,96],[56,82],[76,74],[96,70],[120,73],[140,82],[152,96]],'#d8a838');pxPoly(c,[[70,82],[86,74],[104,72],[118,76],[110,80],[84,82]],'#f2c84a');
  for(let i=0;i<240;i++){const a=((i*37)%113)/113,b=((i*61)%97)/97,cx=38+a*126,cy=top(cx)+2+b*(96-top(cx)-2);c.fillStyle=i%5===0?'#fff0a0':i%3?'#f2c84a':'#e0b040';c.fillRect(Math.round(cx),Math.round(cy),2,1);c.fillStyle='#8a6018';c.fillRect(Math.round(cx),Math.round(cy)+1,2,1)}
- [[42,90,5],[58,86,7],[150,88,6]].forEach(q=>{for(let k=0;k<q[2];k++){c.fillStyle=O;c.fillRect(q[0]-1,q[1]-k*2-1,7,3);c.fillStyle=k%2?'#d8a838':'#f2c84a';c.fillRect(q[0],q[1]-k*2,5,1);c.fillStyle='#8a6018';c.fillRect(q[0],q[1]-k*2+1,5,1)}c.fillStyle='#fff0a0';c.fillRect(q[0]+1,q[1]-q[2]*2+2,3,1)}); // coin stacks
+ [[42,90,5],[58,86,7],[150,88,6]].forEach(q=>{const y0=q[1]-(q[2]-1)*2;c.fillStyle=O;c.fillRect(q[0]-1,y0-1,7,q[2]*2+2);for(let k=0;k<q[2];k++){const yy=q[1]-k*2;c.fillStyle=k%2?'#d8a838':'#f2c84a';c.fillRect(q[0],yy,5,1);c.fillStyle='#a87820';c.fillRect(q[0],yy+1,5,1)}c.fillStyle='#fff0a0';c.fillRect(q[0]+1,y0,3,1)}); // coin stacks (one outline around each stack)
  c.fillStyle=O;c.fillRect(129,73,22,14);c.fillStyle='#5a2e14';c.fillRect(130,74,20,12);c.fillStyle='#7a4220';c.fillRect(130,74,20,3);c.fillStyle='#e0b040';c.fillRect(130,77,20,1);c.fillRect(130,84,20,1);c.fillRect(139,78,2,3); // an open chest
  c.fillStyle=O;c.fillRect(129,66,22,8);c.fillStyle='#4a2410';c.fillRect(130,67,20,6);c.fillStyle='#e0b040';c.fillRect(130,72,20,1); // its lid, open
  c.fillStyle='#f2c84a';c.fillRect(132,72,16,2);[[134,71,'#e83a5a'],[140,71,'#3ac8e8'],[145,72,'#3ae87a']].forEach(q=>{c.fillStyle=q[2];c.fillRect(q[0],q[1],2,2);c.fillStyle='#ffffff';c.fillRect(q[0],q[1],1,1)}); // gold and gems in it
@@ -1158,15 +1158,15 @@ function drawDragonLair(c,x,y,t){x=Math.round(x);y=Math.round(y);c.save();c.tran
 // The dragon asleep on its hoard, head resting on its paws (lair coordinates)
 function drawDragonRest(c,t){const C=DRAGON_C,br=Math.sin(t*1.4)>0?1:0;
  pxTube(c,[78,64],[34,66],[42,86],7,2,C);pxPoly(c,[[36,84],[46,82],[42,91]],C.o);pxPoly(c,[[37,84],[45,83],[42,89]],C.wingD); // its tail curls around the front of the hoard
- pxShade(c,78,64,12,9,C);[[68,72],[72,73],[76,73]].forEach(q=>{c.fillStyle=O;c.fillRect(q[0]-1,q[1]-1,4,4);c.fillStyle=C.horn;c.fillRect(q[0],q[1],2,2)}); // a hind leg and claws
+ pxShade(c,78,64,12,9,C);[[69,72],[73,73],[77,73]].forEach(q=>{c.fillStyle=C.hornD;c.fillRect(q[0],q[1],1,2);c.fillStyle=C.horn;c.fillRect(q[0],q[1],1,1)}); // a hind leg and claws
  pxShade(c,102,58-br,34,13+br,C); // the body (breathing)
- for(let k=0;k<9;k++){c.fillStyle=C.belly;c.fillRect(76+k*6,66,5,3);c.fillStyle=C.bellyD;c.fillRect(76+k*6,68,5,1)} // belly plates
+ c.save();c.beginPath();c.rect(64,63,80,12);c.clip();pxEll(c,102,58-br,31,12+br,'#b8683c');pxEll(c,102,57-br,29,11+br,'#cc8048');c.fillStyle='#9a5430';for(let k=0;k<9;k++)c.fillRect(77+k*6,64,1,8);c.restore(); // the belly: one curved band along the bottom of the body, with faint plate lines
  for(let k=0;k<26;k++){const sx=78+((k*13)%46),sy=50+((k*7)%10);c.fillStyle=C.d;c.fillRect(sx,sy,2,1)} // scales
  pxPoly(c,[[125,48],[85,39],[94,29],[112,24],[130,40]],C.o);pxPoly(c,[[123,47],[88,39],[96,31],[112,26],[127,41]],C.wing); // a folded wing on its back
  [[96,31],[112,26],[88,39]].forEach(q=>pxLine(c,124,46,q[0],q[1],C.wingD));pxLine(c,96,31,112,26,C.wingL);
  for(let k=0;k<7;k++)pxSpike(c,76+k*7,45+Math.abs(k-3)*.7-br,4,4,C.horn); // spines along the back
  pxTube(c,[130,52],[146,46],[152,58],8,6,C); // the neck
- pxShade(c,150,69,7,5,C);[[144,73],[148,74],[152,74]].forEach(q=>{c.fillStyle=O;c.fillRect(q[0]-1,q[1]-1,4,4);c.fillStyle=C.horn;c.fillRect(q[0],q[1],2,2)}); // front paws
+ pxShade(c,150,69,7,5,C);[[145,73],[149,74],[153,74]].forEach(q=>{c.fillStyle=C.hornD;c.fillRect(q[0],q[1],1,2);c.fillStyle=C.horn;c.fillRect(q[0],q[1],1,1)}); // front paws
  pxShade(c,162,60,10,7,C);pxShade(c,175,63,8,4,C); // the head and snout, resting
  pxPoly(c,[[154,55],[146,42],[143,38],[150,46],[158,54]],C.horn);pxPoly(c,[[158,54],[154,42],[153,38],[157,46],[161,53]],C.hornD); // horns
  c.fillStyle=C.d;c.fillRect(158,56,8,1);c.fillRect(166,67,16,1); // brow, mouth line
