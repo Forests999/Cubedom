@@ -331,19 +331,27 @@ function startDragon(o){const all=Object.values(U).filter(v=>!v.dead&&!isStruct(
 function dragonHit(v){const role=grp.roles[v.id]||'fighter',dmg=1+Math.floor(Math.random()*6);v.face=dragon.x>v.x?1:-1;
  if(role==='fighter'){gest(v,'up',.8);v.hop=.5}else if(role==='mage')gest(v,'both',1);else gest(v,'fwd',.8);
  if(Math.random()<.45)say(v,pick(DRAGON_SAY[role]));dshots.push({x0:v.x+v.face*8,y0:v.y-30,t:0,role,dmg})}
-function stepDragon(dt){const d=dragon;if(!d){endGroup(false);return}d.t+=dt;if(d.blink>0)d.blink-=dt;
- if(d.falling!=null){d.falling+=dt;d.y+=dt*(30+d.falling*90);d.x+=d.face*dt*20;if(d.falling>=2){for(let i=0;i<8;i++)poof(d.x-30+i*8,Math.min(d.y,H-20),'#c8b898');beatDragon()}return}
+function stepDragon(dt){const d=dragon;if(!d){endGroup(false);return}d.t+=dt;if(d.blink>0)d.blink-=dt;const S2=DRAGON_SCALE;
+ if(d.falling!=null){d.falling+=dt;d.y+=dt*(30+d.falling*110);d.x+=d.face*dt*24;if(d.falling>=2){for(let i=0;i<10;i++)poof(cl(d.x-60+i*12,10,W-10),H-24,'#c8b898');beatDragon()}return}
+ // the end of the fight: it flies over a random open space, breathes fire on it (killing whoever lives there) and flies off
+ if(d.final){const f=d.final;f.t+=dt;if(d.fire)d.fire.t+=dt;const tx=f.c*CELL+48,ty=f.r*CELL+60,mx=tx-d.face*30,my=Math.max(40,ty-90),hx=mx-d.face*54*S2,hy=my+16*S2;
+  if(f.t<1.2){const k=Math.min(1,dt*3);d.x+=(hx-d.x)*k;d.y+=(hy-d.y)*k}
+  else if(f.t<2.8){d.x=hx;d.y=hy;d.breath=true;if(f.t>=1.6&&!f.hit){f.hit=1;dragonBurn(f.r,f.c)}}
+  else{d.breath=false;d.y-=dt*160;d.x+=d.face*dt*120}
+  if(f.t>=4){toast('The dragon flies off, wounded. It has '+dragonHP()+' of '+DRAGON_HP+' hit points left. It will be back...');endGroup(true)}return}
  // flight: swoop in, then circle and dive above the board
- const tx=W/2+Math.sin(d.t*.55)*W*.33,ty=64+Math.sin(d.t*1.2)*34,px=d.x;
- if(d.t<3){const k=Math.min(1,dt*1.5);d.x+=(tx-d.x)*k;d.y+=(ty-d.y)*k}else{d.x=tx;d.y=ty}if(Math.abs(d.x-px)>.2)d.face=d.x>px?1:-1;
+ const tx=W/2+Math.sin(d.t*.5)*W*.22,ty=H*.36+Math.sin(d.t*1.1)*H*.1,px=d.x;
+ if(d.t<3){const k=Math.min(1,dt*1.4);d.x+=(tx-d.x)*k;d.y+=(ty-d.y)*k}else{d.x=tx;d.y=ty}if(Math.abs(d.x-px)>.2)d.face=d.x>px?1:-1;
  // attacks fly up and hit
- dshots.forEach(s=>{s.t+=dt;if(s.t>=.55&&!s.hit){s.hit=1;S.dragonHP=Math.max(0,dragonHP()-s.dmg);d.blink=.3;poof(d.x,d.y,'#ffd040');parts.push({k:'dmg',s:'-'+s.dmg,x:d.x,y:d.y-24,t:0,life:1.2});showDragonBar();save()}});dshots=dshots.filter(s=>!s.hit);
+ dshots.forEach(s=>{s.t+=dt;if(s.t>=.55&&!s.hit){s.hit=1;S.dragonHP=Math.max(0,dragonHP()-s.dmg);d.blink=.3;poof(d.x,d.y,'#ffd040');parts.push({k:'dmg',s:'-'+s.dmg,x:d.x,y:d.y-30,t:0,life:1.2});showDragonBar();save()}});dshots=dshots.filter(s=>!s.hit);
  if(d.t>=d.next&&dragonHP()>0){d.next=d.t+DRAGON_HIT_EVERY;const team=grp.team.map(id=>U[id]).filter(v=>v&&!v.dead&&v.st==='grp');if(team.length)dragonHit(team[d.turn++%team.length])}
- // now and then it breathes fire into a room (looks only; everyone there is scared)
- if(d.t>3&&!d.fire&&Math.random()<dt*.18){const v=pick(Object.values(U).filter(v=>v.st==='grp'));if(v){d.fire={r:v.r,c:v.c,t:0};v.mood='shock';v.mt=2;v.hop=.4;say(v,'Hot hot HOT!')}}
- if(d.fire&&(d.fire.t+=dt)>1.4)d.fire=null;
- if(dragonHP()<=0){d.falling=0;d.face=1;toast('The dragon is falling!');return}
- if(d.t>=DRAGON_FIGHT){toast('The dragon flies off, wounded. It has '+dragonHP()+' of '+DRAGON_HP+' hit points left. It will be back...');endGroup(true)}}
+ if(dragonHP()<=0){d.falling=0;d.face=1;d.breath=false;toast('The dragon is falling!');return}
+ if(d.t>=DRAGON_FIGHT){const open=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c))open.push([r,c]);const q=pick(open);d.final={r:q[0],c:q[1],t:0};d.face=q[1]*CELL+48<W/2?-1:1;dshots=[];toast('The dragon rears back and takes a deep breath...')}}
+// The final fire breath: everyone living on that space dies (structures don't burn down)
+function dragonBurn(r,c){const who=Object.values(U).filter(v=>at(r,c)===v.id&&!isStruct(v)&&!v.dead&&v.st!=='away');
+ dragon.fire={r,c,t:0};for(let i=0;i<6;i++)poof(c*CELL+14+i*14,r*CELL+60-(i%2)*16,i%2?'#ffd040':'#f08a20');
+ if(!who.length){toast('Its fire scorches an empty space.');return}
+ const names=who.map(v=>'the '+CH[idOf(v)].name);who.forEach(v=>kill(v));toast('The dragon\'s fire engulfs '+names.join(' and ')+'!')}
 // Beaten: the dragon joins you (a Dragon box on the shelf)
 function beatDragon(){S.dragonHP=0;S.un.dragon=true;endGroup(true);buildShelf();save();toast('The dragon is defeated! It bows its great head... A Dragon box has appeared on the shelf.')}
 // The dragon's health bar at the top of the board (only during a battle)
@@ -708,7 +716,7 @@ function addCoins(n,x,y,force){if(mourning()&&!force){if(x!=null)parts.push({k:'
 // ---- unlocks that depend on what you hold ----
 function checkUnlocks(){checkEggs();
  // the dragon may attack once its rumor and story are heard and you hold DRAGON_COINS coins (for good)
- if(!S.dragonReady&&S.dragonRumor&&S.seen.bdragon&&(S.coins||0)>=DRAGON_COINS){S.dragonReady=true;save();checkQuests()}
+ if(!S.dragonReady&&S.dragonRumor&&S.seen.bdragon&&(S.coins||0)>=DRAGON_COINS){S.dragonReady=true;save();setTimeout(()=>toast('Far away, something huge stirs in its sleep...'),2000)}
  // the Druid: every board space bought; the Blacksmith: SMITH_UNLOCK coins spent in total
  if(!S.un.druid&&S.cells&&Array.from({length:ROWS*COLS},(_,i)=>isOpen(Math.floor(i/COLS),i%COLS)).every(Boolean)){S.un.druid=true;buildShelf();save();toast('Every space is open... a Druid steps out of the woods. A Druid box has appeared on the shelf!')}
  if(!S.un.monarch&&Object.values(U).filter(v=>!isFarm(v.id)&&!isStruct(v)).length>=MONARCH_UNLOCK){S.un.monarch=true;buildShelf();save();toast('Ten boxes on the board... a kingdom! A Monarch box has appeared on the shelf.')} // the Monarch: MONARCH_UNLOCK boxes on the board
@@ -2078,7 +2086,7 @@ function render(){
    g.save();g.globalAlpha=k*cl((4.8-t)/.5,0,1);drawBat(g,x,y,t+i*.13);g.restore()}}});
  if((drag&&drag.moved)||(td&&td.moved&&td.box))for(const id in U)if(id!==dm&&id!=='dragon'&&hasLeft(id))drawLeftGlow(g,U[id].c*CELL,U[id].r*CELL,T); // while a box is dragged: a faint blue glow on rooms that still have Compendium entries to find
  // the dragon battle: fire breath, attacks flying up, the dragon itself (over everything)
- if(dragon){if(dragon.fire)drawFire(g,dragon.fire.c*CELL,dragon.fire.r*CELL,dragon.fire.t+.4);dshots.forEach(s=>{const k=cl(s.t/.55,0,1),x=lerp(s.x0,dragon.x,k),y=lerp(s.y0,dragon.y,k)-Math.sin(k*Math.PI)*20;if(s.role==='fighter')drawSpinDagger(g,x,y,s.t*2);else if(s.role==='mage'){g.fillStyle=O;g.fillRect(Math.round(x)-3,Math.round(y)-3,6,6);g.fillStyle=Math.floor(s.t*12)%2?'#c890ff':'#7ac8ff';g.fillRect(Math.round(x)-2,Math.round(y)-2,4,4)}else drawItem(g,Math.floor(s.t*8)%2?'apple':'coin',Math.round(x),Math.round(y),1)});drawDragonFly(g,dragon.x,dragon.y,dragon.face,dragon.t,dragon.blink>0)}
+ if(dragon){if(dragon.fire)drawFire(g,dragon.fire.c*CELL,dragon.fire.r*CELL,dragon.fire.t+.4);dshots.forEach(s=>{const k=cl(s.t/.55,0,1),x=lerp(s.x0,dragon.x,k),y=lerp(s.y0,dragon.y,k)-Math.sin(k*Math.PI)*20;if(s.role==='fighter')drawSpinDagger(g,x,y,s.t*2);else if(s.role==='mage'){g.fillStyle=O;g.fillRect(Math.round(x)-3,Math.round(y)-3,6,6);g.fillStyle=Math.floor(s.t*12)%2?'#c890ff':'#7ac8ff';g.fillRect(Math.round(x)-2,Math.round(y)-2,4,4)}else drawItem(g,Math.floor(s.t*8)%2?'apple':'coin',Math.round(x),Math.round(y),1)});if(dragon.breath&&dragon.final){const[mx,my]=dragonMouth(dragon.x,dragon.y,dragon.face,DRAGON_SCALE),tx=dragon.final.c*CELL+48,ty=dragon.final.r*CELL+60;for(let i=0;i<26;i++){const k=((i/26)+dragon.t*1.6)%1,fx=lerp(mx,tx,k)+Math.sin(i*7+dragon.t*20)*6*k,fy=lerp(my,ty,k)+Math.cos(i*5+dragon.t*18)*6*k,s=Math.round(4+k*12);g.fillStyle=k<.3?'#fff6c0':k<.6?'#ffd040':k<.85?'#f08a20':'#d83a1a';g.fillRect(Math.round(fx-s/2),Math.round(fy-s/2),s,s)}}drawDragonFly(g,dragon.x,dragon.y,dragon.face,dragon.t,dragon.blink>0,DRAGON_SCALE,dragon.breath)} // (its fire breath: a stream of flames from its mouth to the space)
  if(hover&&(drag&&drag.moved?drag.id:td&&td.dragon?'dragon':null)==='dragon'){const q=dragonSpot(hover[0],hover[1]);if(q){g.strokeStyle='#f2a93b';g.lineWidth=3;g.strokeRect(q[1]*CELL+3,q[0]*CELL+3,2*CELL-6,CELL-6)}}else // the Dragon: highlight both spaces
  if(hover){g.strokeStyle='#f2a93b';g.lineWidth=3;g.strokeRect(hover[1]*CELL+3,hover[0]*CELL+3,CELL-6,CELL-6)}
  if(dm==='dragon'){g.globalAlpha=.9;drawDragonLair(g,drag.p.x-96,drag.p.y-48,T);g.globalAlpha=1}else // the Dragon, picked up: its wide lair follows the pointer
@@ -2235,8 +2243,8 @@ function infoText(k){const fl=flavorOf(k),note=NOTE[k]?' '+NOTE[k]:'',p=pctOf(k)
  if(STRUCT_WHO[k]&&WELL_PCT[k]){const nm=CNAME((PAIR_WITH[k]||[])[0]);return 'Idle ('+WELL_PCT[k]+' chance): '+STRUCT_WHO[k]+' next to the '+nm+' ('+Math.round(STRUCT_IDLE*100)+'% of their idle activities use the '+nm+(k==='wellsteal'?'; only after a Merchant has wished on a coin there':'')+(nm==='Massive Tree'?'; the tree stands for 1 minute':'')+'). '+fl+note}
  if(WELL_PCT[k]){const sid2=(PAIR_WITH[k]||[])[0],tag=((PAIR_WITH[k]||[])[1]||'').slice(4),tg={mage:'Mage',fighter:'Fighter',merchant:'Merchant',monstrous:'Monstrous character'}[tag],nm=CNAME(sid2),sec=Object.keys(STRUCT_SECOND).find(q=>(STRUCT_ACTS[sid2]||{})[tag]&&STRUCT_ACTS[sid2][tag].includes(q));
   return 'Idle ('+WELL_PCT[k]+' chance): a '+tg+' next to the '+nm+' ('+Math.round(STRUCT_IDLE*100)+'% of their idle activities use the '+nm+'; with several tags, one is picked at random'+(sec?'; the rarer outcome happens '+Math.round(STRUCT_SECOND[sec]*100)+'% of the time':'')+'). '+fl+note}
- if(k==='grp:dragon')return 'Boss battle (a group event, checked every 5 minutes): once the dragon may attack (quest Here Be Dragons), with 3 Fighters, 2 Mages and a Merchant anywhere on the board (6 different characters). It lasts 45 seconds or until the dragon falls; its 100 hit points carry over between battles. '+fl+note;
- if(k.startsWith('grp:'))return 'Group event (checked every 5 minutes, it happens whenever the board allows): '+({'grp:market':'four Merchants in a 2x2 square','grp:feast':'any three characters side by side in a row','grp:wellchat':'characters on all four sides of the Well','grp:classic':'the Priest, Knight, Wizard and Rogue in the same row as the Tavern','grp:dragon':'3 Fighters, 2 Mages and a Merchant anywhere on the board (6 different characters), once the dragon may attack (quest Here Be Dragons), until it is beaten'}[k])+', at home and free'+', for 1 minute. '+fl+note;
+ if(k==='grp:dragon')return 'Boss battle (a group event, checked every 5 minutes): once the dragon has been heard of and you have held 300 coins, with 3 Fighters, 2 Mages and a Merchant anywhere on the board (6 different characters). After 30 seconds its fire breath kills whoever lives on one random space, and it flies off; its 100 hit points carry over between battles. '+fl+note;
+ if(k.startsWith('grp:'))return 'Group event (checked every 5 minutes, it happens whenever the board allows): '+({'grp:market':'four Merchants in a 2x2 square','grp:feast':'any three characters side by side in a row','grp:wellchat':'characters on all four sides of the Well','grp:classic':'the Priest, Knight, Wizard and Rogue in the same row as the Tavern','grp:dragon':'3 Fighters, 2 Mages and a Merchant anywhere on the board (6 different characters), until it is beaten'}[k])+', at home and free'+', for 1 minute. '+fl+note;
  if(k.startsWith('rq:')){const q=k.slice(3);return 'Visit (his first visit to the Monarch; granted 80% by a generous one, 10% by a greedy one): '+(q==='paladin'?'a Paladin':'the '+CNAME(q))+' next to the Monarch, any side. '+fl}
  for(const kind in ITEM_KEY)for(const c in ITEM_KEY[kind])if(ITEM_KEY[kind][c]===k)return 'Item: '+ITEM_NAME[kind].toLowerCase()+' on '+(c==='*'?'anyone without the Fighter tag':'the '+CNAME(c))+'. '+fl+note;
  return (EGGS.includes(k)?'Secret. ':'')+(DESC[k]||NAMES[k]||'')+(note&&!(DESC[k]||'').includes(NOTE[k])?note:'')}

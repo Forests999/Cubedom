@@ -1202,7 +1202,7 @@ const goblinP=[...B(GBC),[2,5,3,2,GBC.skin],[1,4,1,2,GBC.skin],[11,5,3,2,GBC.ski
 CH.goblin={name:'Goblin',eye:'#f2d040',a:arms(GBC),p:goblinP};
 CH.goblin_helm=Object.assign({},CH.goblin,{p:[...goblinP,[4,1,4,2,'#a8acb8'],[8,0,4,2,'#a8acb8'],[4,1,4,1,'#d0d4e0'],[8,0,4,1,'#d0d4e0'],[11,2,2,1,'#8a8e98']]}); // a Knight's helmet, sitting crooked
 CLASS.goblin='monstrous';TR.goblin={up:'fade',down:'fade'};ALL_CHARS.push('goblin');NAMES.goblin='Goblin';
-SHELF_CLUE.goblin="You've been warning about the goblins coming.";
+SHELF_CLUE.goblin="You've been warned about the goblins coming.";
 const GOBLIN_SCALE=.78,GOBLIN_SHY=.25,GOBLIN_HOARD_EVERY=180,GOBLIN_NAP=10;
 IDLES.goblin=[['grummage','c'],['gdagger','c'],['gnap','c'],['gsteal','r','nbr']];
 // his scenes with each neighbor (any side; the Goblin always visits)
@@ -1265,19 +1265,17 @@ const PASSIVES=['ghoard','bresonance'];
 
 // ---------- the Dragon: unlock the battle, win the battle, then it joins you as a 2-space character (Monstrous) ----------
 // 1) The dragon can attack once you have heard the Fruit Merchant's dragon rumor (S.dragonRumor), seen the Wizard and Bard's dragon story (bdragon)
-//    and held DRAGON_COINS coins at once: S.dragonReady, for good (quest Here Be Dragons).
+//    and held DRAGON_COINS coins at once: S.dragonReady, for good (no quest: the clues are in the Compendium). The battle dragon is drawn DRAGON_SCALE times bigger.
 // 2) The battle, a group event: 3 Fighters, 2 Mages and 1 Merchant anywhere on the board, 6 different characters (each fills one role, DRAGON_ROLES).
 //    Everyone on the board is interrupted. The dragon has DRAGON_HP hit points (S.dragonHP, kept between battles); each attack does 1d6.
-//    A battle lasts DRAGON_FIGHT seconds (an attack every DRAGON_HIT_EVERY seconds, taking turns), or until the dragon falls.
+//    A battle lasts DRAGON_FIGHT seconds, then its fire breath kills whoever is on one random open space and it flies off (an attack every DRAGON_HIT_EVERY seconds, taking turns), or until the dragon falls.
 // 3) At 0 hit points it is beaten: a Dragon box appears on the shelf. On the board it is one wide box over 2 spaces side by side.
-const DRAGON_COINS=300,DRAGON_HP=100,DRAGON_FIGHT=45,DRAGON_HIT_EVERY=2.2,DRAGON_ROLES=['fighter','fighter','fighter','mage','mage','merchant'];
+const DRAGON_COINS=300,DRAGON_HP=100,DRAGON_FIGHT=30,DRAGON_SCALE=3,DRAGON_HIT_EVERY=2.2,DRAGON_ROLES=['fighter','fighter','fighter','mage','mage','merchant'];
 CH.dragon={name:'Dragon',eye:O,p:[]};CLASS.dragon='monstrous';ALL_CHARS.push('dragon');NAMES.dragon='Dragon';TR.dragon={up:'fade',down:'fade'};
-SHELF_CLUE.dragon='Something huge circles high above the kingdom. Only a strong band can bring it down.';
+SHELF_CLUE.dragon='A great beast is rumored nearby. Only a kingdom united can bring it down.';
 COMP_TABS.find(t=>t.id==='group').idle.push('grp:dragon');COMP_TABS.push({id:'dragon',name:'Dragon',pairs:[],idle:['grp:dragon'],items:[]});
 NAMES['grp:dragon']='The dragon attacks!';TITLES['grp:dragon']='Dragon Attack!';
-DESC['grp:dragon']='Once the dragon has been heard of (the Fruit Merchant\'s rumor and the Wizard and Bard\'s story) and you have held 300 coins: with 3 Fighters, 2 Mages and a Merchant on the board (6 different characters), the dragon can swoop down. Everyone stops what they are doing and those six attack it, 1d6 damage each. It has 100 hit points, and its wounds carry over to its next attack. When it is beaten, a Dragon box appears on the shelf.';
+DESC['grp:dragon']='Once the dragon has been heard of (the Fruit Merchant\'s rumor and the Wizard and Bard\'s story) and you have held 300 coins: with 3 Fighters, 2 Mages and a Merchant on the board (6 different characters), the dragon can swoop down. Everyone stops what they are doing and those six attack it, 1d6 damage each. After 30 seconds it breathes fire on a random space, killing whoever is there, and flies off. It has 100 hit points, and its wounds carry over to its next attack. When it is beaten, a Dragon box appears on the shelf.';
 FLAVOR['grp:dragon']='A shadow falls over the whole kingdom. Then a roar. Swords up, spells ready!';
-HINTS['grp:dragon']='Rumors, an old story and a full purse might draw something huge. It takes a whole band to fight it.';
+HINTS['grp:dragon']='A merchant\'s rumor, an old friends\' tale and a heavy purse... something huge may come looking. It takes a kingdom united to bring it down.';
 const DRAGON_SAY={fighter:['For the kingdom!','Have at you!','Take that, overgrown lizard!'],mage:['Feel my power!','Lightning, strike!','Arcane bolt!'],merchant:['Here, have some fruit! HARD fruit!','Catch this!','No refunds!'],other:['Run!','Hide!','A DRAGON?!','Eek!']};
-QUESTS.push({id:'dragons',name:'Here Be Dragons',text:'Hear the Fruit Merchant\'s dragon rumor, hear the Wizard and Bard\'s dragon story, and hold 300 coins at once.',reward:{event:'dragon'},
- prog:()=>S.dragonReady?[3,3]:[[S.dragonRumor,S.seen&&S.seen.bdragon,(S.coins||0)>=DRAGON_COINS].filter(Boolean).length,3]});
