@@ -1131,9 +1131,10 @@ function drawDragonFly(c,x,y,face,t,flash,S,mouth){const C=flash?DRAGON_FLASH:DR
  c.restore()}
 // Where its mouth is, on the board (for the fire breath)
 const dragonMouth=(x,y,face,S)=>[x+face*54*S,y-16*S];
-// Its lair on the board: one wide cave over 2 spaces (192 x 96): rock, stalactites, a warm glow from a great heap of gold, a chest, a crown, gems, bones,
-// and the dragon asleep on top of it all (breathing, smoke from its nose, now and then an eye opens)
-function drawDragonLair(c,x,y,t){x=Math.round(x);y=Math.round(y);c.save();c.translate(x,y);c.beginPath();c.rect(0,0,192,96);c.clip();
+// Its lair on the board: one wide cave over 2 spaces (192 x 96): rock, stalactites, a warm glow from a great rounded heap of gold, treasure, bones.
+// The cave and the gold never change, so they are painted once (LAIR_BG, lairBack) and reused; the sparkles and the sleeping dragon move.
+let LAIR_BG=null;
+function lairBack(){const cv=document.createElement('canvas');cv.width=192;cv.height=96;const c=cv.getContext('2d');
  const g=c.createLinearGradient(0,0,0,96);g.addColorStop(0,'#120a0e');g.addColorStop(.55,'#2c1a18');g.addColorStop(1,'#46281c');c.fillStyle=g;c.fillRect(0,0,192,96); // the cave
  [[8,14,30,18],[44,8,40,14],[96,12,34,16],[140,6,44,20],[22,36,24,12],[150,34,26,14],[64,26,22,10]].forEach(r=>{c.fillStyle='#38221e';c.fillRect(r[0],r[1],r[2],r[3]);c.fillStyle='#4a2e26';c.fillRect(r[0],r[1],r[2],2);c.fillStyle='#1e120e';c.fillRect(r[0],r[1]+r[3]-2,r[2],2)}); // rock slabs
  [[60,22,1,10],[61,31,1,6],[118,30,1,8],[30,30,8,1],[160,28,1,6]].forEach(q=>{c.fillStyle='#160c0a';c.fillRect(q[0],q[1],q[2],q[3])}); // cracks
@@ -1142,25 +1143,34 @@ function drawDragonLair(c,x,y,t){x=Math.round(x);y=Math.round(y);c.save();c.tran
  const rg=c.createRadialGradient(100,84,4,100,84,104);rg.addColorStop(0,'rgba(255,190,80,.42)');rg.addColorStop(1,'rgba(255,190,80,0)');c.fillStyle=rg;c.fillRect(0,0,192,96); // the gold's warm glow
  c.fillStyle='#38200f';c.fillRect(0,84,192,12);c.fillStyle='#4a2c16';c.fillRect(0,84,192,1); // the floor
  c.fillStyle='#ddd4bc';c.fillRect(20,86,6,5);c.fillRect(21,91,4,2);c.fillStyle=O;c.fillRect(21,88,2,2);c.fillRect(24,88,1,2);c.fillStyle='#ddd4bc';[30,33,36].forEach(bx=>c.fillRect(bx,87,1,5));c.fillRect(29,87,9,1); // a skull and ribs
- // the hoard: a great heap of gold, shaded, covered in coins
- const top=hx=>{const H=[[34,96],[46,82],[66,72],[96,66],[128,70],[150,78],[168,96]];for(let i=0;i<H.length-1;i++)if(hx>=H[i][0]&&hx<=H[i+1][0])return H[i][1]+(H[i+1][1]-H[i][1])*(hx-H[i][0])/(H[i+1][0]-H[i][0]);return 96};
- pxPoly(c,[[33,96],[45,81],[66,71],[96,65],[128,69],[151,77],[169,96]],'#7a5410');pxPoly(c,[[34,96],[46,82],[66,72],[96,66],[128,70],[150,78],[168,96]],'#b8862a');pxPoly(c,[[46,96],[56,82],[76,74],[96,70],[120,73],[140,82],[152,96]],'#d8a838');pxPoly(c,[[70,82],[86,74],[104,72],[118,76],[110,80],[84,82]],'#f2c84a');
- for(let i=0;i<240;i++){const a=((i*37)%113)/113,b=((i*61)%97)/97,cx=38+a*126,cy=top(cx)+2+b*(96-top(cx)-2);c.fillStyle=i%5===0?'#fff0a0':i%3?'#f2c84a':'#e0b040';c.fillRect(Math.round(cx),Math.round(cy),2,1);c.fillStyle='#8a6018';c.fillRect(Math.round(cx),Math.round(cy)+1,2,1)}
- [[42,90,5],[58,86,7],[150,88,6]].forEach(q=>{const y0=q[1]-(q[2]-1)*2;c.fillStyle=O;c.fillRect(q[0]-1,y0-1,7,q[2]*2+2);for(let k=0;k<q[2];k++){const yy=q[1]-k*2;c.fillStyle=k%2?'#d8a838':'#f2c84a';c.fillRect(q[0],yy,5,1);c.fillStyle='#a87820';c.fillRect(q[0],yy+1,5,1)}c.fillStyle='#fff0a0';c.fillRect(q[0]+1,y0,3,1)}); // coin stacks (one outline around each stack)
- c.fillStyle=O;c.fillRect(129,73,22,14);c.fillStyle='#5a2e14';c.fillRect(130,74,20,12);c.fillStyle='#7a4220';c.fillRect(130,74,20,3);c.fillStyle='#e0b040';c.fillRect(130,77,20,1);c.fillRect(130,84,20,1);c.fillRect(139,78,2,3); // an open chest
- c.fillStyle=O;c.fillRect(129,66,22,8);c.fillStyle='#4a2410';c.fillRect(130,67,20,6);c.fillStyle='#e0b040';c.fillRect(130,72,20,1); // its lid, open
- c.fillStyle='#f2c84a';c.fillRect(132,72,16,2);[[134,71,'#e83a5a'],[140,71,'#3ac8e8'],[145,72,'#3ae87a']].forEach(q=>{c.fillStyle=q[2];c.fillRect(q[0],q[1],2,2);c.fillStyle='#ffffff';c.fillRect(q[0],q[1],1,1)}); // gold and gems in it
- c.fillStyle=O;c.fillRect(77,87,12,7);c.fillStyle='#f2c84a';c.fillRect(78,90,10,3);[78,82,86].forEach(cx=>c.fillRect(cx,88,2,2));c.fillStyle='#e83a5a';c.fillRect(82,90,2,2);c.fillStyle='#3ac8e8';c.fillRect(79,91,1,1);c.fillRect(86,91,1,1); // a crown
- c.fillStyle=O;c.fillRect(105,85,7,10);c.fillStyle='#f2c84a';c.fillRect(106,86,5,4);c.fillRect(108,90,1,3);c.fillRect(106,93,5,1);c.fillStyle='#e83a5a';c.fillRect(108,87,1,1); // a goblet
- [[64,80,'#e83a5a'],[96,82,'#3ae87a'],[120,88,'#3ac8e8'],[54,90,'#c890ff'],[160,90,'#e83a5a']].forEach(q=>{c.fillStyle=O;c.fillRect(q[0]-1,q[1]-1,4,4);c.fillStyle=q[2];c.fillRect(q[0],q[1],2,2);c.fillStyle='#ffffff';c.fillRect(q[0],q[1],1,1)}); // gems
- c.fillStyle=O;c.fillRect(156,52,3,22);c.fillStyle='#d0d4e0';c.fillRect(157,53,1,16);c.fillStyle=O;c.fillRect(153,68,9,3);c.fillStyle='#e0b040';c.fillRect(154,69,7,1);c.fillStyle='#6a3a1e';c.fillRect(157,70,1,4); // a sword stuck in the gold
+ // the hoard: one smooth, rounded heap of gold, shaded pixel by pixel like a dome lit from the top-left, with an even coin texture
+ const HX=100,HY=104,RX=74,RY=38,GOLD=['#6e4610','#8e6016','#b07e22','#cc9a30','#e2b440','#f2c852','#ffe07a'];
+ c.fillStyle='rgba(0,0,0,.35)';c.fillRect(HX-RX+6,93,2*RX-12,3); // its shadow on the floor
+ for(let py=HY-RY;py<=95;py++){const ny=(py-HY)/RY,w=Math.round(RX*Math.sqrt(Math.max(0,1-ny*ny)));if(w<1)continue;
+  c.fillStyle=O;c.fillRect(HX-w-1,py,1,1);c.fillRect(HX+w,py,1,1); // the outline along its sides
+  for(let px=HX-w;px<HX+w;px++){const nx=(px-HX)/RX,nz=Math.sqrt(Math.max(0,1-nx*nx-ny*ny)),d=(-.45*nx-.75*ny+.5*nz)/1.0;
+   let s=Math.max(0,Math.min(GOLD.length-1,Math.round((d+.15)*5)));if((px*3+py*7)%13===0)s=Math.min(GOLD.length-1,s+2);else if((px*5+py*3)%9===0)s=Math.max(0,s-1); // coins catching the light, little gaps between them
+   c.fillStyle=GOLD[s];c.fillRect(px,py,1,1)}}
+ for(let px=HX-RX;px<HX+RX;px++){const k=(px-HX)/RX,ty=Math.round(HY-RY*Math.sqrt(Math.max(0,1-k*k)));if(ty<96){c.fillStyle=O;c.fillRect(px,ty-1,1,1)}} // the outline along its top
+ [[30,94],[38,95],[166,94],[174,95],[24,95]].forEach(q=>{c.fillStyle=O;c.fillRect(q[0]-1,q[1]-1,5,3);c.fillStyle='#f2c852';c.fillRect(q[0],q[1],3,1)}); // a few loose coins on the floor
+ // treasure resting on the gold: an open chest, a crown, a goblet, a sword stuck in it, gems
+ c.fillStyle=O;c.fillRect(131,68,22,8);c.fillStyle='#4a2410';c.fillRect(132,69,20,6);c.fillStyle='#e0b040';c.fillRect(132,74,20,1); // the chest's open lid
+ c.fillStyle=O;c.fillRect(131,75,22,13);c.fillStyle='#5a2e14';c.fillRect(132,76,20,11);c.fillStyle='#7a4220';c.fillRect(132,76,20,2);c.fillStyle='#e0b040';c.fillRect(132,78,20,1);c.fillRect(132,85,20,1);c.fillRect(141,79,2,3); // the chest
+ c.fillStyle='#f2c852';c.fillRect(134,74,16,2);[[136,73,'#e83a5a'],[142,73,'#3ac8e8'],[147,74,'#3ae87a']].forEach(q=>{c.fillStyle=q[2];c.fillRect(q[0],q[1],2,2);c.fillStyle='#ffffff';c.fillRect(q[0],q[1],1,1)}); // gold and gems spilling from it
+ c.fillStyle=O;c.fillRect(57,79,13,8);c.fillStyle='#f2c852';c.fillRect(58,82,11,4);[58,62,66].forEach(cx=>c.fillRect(cx,80,3,2));c.fillStyle='#b07e22';c.fillRect(58,85,11,1);c.fillStyle='#e83a5a';c.fillRect(63,83,2,2);c.fillStyle='#3ac8e8';c.fillRect(59,83,1,1);c.fillRect(67,83,1,1); // a crown
+ c.fillStyle=O;c.fillRect(111,82,8,11);c.fillStyle='#f2c852';c.fillRect(112,83,6,4);c.fillStyle='#b07e22';c.fillRect(112,86,6,1);c.fillStyle='#f2c852';c.fillRect(114,87,2,3);c.fillRect(112,90,6,2);c.fillStyle='#e83a5a';c.fillRect(114,84,2,1); // a goblet
+ c.fillStyle=O;c.fillRect(165,72,3,18);c.fillStyle='#d0d4e0';c.fillRect(166,78,1,11);c.fillStyle='#ffffff';c.fillRect(166,78,1,3);c.fillStyle=O;c.fillRect(162,74,9,4);c.fillStyle='#e0b040';c.fillRect(163,75,7,2);c.fillStyle='#6a3a1e';c.fillRect(166,71,1,4);c.fillStyle='#e0b040';c.fillRect(166,70,1,1); // a sword stuck in the gold
+ [[78,88,'#e83a5a'],[94,84,'#3ae87a'],[126,90,'#3ac8e8'],[50,90,'#c890ff'],[152,90,'#e83a5a']].forEach(q=>{c.fillStyle=O;c.fillRect(q[0]-1,q[1]-1,4,4);c.fillStyle=q[2];c.fillRect(q[0],q[1],2,2);c.fillStyle='#ffffff';c.fillRect(q[0],q[1],1,1)}); // gems
+ return cv}
+function drawDragonLair(c,x,y,t){x=Math.round(x);y=Math.round(y);if(!LAIR_BG)LAIR_BG=lairBack();c.save();c.translate(x,y);c.beginPath();c.rect(0,0,192,96);c.clip();c.drawImage(LAIR_BG,0,0);
+ [[70,80],[98,88],[126,84],[84,93],[146,92]].forEach((q,i)=>{const k=(t*.7+i*.21)%1;if(k<.2){const a=1-Math.abs(k-.1)*10;c.fillStyle='rgba(255,255,240,'+a.toFixed(2)+')';c.fillRect(q[0],q[1]-1,1,3);c.fillRect(q[0]-1,q[1],3,1)}}); // sparkles twinkling on the gold
  drawDragonRest(c,t);c.restore()}
 // The dragon asleep on its hoard, head resting on its paws (lair coordinates)
 function drawDragonRest(c,t){const C=DRAGON_C,br=Math.sin(t*1.4)>0?1:0;
  pxTube(c,[78,64],[34,66],[42,86],7,2,C);pxPoly(c,[[36,84],[46,82],[42,91]],C.o);pxPoly(c,[[37,84],[45,83],[42,89]],C.wingD); // its tail curls around the front of the hoard
  pxShade(c,78,64,12,9,C);[[69,72],[73,73],[77,73]].forEach(q=>{c.fillStyle=C.hornD;c.fillRect(q[0],q[1],1,2);c.fillStyle=C.horn;c.fillRect(q[0],q[1],1,1)}); // a hind leg and claws
  pxShade(c,102,58-br,34,13+br,C); // the body (breathing)
- c.save();c.beginPath();c.rect(64,63,80,12);c.clip();pxEll(c,102,58-br,31,12+br,'#b8683c');pxEll(c,102,57-br,29,11+br,'#cc8048');c.fillStyle='#9a5430';for(let k=0;k<9;k++)c.fillRect(77+k*6,64,1,8);c.restore(); // the belly: one curved band along the bottom of the body, with faint plate lines
+ c.save();c.beginPath();c.rect(64,63,80,12);c.clip();pxEll(c,102,58-br,31,12+br,'#b8683c');pxEll(c,102,57-br,29,11+br,'#cc8048');c.fillStyle='#9a5430';for(let k=0;k<9;k++)c.fillRect(77+k*6,65,1,4);c.restore(); // the belly: one curved band along the bottom of the body, with faint plate lines
  for(let k=0;k<26;k++){const sx=78+((k*13)%46),sy=50+((k*7)%10);c.fillStyle=C.d;c.fillRect(sx,sy,2,1)} // scales
  pxPoly(c,[[125,48],[85,39],[94,29],[112,24],[130,40]],C.o);pxPoly(c,[[123,47],[88,39],[96,31],[112,26],[127,41]],C.wing); // a folded wing on its back
  [[96,31],[112,26],[88,39]].forEach(q=>pxLine(c,124,46,q[0],q[1],C.wingD));pxLine(c,96,31,112,26,C.wingL);
