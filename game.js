@@ -9,7 +9,7 @@ let boostT=0,boostAmt=0; // Wizard advertising fruit: +boostAmt extra coins per 
 const U={};let S={un:{},coins:0,inv:{scroll:0,potion:0,artifact:0,ingot:0},seen:{},rewarded:0,cells:[],bought:0,revealed:{},goldCells:[],ever:{}},drag=null,td=null,hover=null,parts=[],bolts=[],demons=[],cats=[],fbs=[],flashes=[],thrown=[],splats=[],zaps=[],waves=[],holes=[],coinT=0,bubU=null,T=0;
 
 // ---------- units ----------
-const at=(r,c)=>Object.keys(U).find(i=>U[i].r===r&&U[i].c===c);
+const at=(r,c)=>Object.keys(U).find(i=>U[i].r===r&&(U[i].c===c||(i==='dragon'&&U[i].c+1===c))); // (the Dragon covers 2 spaces: its own and the one to its right)
 // Board spaces: the middle 3x3 is open from the start, the rest are bought (S.cells). The first costs CELL_PRICE, each next one CELL_STEP more.
 const isOpen=(r,c)=>START_CELLS.includes(r+','+c)||S.cells.includes(r+','+c);
 const cellPrice=()=>CELL_PRICE+CELL_STEP*(S.bought||0);
@@ -82,7 +82,7 @@ function relocate(id,r,c){
  const cells=[[u.r,u.c],[r,c]];u.r=r;u.c=c;toHome(u);clearRooms(cells,[u,oid&&U[oid]].filter(Boolean));checkUnlocks();
 }
 // (the Monarch leaving the board ends every grudge: no more revenge)
-function removeUnit(id,quiet){const u=U[id];if(id==='monarch')Object.values(U).forEach(v=>{v.grudge=false});detach(u);clearRooms([[u.r,u.c]],[u]);for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===id)demons.splice(i,1);if(!quiet)poof(u.c*CELL+48,u.r*CELL+48);dropBub(u);u.lb.remove();if(u.hoardEl)u.hoardEl.remove();delete U[id];ui()}
+function removeUnit(id,quiet){const u=U[id];if(id==='monarch')Object.values(U).forEach(v=>{v.grudge=false});detach(u);clearRooms(id==='dragon'?[[u.r,u.c],[u.r,u.c+1]]:[[u.r,u.c]],[u]);for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===id)demons.splice(i,1);if(!quiet)poof(u.c*CELL+48,u.r*CELL+48);dropBub(u);u.lb.remove();if(u.hoardEl)u.hoardEl.remove();delete U[id];ui()}
 function poof(x,y,c){parts.push({x,y,t:0,life:.5,c:c||'#eadcb4'})}
 function hearts(u){parts.push({x:u.x,y:u.y-44,t:0,life:1.3,k:'h'})}
 // Speech bubbles: each character has their own, so several conversations can show at the same time
@@ -172,28 +172,30 @@ function tSell(u,kind){if(mourning())return false;addCoins(TRAVEL_BUY[kind],u.x,
 let grp=null,grpClock=0;
 // (a character busy with an idle activity is pulled out of it; scenes with others, and a few activities that must finish, are not interrupted)
 const NO_INTERRUPT={demon:1,retire:1,aretire:1,recruit:1,massprayer:1,funeral:1,fireball:1,relic:1,ascend:1,prisoners:1,wcast:1,harvest:1,sleepc:1,swapc:1};
-const grpReady=v=>v&&!v.dead&&atHome(v)&&!isFarm(v.id)&&!isStruct(v)&&(freeU(v)||(v.st==='act'&&!v.hosting&&!v.target&&!NO_INTERRUPT[v.act]&&v.form!=='dknight'&&!TEMP_FORM[v.form]&&!(v.sickT>0)));
+const grpReady=v=>v&&!v.dead&&atHome(v)&&!isFarm(v.id)&&!isStruct(v)&&v.id!=='dragon'&&(freeU(v)||(v.st==='act'&&!v.hosting&&!v.target&&!NO_INTERRUPT[v.act]&&v.form!=='dknight'&&!TEMP_FORM[v.form]&&!(v.sickT>0)));
 function groupOptions(){const ok=(r,c)=>{const v=U[at(r,c)];return grpReady(v)?v:null},out=[];
  for(let r=0;r<ROWS-1;r++)for(let c=0;c<COLS-1;c++){const q=[[r,c],[r,c+1],[r+1,c],[r+1,c+1]].map(p=>ok(p[0],p[1]));if(q.every(v=>v&&hasClass(v,'merchant')))out.push({kind:'market',us:q})} // four Merchants in a 2x2 square
  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS-2;c++){const q=[0,1,2].map(d=>ok(r,c+d));if(q.every(Boolean))out.push({kind:'feast',us:q})} // three side by side in a row
+ if(S.dragonReady&&dragonHP()>0&&!U.dragon&&!S.un.dragon){const team=dragonTeam();if(team)out.push({kind:'dragon',us:team})} // the dragon battle: 3 Fighters, 2 Mages, 1 Merchant anywhere on the board
  return [...out,...travelOptions()]} // (plus the travelling ones: the Well, the Tavern)
-function startGroup(o){const rs=o.us.map(v=>v.r),cs=o.us.map(v=>v.c);logEv(titleOf('grp:'+o.kind),o.us.map(v=>CH[idOf(v)].name).join(', '));
+function startGroup(o){if(o.kind==='dragon'){startDragon(o);return}const rs=o.us.map(v=>v.r),cs=o.us.map(v=>v.c);logEv(titleOf('grp:'+o.kind),o.us.map(v=>CH[idOf(v)].name).join(', '));
  grp={kind:o.kind,ids:o.us.map(v=>v.id),pos:o.us.map(v=>[v.r,v.c]),t:0,box:[Math.min(...rs),Math.min(...cs),Math.max(...rs)-Math.min(...rs)+1,Math.max(...cs)-Math.min(...cs)+1]};
  o.us.forEach((v,i)=>{stopIdle(v);v.path=[];v.act=null;v.gx=null;v.st='grp';v.gwait=.5+Math.random()*2;v.mood='happy';v.mt=2;
   if(o.kind==='feast'){v.x=v.c*CELL+48;v.y=v.r*CELL+FY;v.face=i===0?1:i===2?-1:pick([1,-1])}});
  if(o.kind==='feast'){questStat('feasts');if(o.us.some(v=>v.id==='monarch'))questStat('royalFeasts')} // quests: Prosperity, Feast Fit for a King
  markSeen('grp:'+o.kind);toast(o.kind==='market'?'Market day! The merchants put up their tents and a crowd pours in.':'A feast! Three neighbors sit down at one long table.')}
-function endGroup(done){if(!grp)return;const g0=grp;grp=null;g0.ids.forEach(id=>{const v=U[id];if(v&&v.st==='grp'){v.st='idle';v.wait=1+Math.random()*2;v.mv=false;v.gx=null}});
+function endGroup(done){if(!grp)return;const g0=grp;grp=null;if(g0.kind==='dragon'){dragon=null;dshots=[];showDragonBar()}g0.ids.forEach(id=>{const v=U[id];if(v&&v.st==='grp'){v.st='idle';v.wait=1+Math.random()*2;v.mv=false;v.gx=null}});
  if(done&&g0.kind==='market'){const n=1+Math.floor(Math.random()*10)+1+Math.floor(Math.random()*10),M=U[g0.ids[0]];addCoins(n,M?M.x:null,M?M.y-50:null);toast('The market closes. Sales brought in '+n+' coins!')} // 2d10 coins
  if(done&&g0.kind==='feast')toast('The feast is over. Everyone heads home happy and full.')}
 function stepGroup(dt){grpClock+=dt;
  if(grpClock>=GROUP_EVERY){let go=false;if(!grp&&!rf&&Math.random()<ODDS.group){const o=groupOptions();if(o.length){const p=pick(o);if(p.host)startTravelGroup(p);else startGroup(p);go=true}}grpClock=go?0:GROUP_EVERY-5} // (if nobody is ready right then, it tries again every 5 seconds)
- if(!grp)return;grp.t+=dt;if(TRAVEL_GRP[grp.kind]){stepTravelGroup(dt);return}
+ if(!grp)return;grp.t+=dt;if(grp.kind==='dragon'){stepDragon(dt);return}if(TRAVEL_GRP[grp.kind]){stepTravelGroup(dt);return}
  // it stops early if a character is gone, moved, or pulled away (a funeral, for example)
  if(grp.ids.some((id,i)=>{const v=U[id];return !v||v.st!=='grp'||v.r!==grp.pos[i][0]||v.c!==grp.pos[i][1]})){endGroup(false);return}
  if(grp.t>=GROUP_TIME)endGroup(true)}
 // A character in a group event: Merchants stroll their stall and shout; diners stay seated, chat and toast
 function stepGrpUnit(u,dt){const bx=u.c*CELL;u.mv=false;
+ if(grp&&grp.kind==='dragon'){if(!grp.team.includes(u.id)&&(u.gwait-=dt)<=0){u.gwait=3+Math.random()*4;u.mood='shock';u.mt=2;if(Math.random()<.35)say(u,pick(DRAGON_SAY.other))}return} // the dragon battle: the six fight (dragonHit), everyone else cowers
  if((u.gwait-=dt)<=0){u.gwait=2.5+Math.random()*3;
   if(grp&&grp.kind==='market'){u.gx=bx+18+Math.random()*40; // (stays left of the shop coin in the bottom-right corner, which is drawn over the feet)
    if(Math.random()<.55){say(u,pick(MARKET_SHOUT));gest(u,'up',1)}}
@@ -220,12 +222,13 @@ function stepTravelGroup(dt){const H=U[grp.host],T2=TRAVEL_GRP[grp.kind];
  if((grp.talkT-=dt)<=0&&here.length){grp.talkT=2.6+Math.random()*1.6;const v=pick(here);say(v,pick(T2.talk));gest(v,T2.mug?'up':'fwd',1);v.hop=.3;v.mood='happy';v.mt=2}
  if(grp.t>=GROUP_TIME){const g0=grp;grp=null;endTravelGroup(g0)}}
 const grpRect=()=>{const[r,c,h,w]=grp.box;return[c*CELL,r*CELL,w*CELL,h*CELL]};
-function drawGroupBack(c,t){if(TRAVEL_GRP[grp.kind])return;const[x,y,w,h]=grpRect();if(grp.kind==='market'){drawMarketBack(c,x,y,w,h);drawMarketCrowd(c,x,y,w,h,t)}else drawFeastBack(c,x,y,w,t);
+function drawGroupBack(c,t){if(TRAVEL_GRP[grp.kind]||grp.kind==='dragon')return; // (the dragon battle keeps every room as it is)
+ const[x,y,w,h]=grpRect();if(grp.kind==='market'){drawMarketBack(c,x,y,w,h);drawMarketCrowd(c,x,y,w,h,t)}else drawFeastBack(c,x,y,w,t);
  c.strokeStyle='#000';c.lineWidth=4;c.strokeRect(x+2,y+2,w-4,h-4)} // one big room with one frame
 function mkBolt(s,t){const sx=s.x,sy=s.y-40,ex=t.x,ey=t.y-26,n=Math.max(3,Math.round((ey-sy)/10)),p=[[sx,sy]];
  for(let i=1;i<n;i++)p.push([sx+(ex-sx)*i/n+Math.random()*14-7,sy+(ey-sy)*i/n]);p.push([ex,ey]);
  return{p,t:0,cells:[[s.c*CELL,s.r*CELL],[t.c*CELL,t.r*CELL]]}}
-const freeU=x=>x&&!x.dead&&!isStruct(x)&&!x.hosting&&!x.target&&x.form!=='dknight'&&!TEMP_FORM[x.form]&&!(x.sickT>0)&&(x.st==='idle'||x.st==='walk'); // free to start something (not busy, asleep, sick, or a Death Knight)
+const freeU=x=>x&&!x.dead&&!isStruct(x)&&x.id!=='dragon'&&!x.hosting&&!x.target&&x.form!=='dknight'&&!TEMP_FORM[x.form]&&!(x.sickT>0)&&(x.st==='idle'||x.st==='walk'); // free to start something (not busy, asleep, sick, or a Death Knight)
 // The Alchemist (in his normal form) is a neighbor of u
 const alcNext=u=>Object.values(U).some(v=>v!==u&&idOf(v)==='alchemist'&&!v.form&&rel(v,u));
 // Pick from a list with weights (w(item) = how likely)
@@ -238,7 +241,7 @@ const graveyardOn=u=>!!u&&u.id==='rogue'&&u.r===ROWS-1&&!!U.necromancer&&U.necro
 // Potion on the Alchemist: for ALC_LUCK_TIME his neighbors' rarest scene chances are 30% higher (ALC_LUCK)
 const lucky=u=>!!u&&Object.values(U).some(a=>idOf(a)==='alchemist'&&a.luckT>0&&(a===u||rel(a,u)));
 const luck=(p,u,h)=>Math.random()<p*(lucky(u)||lucky(h)?1+ALC_LUCK:1);
-const nbrs=u=>[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filter(h=>freeU(h)&&h.id!=='traveler'); // nobody visits the Traveling Merchant
+const nbrs=u=>[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filter(h=>freeU(h)&&h.id!=='traveler'&&h!==u); // (the Dragon: freeU is false for now, it has no scenes yet) // nobody visits the Traveling Merchant
 // ---------- the Druid's Overgrowth on board spaces ----------
 // Which effect is on a space right now (or null); wxOf(u) = the one on u's own space (only Overgrowth now, which is looks only)
 const weatherAt=(r,c)=>{const w=weathers.find(q=>q.r===r&&q.c===c&&q.t<WEATHER_TIME);return w?w.k:null};
@@ -310,9 +313,51 @@ function showBorder(){$('#wrap').classList.toggle('golden',!!S.goldBorder)}
 // The Library's economics lesson: +1 coin every LIB_ECON_EVERY seconds for LIB_ECON_TIME (not saved)
 let econT=0,econClock=0;
 function stepEcon(dt){if(econT<=0)return;econT-=dt;if((econClock+=dt)>=LIB_ECON_EVERY){econClock=0;const L=U.library;addCoins(1,L?L.c*CELL+48:null,L?L.r*CELL+40:null)}}
-// The Goblin's stash grows (1 coin a minute); the Bard's Resonance: passers-by toss 1 coin a minute for each of the Bard's tags
+// ---------- the Dragon battle (group event 'dragon'; DRAGON_* in data.js) ----------
+let dragon=null,dshots=[]; // the dragon over the board during a battle {x,y,t,face,next,turn,blink,fire,falling}; attacks flying at it {x0,y0,t,role,dmg}
+// 3 Fighters, 2 Mages and 1 Merchant: 6 different characters, each filling one role (a character with several tags fills only one)
+function dragonTeam(){const pool=Object.values(U).filter(v=>!v.dead&&!isStruct(v)&&!isFarm(v.id)&&v.id!=='dragon'&&v.st!=='away'&&!TEMP_FORM[v.form]&&v.form!=='dknight');
+ const fill=(i,used)=>{if(i===DRAGON_ROLES.length)return[];for(const v of pool){if(used.has(v)||!hasClass(v,DRAGON_ROLES[i]))continue;used.add(v);const rest=fill(i+1,used);if(rest)return[v,...rest];used.delete(v)}return null};
+ return fill(0,new Set())}
+const dragonHP=()=>S.dragonHP==null?DRAGON_HP:S.dragonHP;
+// The dragon swoops down: everyone on the board stops whatever they were doing (scenes, idles, sleep); the six fight, everyone else cowers
+function startDragon(o){const all=Object.values(U).filter(v=>!v.dead&&!isStruct(v)&&v.st!=='away'&&v.id!=='dragon');
+ all.forEach(v=>{detach(v);stopIdle(v);toHome(v);v.sleepT=0;v.st='grp';v.gwait=1+Math.random()*3;v.mood='shock';v.mt=2});
+ const roles={};o.us.forEach((v,i)=>{roles[v.id]=DRAGON_ROLES[i]});
+ grp={kind:'dragon',ids:all.map(v=>v.id),team:o.us.map(v=>v.id),roles,pos:[],t:0,box:[0,0,ROWS,COLS]};
+ dragon={x:-70,y:20,t:0,face:1,next:4,turn:0,blink:0};dshots=[];markSeen('grp:dragon');showDragonBar();
+ toast('A DRAGON swoops down over the kingdom! To arms!')}
+// One attack: 1d6 damage, flying up at the dragon (Fighters throw their blades, Mages cast bolts, the Merchant throws whatever is handy)
+function dragonHit(v){const role=grp.roles[v.id]||'fighter',dmg=1+Math.floor(Math.random()*6);v.face=dragon.x>v.x?1:-1;
+ if(role==='fighter'){gest(v,'up',.8);v.hop=.5}else if(role==='mage')gest(v,'both',1);else gest(v,'fwd',.8);
+ if(Math.random()<.45)say(v,pick(DRAGON_SAY[role]));dshots.push({x0:v.x+v.face*8,y0:v.y-30,t:0,role,dmg})}
+function stepDragon(dt){const d=dragon;if(!d){endGroup(false);return}d.t+=dt;if(d.blink>0)d.blink-=dt;
+ if(d.falling!=null){d.falling+=dt;d.y+=dt*(30+d.falling*90);d.x+=d.face*dt*20;if(d.falling>=2){for(let i=0;i<8;i++)poof(d.x-30+i*8,Math.min(d.y,H-20),'#c8b898');beatDragon()}return}
+ // flight: swoop in, then circle and dive above the board
+ const tx=W/2+Math.sin(d.t*.55)*W*.33,ty=64+Math.sin(d.t*1.2)*34,px=d.x;
+ if(d.t<3){const k=Math.min(1,dt*1.5);d.x+=(tx-d.x)*k;d.y+=(ty-d.y)*k}else{d.x=tx;d.y=ty}if(Math.abs(d.x-px)>.2)d.face=d.x>px?1:-1;
+ // attacks fly up and hit
+ dshots.forEach(s=>{s.t+=dt;if(s.t>=.55&&!s.hit){s.hit=1;S.dragonHP=Math.max(0,dragonHP()-s.dmg);d.blink=.3;poof(d.x,d.y,'#ffd040');parts.push({k:'dmg',s:'-'+s.dmg,x:d.x,y:d.y-24,t:0,life:1.2});showDragonBar();save()}});dshots=dshots.filter(s=>!s.hit);
+ if(d.t>=d.next&&dragonHP()>0){d.next=d.t+DRAGON_HIT_EVERY;const team=grp.team.map(id=>U[id]).filter(v=>v&&!v.dead&&v.st==='grp');if(team.length)dragonHit(team[d.turn++%team.length])}
+ // now and then it breathes fire into a room (looks only; everyone there is scared)
+ if(d.t>3&&!d.fire&&Math.random()<dt*.18){const v=pick(Object.values(U).filter(v=>v.st==='grp'));if(v){d.fire={r:v.r,c:v.c,t:0};v.mood='shock';v.mt=2;v.hop=.4;say(v,'Hot hot HOT!')}}
+ if(d.fire&&(d.fire.t+=dt)>1.4)d.fire=null;
+ if(dragonHP()<=0){d.falling=0;d.face=1;toast('The dragon is falling!');return}
+ if(d.t>=DRAGON_FIGHT){toast('The dragon flies off, wounded. It has '+dragonHP()+' of '+DRAGON_HP+' hit points left. It will be back...');endGroup(true)}}
+// Beaten: the dragon joins you (a Dragon box on the shelf)
+function beatDragon(){S.dragonHP=0;S.un.dragon=true;endGroup(true);buildShelf();save();toast('The dragon is defeated! It bows its great head... A Dragon box has appeared on the shelf.')}
+// The dragon's health bar at the top of the board (only during a battle)
+function showDragonBar(){let e=$('#dragonbar');if(!grp||grp.kind!=='dragon'){if(e)e.hidden=true;return}
+ if(!e){e=document.createElement('div');e.id='dragonbar';e.innerHTML='<span class="dn">Dragon</span><div class="hp"><i></i></div><span class="hv"></span>';$('#wrap').append(e)}
+ e.hidden=false;const hp=dragonHP();e.querySelector('i').style.width=(100*hp/DRAGON_HP)+'%';e.querySelector('.hv').textContent=hp+' / '+DRAGON_HP}
+// ---------- the Dragon on the board: one wide box over 2 spaces side by side (r,c and r,c+1) ----------
+// Where a 2-space Dragon would go when dropped on (r,c): that space and the next one to the right (or the left, at the edge or if that fits better); null if neither fits
+function dragonSpot(r,c){const ok=(cc)=>cc>=0&&cc+1<COLS&&[cc,cc+1].every(x=>isOpen(r,x)&&(!at(r,x)||at(r,x)==='dragon'));return ok(c)?[r,c]:ok(c-1)?[r,c-1]:null}
+function firstDragonSpot(){for(let r=0;r<ROWS;r++)for(let c=0;c<COLS-1;c++){const q=dragonSpot(r,c);if(q&&q[1]===c)return q}return null}
+function moveDragon(q){const u=U.dragon;if(!u)return;const cells=[[u.r,u.c],[u.r,u.c+1],[q[0],q[1]],[q[0],q[1]+1]];detach(u);u.r=q[0];u.c=q[1];toHome(u);clearRooms(cells,[u]);checkUnlocks();save()}
 // The Goblin's stash count, in the bottom-right corner of his room (HTML, so it stays sharp)
 function showHoard(u,hide){let e=u.hoardEl;if(!e){e=u.hoardEl=document.createElement('div');e.className='lb hoardlb';$('#labels').append(e)} const n=String(Math.floor(u.hoard||0));if(e.dataset.n!==n){e.dataset.n=n;e.innerHTML='<img class="tag" alt="coins" src="'+iconURL('coin')+'"> '+n} e.style.left=((u.c+1)*CELL-5)/W*100+'%';e.style.top=((u.r+1)*CELL-5)/H*100+'%';e.style.opacity=hide||u.dead?0:1}
+// The Goblin's stash grows (1 coin every 3 minutes); the Bard's Resonance: passers-by toss 1 coin a minute for each of the Bard's tags
 function stepGoblinBard(dt){const G=U.goblin,Bd=U.bard;
  if(G&&!G.dead&&(G.hoardT=(G.hoardT||0)+dt)>=GOBLIN_HOARD_EVERY){G.hoardT=0;G.hoard=(G.hoard||0)+1;save()}
  if(Bd&&!Bd.dead&&Bd.st!=='away'&&(Bd.resT=(Bd.resT||0)+dt)>=RES_COIN_EVERY){Bd.resT=0;const n=classesOf(Bd).length;if(n){addCoins(n,Bd.x,Bd.y-50);markSeen('bresonance')}}}
@@ -345,7 +390,7 @@ function idleOk(u,c){const M=U.monarch;
  if(c==='target')return Object.values(U).some(v=>v!==u&&freeU(v)&&atHome(v));
  if(c==='alc')return alcNext(u);
  if(c==='madsci')return madSci(u)&&!u.as&&atHome(u)&&nbrs(u).some(v=>!isFarm(v.id));
- if(c==='others')return u.id==='rogue'&&!u.as&&Object.values(U).some(v=>v!==u&&!v.dead&&!isFarm(v.id)&&v.id!=='rogue'&&!isStruct(v)&&!v.form);
+ if(c==='others')return u.id==='rogue'&&!u.as&&Object.values(U).some(v=>v!==u&&!v.dead&&!isFarm(v.id)&&v.id!=='rogue'&&v.id!=='dragon'&&!isStruct(v)&&!v.form);
  if(c==='mageTag')return u.id==='rogue'&&!u.as&&!!u.mageTag;
  if(c==='spirit')return [[0,1],[0,-1],[1,0],[-1,0]].every(d=>{const rr=u.r+d[0],cc=u.c+d[1];return rr>=0&&rr<ROWS&&cc>=0&&cc<COLS&&isOpen(rr,cc)&&!at(rr,cc)});
  if(c==='grudge')return !!u.grudge&&!u.as&&!u.form&&!!M&&!M.dead&&freeU(M)&&!rf;
@@ -382,7 +427,7 @@ function doIdle(u,k){const bx=u.c*CELL,dur=(a,d)=>{beginAct(u,a);u.dur=d};
  if(k==='forgework'||k==='smelt'||k==='coal'||k==='pour'){dur(k,{forgework:5,smelt:6,coal:4.5,pour:5}[k]);u.hx=k==='forgework'||k==='pour'?bx+52:bx+44;if(k==='smelt')u.smeltWhat=Math.random()<.5?'armor':'sword';return true}
  if(k==='alcbrew'||k==='research'||k==='smoke'){dur(k,{alcbrew:4.6,research:5,smoke:5}[k]);if(k==='alcbrew')u.hx=bx+46;return true}
  if(k==='conjure'){dur('conjure',3);return true}
- if(k==='disguise'){const who=Object.values(U).filter(v=>v!==u&&!v.dead&&!isFarm(v.id)&&!isStruct(v)&&v.id!=='rogue'&&!v.form);if(!who.length)return false;disguise(u,pick(who));return true} // (never a structure; nobody to copy: he does something else)
+ if(k==='disguise'){const who=Object.values(U).filter(v=>v!==u&&!v.dead&&!isFarm(v.id)&&!isStruct(v)&&v.id!=='dragon'&&v.id!=='rogue'&&!v.form);if(!who.length)return false;disguise(u,pick(who));return true} // (never a structure; nobody to copy: he does something else)
  if(k==='daggers'||k==='smokebomb'||k==='count'){dur(k,{daggers:5,smokebomb:4,count:4}[k]);if(k==='daggers')u.hx=bx+30;return true}
  if(k==='brew'){dur('brew',4.2);return true}
  if(k==='read'||k==='magic'||k==='demon'){markSeen(k);u.st='act';u.act=k;u.at=0;u.ev={};u.dur=k==='read'?4+Math.random()*2:k==='magic'?3.5+Math.random()*1.5:3;
@@ -662,6 +707,8 @@ const inGold=(x,y)=>x!=null&&(S.goldCells||[]).some(q=>Math.floor(x/CELL)===q[1]
 function addCoins(n,x,y,force){if(mourning()&&!force){if(x!=null)parts.push({k:'txt',s:'mourning',x,y,t:0,life:1.4});return}n=fertileBonus(n,x,y);if(inGold(x,y))n*=2;S.coins=(S.coins||0)+n;showCoins();checkUnlocks();save();if(x!=null)parts.push({k:'txt',s:'+'+n,x,y,t:0,life:1.4})}
 // ---- unlocks that depend on what you hold ----
 function checkUnlocks(){checkEggs();
+ // the dragon may attack once its rumor and story are heard and you hold DRAGON_COINS coins (for good)
+ if(!S.dragonReady&&S.dragonRumor&&S.seen.bdragon&&(S.coins||0)>=DRAGON_COINS){S.dragonReady=true;save();checkQuests()}
  // the Druid: every board space bought; the Blacksmith: SMITH_UNLOCK coins spent in total
  if(!S.un.druid&&S.cells&&Array.from({length:ROWS*COLS},(_,i)=>isOpen(Math.floor(i/COLS),i%COLS)).every(Boolean)){S.un.druid=true;buildShelf();save();toast('Every space is open... a Druid steps out of the woods. A Druid box has appeared on the shelf!')}
  if(!S.un.monarch&&Object.values(U).filter(v=>!isFarm(v.id)&&!isStruct(v)).length>=MONARCH_UNLOCK){S.un.monarch=true;buildShelf();save();toast('Ten boxes on the board... a kingdom! A Monarch box has appeared on the shelf.')} // the Monarch: MONARCH_UNLOCK boxes on the board
@@ -821,7 +868,7 @@ function useItem(kind,r,c){
  if(kind==='potion'){const z=Object.values(U).find(v=>v.st==='sleep'&&cellX(v)===c&&cellY(v)===r);if(z){S.inv.potion--;showItems();save();poof(z.x,z.y-24,'#c890ff');wakeUnit(z);return}}
  const home=u&&u.form!=='dknight'&&u.form!=='bear'&&!u.target&&!u.hosting&&cellX(u)===u.c&&cellY(u)===u.r&&(u.st==='idle'||u.st==='walk'||(u.st==='act'&&!busy.includes(u.act)));
  // A spell scroll on the buried Druid's space revives him; nothing else works on him while he is buried
- if(isStruct(u)){no();return} // items do nothing on a structure
+ if(isStruct(u)||u.id==='dragon'){no();return} // items do nothing on a structure (or on the Dragon, for now)
  if(u&&u.dead){if(kind!=='scroll'){no();return}S.inv.scroll--;showItems();revive(u);markSeen('drevive');save();return}
  const fx=u&&(ITEM_FX[kind][u.id]||ITEM_FX[kind]['*']); // '*' = works on anyone (the ingot)
  if(!fx||!(home||(kind==='ingot'&&u&&!u.dead&&u.st!=='away'))){no();return} // an ingot works even when the owner is busy or out (not away from the board)
@@ -1297,7 +1344,7 @@ function talk(u,dt){
   once('c',2.2,()=>{u.show=null;merchantGain(SELL_GAIN,Mr.x,Mr.y-50);K.mood='hurt';K.mt=1;say(K,'Sour! ...Delicious, actually.')});
   once('d',3.4,()=>{K.mood=Mr.mood='happy';K.mt=Mr.mt=1.2;K.hop=.4})}
  else if(k==='rumors'){const Mr=pp.merchant;// Merchant below the Knight: goblins (90%) or a dragon (10%); the Knight vows to slay them
-  if(!u.sc2){u.sc2=luck(ODDS.dragon,u,h)?RUMOR_DRAGON:RUMOR_GOBLIN;if(u.sc2===RUMOR_GOBLIN)questStat('goblinRumors')}lines(u.sc2); // (goblin rumors count toward the quest The Rumors are True)
+  if(!u.sc2){u.sc2=luck(ODDS.dragon,u,h)?RUMOR_DRAGON:RUMOR_GOBLIN;if(u.sc2===RUMOR_GOBLIN)questStat('goblinRumors');else{S.dragonRumor=true;checkUnlocks()}}lines(u.sc2); // (goblin rumors count toward the quest The Rumors are True)
   once('m',.7,()=>{Mr.mood='shock';Mr.mt=1.6});once('k',.6+3*2.3+.1,()=>{gest(K,'up',1.4);K.mood='happy';K.mt=1.6;K.hop=.4})}
  // ---------- Knight + Apothecary ----------
  else if(k==='bear'){end=4.6;const Ap=pp.apothecary;// Knight above the Apothecary: a strength tonic turns him into a grizzly bear
@@ -1850,7 +1897,7 @@ function step(dt){
  refreshTags();
  stepWeather(dt);stepBoardWx(dt);stepEcon(dt);stepGoblinBard(dt);stepRoyal(dt);stepTraveler(dt);stepGroup(dt);
  for(const id in U){const u=U[id];
-  if(u.dead||isStruct(u))continue; // a buried Druid does nothing at all; nor does a structure
+  if(u.dead||isStruct(u)||u.id==='dragon')continue; // (the Dragon has no idles or scenes yet) a buried Druid does nothing at all; nor does a structure
   if(u.id==='druid'&&!u.pet)u.pet={kind:u.fam||'bear',x:u.x,y:u.y,face:1}; // his animal: grizzly bear, eagle or wolf
   if(u.mt>0&&(u.mt-=dt)<=0)u.mood='ok';
   if(u.hop>(u.hp||0)+1e-4)u.hd=u.hop;if(u.hop>0)u.hop-=dt;u.hp=u.hop;if(u.blink>0)u.blink-=dt;if(u.gt>0)u.gt-=dt;if(u.ward!=null)u.ward+=dt;if(u.wardHit>0)u.wardHit-=dt;
@@ -1912,6 +1959,7 @@ function render(){
  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){if(!isOpen(r,c)){drawLocked(g,c*CELL,r*CELL,price,(S.coins||0)>=price);continue}g.fillStyle=(r+c)%2?'#25214a':'#2a2650';g.fillRect(c*CELL,r*CELL,CELL,CELL)}
  const dm=drag&&drag.moved?drag.id:null,live=Object.values(U).filter(u=>u.id!==dm);
  for(const id in U){const u=U[id],x=u.c*CELL,y=u.r*CELL;
+  if(id==='dragon'){if(id===dm){g.strokeStyle='#5a5590';g.lineWidth=2;g.setLineDash([4,4]);g.strokeRect(x+4,y+4,2*CELL-8,CELL-8);g.setLineDash([])}else{drawDragonLair(g,x,y,T);g.strokeStyle=O;g.lineWidth=4;g.strokeRect(x+2,y+2,2*CELL-4,CELL-4)}u.lb.style.opacity=id===dm?0:1;continue} // the Dragon: one wide lair over 2 spaces
   if(id===dm){g.strokeStyle='#5a5590';g.lineWidth=2;g.setLineDash([4,4]);g.strokeRect(x+4,y+4,CELL-8,CELL-8);g.setLineDash([])}
   else{box(g,id,x,y,id==='druid'?u.r:id==='monarch'?u.pal:u.weapon);const nb=(r2,c2)=>{const o=at(r2,c2);return o&&o!==dm};boxFrame(g,x,y,{t:!nb(u.r-1,u.c),b:!nb(u.r+1,u.c),l:!nb(u.r,u.c-1),r:!nb(u.r,u.c+1)})} // shared edges stay as thin as outer ones
   u.lb.style.opacity=id===dm?0:u.st==='away'?.45:u.dead?.6:1;
@@ -1947,7 +1995,7 @@ function render(){
    if(p.act==='prac'){g.save();g.beginPath();g.rect(cellX(p)*CELL+4,cellY(p)*CELL,CELL-8,CELL);g.clip();drawAct(g,{act:'prac',at:p.t,x:p.x,y:p.y,face:p.face,weapon:'wood',form:'squire'});g.restore()}return}
   if(u.npcOf){const n=u.npcOf.npc,nh=n.hop>0?-Math.sin((1-n.hop/.5)*Math.PI)*8:0;
    spr(g,n.id,blinkMood(n.mood,7,T),n.x+(n.shake?Math.round(Math.sin(T*40)):0),n.y,n.face,(n.walk?Math.sin(n.t*14)*1:0)+nh,n.al,scl({y:n.y,sk:1}),'none',n.walk?stepOf(n.t):0);return}
-  if(isStruct(u))return; // nobody lives in a structure
+  if(isStruct(u)||u.id==='dragon')return; // nobody lives in a structure; the Dragon is drawn with its lair
   if(u.melt>0)drawPuddle(g,u.x,u.y,u.melt); // melting at the Well
   if(u.dead&&u.id==='monarch'){drawCoffin(g,u.c*CELL,u.r*CELL,T);return} // the Monarch lying in state (grand funeral)
   if(u.dead){const bx=u.c*CELL,by=u.r*CELL,k=u.fam||'bear';drawMound(g,bx,by,T);if(k==='bear')drawBearPet(g,bx+70,by+FY,-1,0,false);else if(k==='wolf')drawWolfPet(g,bx+74,by+FY,-1,0,false);else drawEagle(g,bx+66,by+FY-4,-1,T,true);return} // buried Druid: a mound with a sapling, his animal keeping watch
@@ -2009,6 +2057,7 @@ function render(){
   else if(p.k==='sick'){g.globalAlpha=cl((p.life-p.t)/.4,0,1);g.fillStyle='#7ad040';g.fillRect(Math.round(p.x),Math.round(p.y-p.t*14),2,2);g.globalAlpha=1} // sick bubbles
   else if(p.k==='bubble'){g.globalAlpha=cl((p.life-p.t)/.4,0,1);g.strokeStyle='#bfe8ff';g.lineWidth=1;g.beginPath();g.arc(p.x,p.y,p.r,0,Math.PI*2);g.stroke();g.globalAlpha=1}
   else if(p.k==='z')drawZ(g,Math.round(p.x+Math.sin(p.t*3)*4),Math.round(p.y-p.t*16),cl((p.life-p.t)/.5,0,1));
+  else if(p.k==='dmg'){g.save();g.globalAlpha=cl((p.life-p.t)/.4,0,1);g.font='bold 16px '+GAME_FONT;g.lineWidth=3;g.strokeStyle=O;g.textAlign='center';const y=Math.round(p.y-p.t*20);g.strokeText(p.s,p.x,y);g.fillStyle='#ff5a4a';g.fillText(p.s,p.x,y);g.restore()} // damage dealt to the dragon
   else if(p.k==='txt'){g.save();g.globalAlpha=cl((p.life-p.t)/.4,0,1);const y=Math.round(p.y-p.t*18);drawItem(g,p.icon||'coin',Math.round(p.x-12),y-4,1);g.font='bold 13px '+GAME_FONT;g.lineWidth=3;g.strokeStyle=O;g.strokeText(p.s,Math.round(p.x-4),y);g.fillStyle='#f2c84a';g.fillText(p.s,Math.round(p.x-4),y);g.restore()}
   else{const k=p.t/p.life,s=Math.max(1,7*(1-k));g.fillStyle=p.c;for(let i=0;i<8;i++){const a=i*Math.PI/4;g.fillRect(p.x+Math.cos(a)*k*28-s/2,p.y+Math.sin(a)*k*28-s/2,s,s)}}});
  bolts.forEach(b=>{const a=1-b.t/.5;g.fillStyle='rgba(255,255,255,'+(a*.6)+')';b.cells.forEach(q=>g.fillRect(q[0],q[1],CELL,CELL));
@@ -2027,8 +2076,12 @@ function render(){
   for(let i=0;i<6;i++){const k=cl((t-.3-i*.08)/.5,0,1);if(k<=0||t>4.8)continue;let x=bx+48+Math.sin(t*2.6+i*1.1)*32,y=by+40+Math.cos(t*3.3+i*1.9)*18;
    if(i<3&&A&&t>1.4){const d=cl((t-1.4)/.8,0,1),ax=A.c*CELL+48+Math.sin(t*3+i*2)*26,ay=A.r*CELL+36+Math.cos(t*4+i)*14;x=lerp(x,ax,d);y=lerp(y,ay,d)}
    g.save();g.globalAlpha=k*cl((4.8-t)/.5,0,1);drawBat(g,x,y,t+i*.13);g.restore()}}});
- if((drag&&drag.moved)||(td&&td.moved&&td.box))for(const id in U)if(id!==dm&&hasLeft(id))drawLeftGlow(g,U[id].c*CELL,U[id].r*CELL,T); // while a box is dragged: a faint blue glow on rooms that still have Compendium entries to find
+ if((drag&&drag.moved)||(td&&td.moved&&td.box))for(const id in U)if(id!==dm&&id!=='dragon'&&hasLeft(id))drawLeftGlow(g,U[id].c*CELL,U[id].r*CELL,T); // while a box is dragged: a faint blue glow on rooms that still have Compendium entries to find
+ // the dragon battle: fire breath, attacks flying up, the dragon itself (over everything)
+ if(dragon){if(dragon.fire)drawFire(g,dragon.fire.c*CELL,dragon.fire.r*CELL,dragon.fire.t+.4);dshots.forEach(s=>{const k=cl(s.t/.55,0,1),x=lerp(s.x0,dragon.x,k),y=lerp(s.y0,dragon.y,k)-Math.sin(k*Math.PI)*20;if(s.role==='fighter')drawSpinDagger(g,x,y,s.t*2);else if(s.role==='mage'){g.fillStyle=O;g.fillRect(Math.round(x)-3,Math.round(y)-3,6,6);g.fillStyle=Math.floor(s.t*12)%2?'#c890ff':'#7ac8ff';g.fillRect(Math.round(x)-2,Math.round(y)-2,4,4)}else drawItem(g,Math.floor(s.t*8)%2?'apple':'coin',Math.round(x),Math.round(y),1)});drawDragonFly(g,dragon.x,dragon.y,dragon.face,dragon.t,dragon.blink>0)}
+ if(hover&&(drag&&drag.moved?drag.id:td&&td.dragon?'dragon':null)==='dragon'){const q=dragonSpot(hover[0],hover[1]);if(q){g.strokeStyle='#f2a93b';g.lineWidth=3;g.strokeRect(q[1]*CELL+3,q[0]*CELL+3,2*CELL-6,CELL-6)}}else // the Dragon: highlight both spaces
  if(hover){g.strokeStyle='#f2a93b';g.lineWidth=3;g.strokeRect(hover[1]*CELL+3,hover[0]*CELL+3,CELL-6,CELL-6)}
+ if(dm==='dragon'){g.globalAlpha=.9;drawDragonLair(g,drag.p.x-96,drag.p.y-48,T);g.globalAlpha=1}else // the Dragon, picked up: its wide lair follows the pointer
  if(dm){const u=U[dm],x=drag.p.x-48,y=drag.p.y-48;g.globalAlpha=.9;box(g,dm,x,y,dm==='druid'?u.r:dm==='monarch'?u.pal:u.weapon);boxFrame(g,x,y,{t:1,b:1,l:1,r:1});spr(g,sid(u),'ok',x+48,y+FY,1,0);g.globalAlpha=1}
  bubs.forEach(placeBub);
 }
@@ -2060,7 +2113,7 @@ cv.onpointerup=e=>{if(!drag){const p=pt(e);if(lockTap&&p.inb){const[r,c]=cellOf(
   if(u&&deskOn(u)&&onShopCoin(u,p)){writeScroll(u);return}
   if(u&&Math.hypot(p.x-u.x,p.y-(u.y-22))<30){u.hop=.5;u.mood='happy';u.mt=1;gest(u,'up',.6)}return}
  if(inRect(tray,e))sendToShelf(d.id);
- else if(p.inb){const[r,c]=cellOf(p),u=U[d.id];if(!isOpen(r,c))toast('That space is locked. Tap it to buy it.');else if(at(r,c)==='tree')toast('The Massive Tree is rooted to the spot. Nothing can swap with it.');else if(r!==u.r||c!==u.c)relocate(d.id,r,c)}
+ else if(p.inb){const[r,c]=cellOf(p),u=U[d.id];if(!isOpen(r,c))toast('That space is locked. Tap it to buy it.');else if(d.id==='dragon'){const q=dragonSpot(r,c);if(!q)toast('The Dragon needs two open spaces side by side.');else if(q[0]!==u.r||q[1]!==u.c)moveDragon(q)}else if(at(r,c)==='dragon')toast('The Dragon is too big to swap with. Move it instead.');else if(at(r,c)==='tree')toast('The Massive Tree is rooted to the spot. Nothing can swap with it.');else if(r!==u.r||c!==u.c)relocate(d.id,r,c)}
  save()};
 // Dragging a box back onto the shelf costs REMOVE_COST coins (asks first)
 function sendToShelf(id){const u=U[id];if(!u)return;
@@ -2073,7 +2126,7 @@ const gh=$('#ghost'),gx=gh.getContext('2d');
 function firstFree(){for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c)&&!at(r,c))return[r,c]}
 // Shared drag behaviour for shelf buttons. onDrop(r,c) runs when dropped on a board cell; onTap when just tapped.
 function draggable(b,canStart,onDrop,onTap,isBox){
- b.onpointerdown=e=>{if(!canStart())return;b.setPointerCapture(e.pointerId);td={sx:e.clientX,sy:e.clientY,moved:false,box:!!isBox}};
+ b.onpointerdown=e=>{if(!canStart())return;b.setPointerCapture(e.pointerId);td={sx:e.clientX,sy:e.clientY,moved:false,box:!!isBox,dragon:b.dataset.id==='dragon'}};
  b.onpointermove=e=>{if(!td)return;
   if(!td.moved&&Math.hypot(e.clientX-td.sx,e.clientY-td.sy)>8){td.moved=true;gx.clearRect(0,0,96,96);gx.drawImage(b.firstChild,0,0);gh.style.display='block'}
   if(td.moved){gh.style.left=e.clientX-42+'px';gh.style.top=e.clientY-42+'px';const p=pt(e);hover=p.inb?cellOf(p):null}};
@@ -2092,14 +2145,15 @@ function buildShelf(){
  order.forEach(id=>{if(!have.includes(id)){const b=document.createElement('button');b.className='it locked';b.disabled=true;b.innerHTML='<canvas width="96" height="96"></canvas><span class="clue"></span>';b.lastChild.textContent=SHELF_CLUE[id]||'???';
    const t=b.firstChild.getContext('2d');t.fillStyle='#221e3c';t.fillRect(0,0,96,96);t.font='34px '+GAME_FONT;t.fillStyle='#4a4470';t.textAlign='center';t.fillText('?',48,62);tray.appendChild(b);return}
   const b=document.createElement('button');b.className='it';b.dataset.id=id;b.innerHTML='<canvas width="96" height="96"></canvas>'+CH[id].name+tagImg(id);
-  const t=b.firstChild.getContext('2d');t.imageSmoothingEnabled=false;box(t,id,0,0,'longsword');if(!CLASS[id]||CLASS[id]!=='structure')spr(t,id,'ok',48,FY,1,0);
+  const t=b.firstChild.getContext('2d');t.imageSmoothingEnabled=false;if(id==='dragon'){t.fillStyle='#221e3c';t.fillRect(0,0,96,96);t.save();t.translate(0,24);t.scale(.5,.5);drawDragonLair(t,0,0,0);t.restore()}else{box(t,id,0,0,'longsword');if(!CLASS[id]||CLASS[id]!=='structure')spr(t,id,'ok',48,FY,1,0)} // (the Dragon's wide lair, at half size)
   // placing costs coins for the Apothecary, and for every Monarch after the first one of the game
-  const place=(r,c,col)=>{const cost=id==='apothecary'?APOTH_PLACE_COST:id==='monarch'&&(S.monarchs||0)>=1?MONARCH_COST:0;if(!cost){addUnit(id,r,c,false,null,null,col);return}
+  const place=(r,c,col)=>{if(id==='dragon'){const q=dragonSpot(r,c);if(!q){toast('The Dragon needs two open spaces side by side.');return}r=q[0];c=q[1]} // the Dragon takes 2 spaces
+   const cost=id==='apothecary'?APOTH_PLACE_COST:id==='monarch'&&(S.monarchs||0)>=1?MONARCH_COST:0;if(!cost){addUnit(id,r,c,false,null,null,col);return}
    const nm=CH[id].name;if((S.coins||0)<cost){toast('Setting up the '+nm+' costs '+cost+' coins. You have '+(S.coins||0)+'.');return}
    ask('Set up the '+nm+' for '+cost+' coins?','Pay '+cost,()=>{if(at(r,c)||U[id]||S.coins<cost)return;spend(cost);showCoins();addUnit(id,r,c,false);parts.push({k:'txt',s:'-'+cost,x:c*CELL+48,y:r*CELL+30,t:0,life:1.4,icon:'coin'})})};
-  const tap=()=>{const f=firstFree();if(f)place(f[0],f[1],id==='wizard'?pick(WIZ_RANDOM):null);else toast('No free space. Tap a locked space to buy more room.')};
+  const tap=()=>{const f=id==='dragon'?firstDragonSpot():firstFree();if(f)place(f[0],f[1],id==='wizard'?pick(WIZ_RANDOM):null);else toast('No free space. Tap a locked space to buy more room.')};
   const free=()=>!U[id]&&!(id==='traveler'&&S.travelRoam); // not on the board (the Traveling Merchant: not on the road either)
-  draggable(b,free,(r,c)=>{if(!isOpen(r,c))toast('That space is locked. Tap it to buy it.');else if(!at(r,c))place(r,c)},tap,true);
+  draggable(b,free,(r,c)=>{if(!isOpen(r,c))toast('That space is locked. Tap it to buy it.');else if(id==='dragon')place(r,c);else if(!at(r,c))place(r,c)},tap,true);
   b.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&free()){e.preventDefault();tap()}};
   tray.appendChild(b);
  });
@@ -2181,7 +2235,8 @@ function infoText(k){const fl=flavorOf(k),note=NOTE[k]?' '+NOTE[k]:'',p=pctOf(k)
  if(STRUCT_WHO[k]&&WELL_PCT[k]){const nm=CNAME((PAIR_WITH[k]||[])[0]);return 'Idle ('+WELL_PCT[k]+' chance): '+STRUCT_WHO[k]+' next to the '+nm+' ('+Math.round(STRUCT_IDLE*100)+'% of their idle activities use the '+nm+(k==='wellsteal'?'; only after a Merchant has wished on a coin there':'')+(nm==='Massive Tree'?'; the tree stands for 1 minute':'')+'). '+fl+note}
  if(WELL_PCT[k]){const sid2=(PAIR_WITH[k]||[])[0],tag=((PAIR_WITH[k]||[])[1]||'').slice(4),tg={mage:'Mage',fighter:'Fighter',merchant:'Merchant',monstrous:'Monstrous character'}[tag],nm=CNAME(sid2),sec=Object.keys(STRUCT_SECOND).find(q=>(STRUCT_ACTS[sid2]||{})[tag]&&STRUCT_ACTS[sid2][tag].includes(q));
   return 'Idle ('+WELL_PCT[k]+' chance): a '+tg+' next to the '+nm+' ('+Math.round(STRUCT_IDLE*100)+'% of their idle activities use the '+nm+'; with several tags, one is picked at random'+(sec?'; the rarer outcome happens '+Math.round(STRUCT_SECOND[sec]*100)+'% of the time':'')+'). '+fl+note}
- if(k.startsWith('grp:'))return 'Group event (checked every 5 minutes, it happens whenever the board allows): '+({'grp:market':'four Merchants in a 2x2 square','grp:feast':'any three characters side by side in a row','grp:wellchat':'characters on all four sides of the Well','grp:classic':'the Priest, Knight, Wizard and Rogue in the same row as the Tavern'}[k])+', at home and free'+', for 1 minute. '+fl+note;
+ if(k==='grp:dragon')return 'Boss battle (a group event, checked every 5 minutes): once the dragon may attack (quest Here Be Dragons), with 3 Fighters, 2 Mages and a Merchant anywhere on the board (6 different characters). It lasts 45 seconds or until the dragon falls; its 100 hit points carry over between battles. '+fl+note;
+ if(k.startsWith('grp:'))return 'Group event (checked every 5 minutes, it happens whenever the board allows): '+({'grp:market':'four Merchants in a 2x2 square','grp:feast':'any three characters side by side in a row','grp:wellchat':'characters on all four sides of the Well','grp:classic':'the Priest, Knight, Wizard and Rogue in the same row as the Tavern','grp:dragon':'3 Fighters, 2 Mages and a Merchant anywhere on the board (6 different characters), once the dragon may attack (quest Here Be Dragons), until it is beaten'}[k])+', at home and free'+', for 1 minute. '+fl+note;
  if(k.startsWith('rq:')){const q=k.slice(3);return 'Visit (his first visit to the Monarch; granted 80% by a generous one, 10% by a greedy one): '+(q==='paladin'?'a Paladin':'the '+CNAME(q))+' next to the Monarch, any side. '+fl}
  for(const kind in ITEM_KEY)for(const c in ITEM_KEY[kind])if(ITEM_KEY[kind][c]===k)return 'Item: '+ITEM_NAME[kind].toLowerCase()+' on '+(c==='*'?'anyone without the Fighter tag':'the '+CNAME(c))+'. '+fl+note;
  return (EGGS.includes(k)?'Secret. ':'')+(DESC[k]||NAMES[k]||'')+(note&&!(DESC[k]||'').includes(NOTE[k])?note:'')}
@@ -2202,7 +2257,7 @@ function unlockHint(k){if(HINTS[k])return HINTS[k];const p=pctOf(k),how=p==null?
  return ''}
 function hintOf(k){const f=flavorOf(k),h=unlockHint(k);return 'Not discovered yet. '+(f||'Keep exploring!')+(h?' '+h:'')}
 // Top of each tab: how this character decides
-const DECIDE_NOTE={goblin:'Neighbors visit him far less often than anyone else (he always visits for his own scenes).',druid:'His visits are casts instead: Overgrowth, or rarely a change of weather (and his one request to the Monarch).',monarch:'A greedy Monarch never visits.',traveler:'He never visits, and nobody visits him.',
+const DECIDE_NOTE={dragon:'For now it only sleeps on its hoard: no idle activities or scenes yet, and nobody visits it.',goblin:'Neighbors visit him far less often than anyone else (he always visits for his own scenes).',druid:'His visits are casts instead: Overgrowth, or rarely a change of weather (and his one request to the Monarch).',monarch:'A greedy Monarch never visits.',traveler:'He never visits, and nobody visits him.',
  farmer:'Farmers only hoe and carry pitchforks until the harvest.'};
 const decideText=id=>'Every 5-10 seconds a character does an activity: Idle ('+Math.round(DECIDE.idle*100)+'% chance), Visit a neighbor ('+Math.round(DECIDE.visit*100)+'% chance) or Wanders their room ('+Math.round((1-DECIDE.idle-DECIDE.visit)*100)+'% chance).'+(DECIDE_NOTE[id]?' '+DECIDE_NOTE[id]:'');
 // Hint for a tile not discovered yet: the description without where the characters must be, which item to use, or any chance (those show once discovered)
@@ -2407,7 +2462,7 @@ function pairDiagram(k){
 function poofTile(c,x,y,k,col){const s=Math.max(1,7*(1-k));c.fillStyle=col||'#6a9a3a';for(let i=0;i<8;i++){const a=i*Math.PI/4;c.fillRect(x+Math.cos(a)*k*28-s/2,y+Math.sin(a)*k*28-s/2,s,s)}}
 const flash=(on,tt)=>on&&Math.floor(tt*14)%2?.2:1;
 function idleTile(kind,wp){
- const wide=kind==='grp:market'||kind==='grp:feast'||kind==='fireball'||kind==='raise'||kind==='nscroll'||kind==='wave'||kind==='alcpotion',[c,x]=mkc(wide?192:96,96,NAMES[kind]+(wp?' ('+wp+')':''));
+ const wide=kind==='grp:market'||kind==='grp:feast'||kind==='grp:dragon'||kind==='fireball'||kind==='raise'||kind==='nscroll'||kind==='wave'||kind==='alcpotion',[c,x]=mkc(wide?192:96,96,NAMES[kind]+(wp?' ('+wp+')':''));
  anim.push(t=>{x.clearRect(0,0,wide?192:96,96);
   if(kind==='read'||kind==='magic'){box(x,'wizard',0,0);spr(x,'wizard','ok',48,FY,1,0,1,1,poseOf(kind,t));drawAct(x,{act:kind,at:t,x:48,y:FY,face:1})}
   else if(kind==='demon'){const tt=t%4.6,sk=sinkOf(tt);box(x,'wizard',0,0);
@@ -2624,6 +2679,7 @@ function idleTile(kind,wp){
   else if(kind==='wellwish'){const tt=t%4,k2=cl((tt-.6)/.5,0,1);box(x,'well',0,0);spr(x,'merchant',tt>1.2&&tt<2.8?'sleep':'ok',20,FY,1,0,1,1,tt>.4&&tt<1.2?'fwd':'none');if(tt>.6&&tt<1.1)drawItem(x,'coin',Math.round(lerp(28,48,k2)),Math.round(lerp(56,57,k2)-Math.sin(k2*Math.PI)*12),1);if(tt>1.2&&tt<2.4)heart(x,20,30-(tt-1.2)*10)}
   else if(kind==='welldive'){const tt=t%5,d=tt<1?0:tt<1.4?30*(tt-1)/.4:tt<2.4?30:tt<2.8?30-26*(tt-2.4)/.4:tt<4?4:0;box(x,'well',0,0);x.save();x.beginPath();x.rect(0,0,96,tt>=1&&tt<4?57:96);x.clip();spr(x,'goblin','happy',48,FY+d,1,0,1,GOBLIN_SCALE);x.restore()}
   else if(kind==='grp:market'){drawMarketBack(x,0,0,192,96);drawMarketCrowd(x,0,0,192,96,t);spr(x,'merchant','happy',40,FY,1,0,1,1,Math.floor(t)%3===0?'up':'none');spr(x,'apothecary','happy',136,FY,-1,0,1,1,Math.floor(t+1.5)%3===0?'up':'none')}
+  else if(kind==='grp:dragon'){const tt=t%3;box(x,'knight',0,0,'longsword');box(x,'wizard',96,0);spr(x,'knight','mad',48,FY,1,tt<.5?-4:0,1,1,'up');spr(x,'wizard_blue','mad',144,FY,-1,0,1,1,'both');const dx=96+Math.sin(t*.8)*40,dy=34+Math.sin(t*1.6)*8;if(tt>1&&tt<1.6){const k=(tt-1)/.6;x.fillStyle='#c890ff';x.fillRect(Math.round(lerp(144,dx,k))-2,Math.round(lerp(FY-40,dy,k))-2,4,4)}drawDragonFly(x,dx,dy,Math.cos(t*.8)>0?1:-1,t,tt>1.6&&tt<1.9)}
   else if(kind==='grp:feast'){drawFeastBack(x,0,0,192,t);spr(x,'knight','happy',48,FY,1,Math.floor(t*2)%5===0?-3:0);spr(x,'wizard','happy',144,FY,-1,Math.floor(t*2+2)%5===0?-3:0,1,1,Math.floor(t)%4===0?'fwd':'none');drawFeastFront(x,0,0,192)}
   else if(kind==='ss:gold'){x.fillStyle='#1a1733';x.fillRect(0,0,96,96);for(let r=0;r<4;r++)for(let c=0;c<5;c++){x.fillStyle='#c8962a';x.fillRect(4+c*18,12+r*18,16,16);x.fillStyle='#f2c84a';x.fillRect(5+c*18,13+r*18,14,14);x.fillStyle='#fff0a8';x.fillRect(6+c*18,14+r*18,4,2);if(Math.floor(t*3+r+c*2)%7===0){x.fillStyle='#ffffff';x.fillRect(12+c*18,18+r*18,2,2)}}}
   else if(kind==='ss:alltags'){box(x,'alchemist',0,0);spr(x,'alchemist_mad','happy',48,FY,1,0,1,1,'both');['fighter','mage','merchant','monstrous'].forEach((g2,i)=>{TAG_ICON[g2].forEach(r=>{x.fillStyle=r[4];x.fillRect(6+r[0]*2,8+i*17+r[1]*2,r[2]*2,r[3]*2)})})}
@@ -2723,7 +2779,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  for(const wk in WELL_PCT)T[wk]=[I(wk),WELL_PCT[wk]]; // the Well's activities (labels: share of a neighbor's idle activities)
  Object.assign(T,{bplay:[I('bplay')],bhum:[I('bhum')],bspell:[I('bspell')],bwisdom:[I('bwisdom')],blisten:[I('blisten')],bstory:[I('bstory')],bsoothe:[I('bsoothe')],bdragon:[I('bdragon')],bfruit:[I('bfruit')],'ss:elven':[I('ss:elven'),'super secret']}); // the Bard
  ['grummage','gdagger','gnap','gsteal','ghoard','bresonance',...Object.keys(GOBLIN_WITH)].forEach(k=>{T[k]=[I(k)]});T.ghoard[1]='passive';T.bresonance[1]='passive'; // the Goblin; the Bard's Resonance
- Object.assign(T,{'grp:wellchat':[I('grp:wellchat'),'secret'],'grp:classic':[I('grp:classic'),'secret'],'grp:market':[I('grp:market'),'every 5 min'],'grp:feast':[I('grp:feast'),'every 5 min'],'ss:gold':[I('ss:gold'),'super secret'],'ss:alltags':[I('ss:alltags'),'super secret'],dingot:[I('dingot')],rqdeny:[P('rqdeny'),'20% / 90%'],drain:[P('drain'),pv*ODDS.drain],royalfuneral:[I('royalfuneral'),'on death'],regicide:[I('regicide'),'secret'],royalpatron:[I('royalpatron'),'secret'],
+ Object.assign(T,{'grp:wellchat':[I('grp:wellchat'),'secret'],'grp:classic':[I('grp:classic'),'secret'],'grp:market':[I('grp:market'),'every 5 min'],'grp:dragon':[I('grp:dragon'),'boss'],'grp:feast':[I('grp:feast'),'every 5 min'],'ss:gold':[I('ss:gold'),'super secret'],'ss:alltags':[I('ss:alltags'),'super secret'],dingot:[I('dingot')],rqdeny:[P('rqdeny'),'20% / 90%'],drain:[P('drain'),pv*ODDS.drain],royalfuneral:[I('royalfuneral'),'on death'],regicide:[I('regicide'),'secret'],royalpatron:[I('royalpatron'),'secret'],
   wares:[I('wares'),'100%'],troad:[I('troad'),'5 min'],tshop:[I('tshop'),TRAVEL_ARTIFACT+' coins'],tscroll:[I('tscroll')],tpotion:[I('tpotion')],tingot:[I('tingot')]});
  ROGUE_SCENES.forEach(k=>{if(!T[k])T[k]=[P(k),pv]});
  WEAPONS.forEach(w=>T['prac:'+w]=[I('prac',w),K.prac]);
@@ -2764,7 +2820,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  [...new Set(pairs.map(other))].sort((a,c)=>nameOf(a).localeCompare(nameOf(c))).forEach(id=>{const keys=pairs.filter(k=>other(k)===id),h=document.createElement('h3');
   h.className='sub';h.innerHTML='with '+(id==='anyone'?'anyone':TAG_NAMES[id]?TAG_NAMES[id]+tagOf(id.slice(4)):'the '+nameOf(id)+tagImg(id))+' <small>'+count(keys)+'</small>';b.append(h,grid(keys))});
  const items=tab.items.filter(k=>!EGGS.includes(k)&&!PASSIVES.includes(k)),eggs=tab.items.filter(k=>EGGS.includes(k));
- if(tab.idle.length)b.append(head(tab.id==='group'?'Events':'Idle activities',tab.idle),grid(tab.idle));if(items.length)b.append(head('Items and shops',items),grid(items,1)); // (empty groups are left out)
+ if(tab.idle.length)b.append(head(tab.id==='group'||tab.id==='dragon'?'Events':'Idle activities',tab.idle),grid(tab.idle));if(items.length)b.append(head('Items and shops',items),grid(items,1)); // (empty groups are left out)
  // Secrets: their own group at the bottom; hidden until found but counted
  if(eggs.length){b.append(head('Secrets',eggs));if(eggs.some(k=>S.seen[k]||S.revealed[k]))b.append(grid(eggs,1));
   else{const q=document.createElement('p');q.className='cinfo';q.textContent='Not found yet. Keep exploring!';b.append(q)}}
@@ -2778,12 +2834,13 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
 // ---------- Quests (QUESTS in data.js) ----------
 // A quest's counter goes up (S.qs); when it reaches the goal the reward is paid once (S.qDone), even during the grand funeral
 function questStat(stat,n){S.qs=S.qs||{};S.qs[stat]=(S.qs[stat]||0)+(n||1);checkQuests();save();if(!$('#tab-quest').hidden)buildQuests()}
-const rewardText=r=>Object.keys(r).map(k=>k==='coins'?r[k]+' coins':k==='unlock'?'unlocks the '+NAMES[r[k]]:r[k]+' '+ITEM_WORD[k][r[k]===1?0:1]).join(' and ');
+const rewardText=r=>Object.keys(r).map(k=>k==='coins'?r[k]+' coins':k==='unlock'?'unlocks the '+NAMES[r[k]]:k==='event'?'the dragon may now attack':r[k]+' '+ITEM_WORD[k][r[k]===1?0:1]).join(' and ');
 // A quest's progress [done, goal]: a counter (stat) or a whole Compendium page found (tab)
-const questProg=q=>{if(q.tab){const t=COMP_TABS.find(x=>x.id===q.tab),ks=t?tabKeys(t):[];return[ks.filter(k=>S.seen[k]).length,ks.length||1]}return[Math.min((S.qs||{})[q.stat]||0,q.goal),q.goal]};
+const questProg=q=>{if(q.prog)return q.prog();if(q.tab){const t=COMP_TABS.find(x=>x.id===q.tab),ks=t?[...new Set([...t.pairs,...t.idle,...t.items])]:[]; // (every entry of that page in the whole game, also ones with characters not unlocked yet)
+ return[ks.filter(k=>S.seen[k]).length,ks.length||1]}return[Math.min((S.qs||{})[q.stat]||0,q.goal),q.goal]};
 function checkQuests(){S.qDone=S.qDone||{};QUESTS.forEach(q=>{const[n,g]=questProg(q);if(S.qDone[q.id]||n<g)return;S.qDone[q.id]=1;
- for(const k in q.reward){if(k==='coins')addCoins(q.reward[k],null,null,true);else if(k==='unlock'){S.un[q.reward[k]]=true;buildShelf()}else addItem(k,q.reward[k],null,null,true)}
- save();toast('Quest complete: '+q.name+'! '+(q.reward.unlock?'A '+NAMES[q.reward.unlock]+' box has appeared on the shelf!':'+'+rewardText(q.reward)))})}
+ for(const k in q.reward){if(k==='coins')addCoins(q.reward[k],null,null,true);else if(k==='unlock'){S.un[q.reward[k]]=true;buildShelf()}else if(k==='event'){}else addItem(k,q.reward[k],null,null,true)}
+ save();toast('Quest complete: '+q.name+'! '+(q.reward.unlock?'A '+NAMES[q.reward.unlock]+' box has appeared on the shelf!':q.reward.event?'A huge shadow passes over the kingdom... The dragon may now attack.':'+'+rewardText(q.reward)))})}
 function buildQuests(){const box=$('#quests');box.textContent='';S.qDone=S.qDone||{};
  QUESTS.forEach(q=>{const[n0,g]=questProg(q),n=Math.min(n0,g),done=!!S.qDone[q.id],d=document.createElement('div');d.className='quest'+(done?' done':'');q.goal=g;
   d.innerHTML='<h3></h3><p class="qt"></p><div class="qbar"><i></i></div><p class="qr"></p>';
@@ -2793,7 +2850,7 @@ function buildQuests(){const box=$('#quests');box.textContent='';S.qDone=S.qDone
 
 // ---------- state ----------
 function ui(){document.querySelectorAll('.it[data-id]').forEach(b=>b.classList.toggle('used',!!U[b.dataset.id]||(b.dataset.id==='traveler'&&!!S.travelRoam)))} // dimmed: on the board, or on the road
-function save(){if(resetting)return;try{const b={};for(const i in U)if(!isFarm(i)&&i!=='tree')b[i]=[U[i].r,U[i].c,U[i].weapon,TEMP_FORM[U[i].form]?null:U[i].form,U[i].color,U[i].backwards?1:0,U[i].skin||0,U[i].mageTag?1:0,U[i].dead?1:0,U[i].reinforced?1:0,U[i].paladin?1:0,U[i].armor?1:0,U[i].fam||0,U[i].arch?1:0,U[i].trait||0,extras(U[i])];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,spent:S.spent||0,inv:S.inv,seen:S.seen,rewarded:S.rewarded||0,cells:S.cells,bought:S.bought||0,revealed:S.revealed,goldCells:S.goldCells,ever:S.ever,tabDone:S.tabDone||{},bigRewarded:S.bigRewarded||0,monarchs:S.monarchs||0,travelRoam:!!S.travelRoam,qs:S.qs||{},qDone:S.qDone||{},wx:{k:bwx.k,t:Math.round(bwx.t)},elvenScroll:!!S.elvenScroll,goldBorder:!!S.goldBorder,bardMon:!!S.bardMon}))}catch(e){}}
+function save(){if(resetting)return;try{const b={};for(const i in U)if(!isFarm(i)&&i!=='tree')b[i]=[U[i].r,U[i].c,U[i].weapon,TEMP_FORM[U[i].form]?null:U[i].form,U[i].color,U[i].backwards?1:0,U[i].skin||0,U[i].mageTag?1:0,U[i].dead?1:0,U[i].reinforced?1:0,U[i].paladin?1:0,U[i].armor?1:0,U[i].fam||0,U[i].arch?1:0,U[i].trait||0,extras(U[i])];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,spent:S.spent||0,inv:S.inv,seen:S.seen,rewarded:S.rewarded||0,cells:S.cells,bought:S.bought||0,revealed:S.revealed,goldCells:S.goldCells,ever:S.ever,tabDone:S.tabDone||{},bigRewarded:S.bigRewarded||0,monarchs:S.monarchs||0,travelRoam:!!S.travelRoam,qs:S.qs||{},qDone:S.qDone||{},wx:{k:bwx.k,t:Math.round(bwx.t)},elvenScroll:!!S.elvenScroll,goldBorder:!!S.goldBorder,bardMon:!!S.bardMon,dragonRumor:!!S.dragonRumor,dragonReady:!!S.dragonReady,dragonHP:S.dragonHP==null?DRAGON_HP:S.dragonHP}))}catch(e){}}
 // [15] in a saved box: everything newer, by name (royal colors, requests made, grudges, the Monarch's gifts, the Traveling Merchant's time left)
 const EXTRA_KEYS=['pal','asked','grudge','sir','helper','staff','barrel','sacks','pine','minions','travelT','wcoins','inst','merchTag','fightTag','monTag','hoard','helm'];
 const extras=u=>{const o={};EXTRA_KEYS.forEach(k=>{if(u[k])o[k]=k==='travelT'?Math.round(u[k]):u[k]});return o};
@@ -2801,7 +2858,7 @@ function load(){let d=null;try{d=JSON.parse(localStorage.getItem(KEY))}catch(e){
  if(d){S.un=d.un||{};S.coins=d.coins||0;S.inv=Object.assign({scroll:0,potion:0,artifact:0,ingot:0},d.inv);S.spent=d.spent||0;S.seen=d.seen||{};S.rewarded=d.rewarded!=null?d.rewarded:Math.floor(ALL_KEYS.filter(k=>S.seen[k]).length/DISCOVER_EVERY)}
  // Bought board spaces. An older save made before spaces were locked: any space that already holds a box stays open, free.
  S.cells=(d&&d.cells)||[];S.bought=(d&&d.bought)||0;S.revealed=(d&&d.revealed)||{};S.goldCells=(d&&d.goldCells)||(d&&d.goldCell?[d.goldCell]:[]);S.ever=(d&&d.ever)||{};S.tabDone=(d&&d.tabDone)||{};S.bigRewarded=(d&&d.bigRewarded)||0;S.travelRoam=!!(d&&d.travelRoam);
- S.qs=(d&&d.qs)||{};S.qDone=(d&&d.qDone)||{};S.elvenScroll=!!(d&&d.elvenScroll);S.goldBorder=!!(d&&d.goldBorder);S.bardMon=!!(d&&d.bardMon);showBorder();if(d&&d.wx&&BOARD_WX[d.wx.k])bwx={k:d.wx.k,t:d.wx.t||0};showWx(); // quests; the board's weather
+ S.qs=(d&&d.qs)||{};S.qDone=(d&&d.qDone)||{};S.elvenScroll=!!(d&&d.elvenScroll);S.goldBorder=!!(d&&d.goldBorder);S.bardMon=!!(d&&d.bardMon);S.dragonRumor=!!(d&&d.dragonRumor);S.dragonReady=!!(d&&d.dragonReady);S.dragonHP=d&&d.dragonHP!=null?d.dragonHP:DRAGON_HP;showBorder();if(d&&d.wx&&BOARD_WX[d.wx.k])bwx={k:d.wx.k,t:d.wx.t||0};showWx(); // quests; the board's weather
  S.monarchs=d&&d.monarchs!=null?d.monarchs:d&&d.boxes&&d.boxes.monarch?1:0; // (an older save with a Monarch on the board: that one was the free one)
  if(d&&d.boxes&&!d.cells)for(const i in d.boxes){const q=d.boxes[i],k=q[0]+','+q[1];if(!isOpen(q[0],q[1]))S.cells.push(k)}
  showCoins();showItems();checkUnlocks();

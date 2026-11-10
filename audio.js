@@ -43,9 +43,10 @@ const LAYERS={
  tavern:[(s,c,t,b)=>{if(JIG[s])tone(b,'square',mf(JIG[s]),t,.11,.17)},.1], // a jig
  bard:[(s,c,t,b)=>{if(s%4===0||s%8===6)tone(b,'triangle',mf(c[(s>>1)%3]+19),t,.3,.3)},.55], // lute plucks, up high
  library:[(s,c,t,b)=>{if(s%16===0)tone(b,'sine',mf(c[0]-12),t,STEP*15,.25)},-.1],
- goblin:[(s,c,t,b)=>{if(s%8===1||s%8===3)tone(b,'square',mf(c[0]-5+(s%8===3?1:0)),t,.06,.22)},.35]}; // one soft, low hum every two bars (a quiet place)
+ goblin:[(s,c,t,b)=>{if(s%8===1||s%8===3)tone(b,'square',mf(c[0]-5+(s%8===3?1:0)),t,.06,.22)},.35],
+ dragon:[(s,c,t,b)=>{if(s%16===0)tone(b,'sawtooth',mf(c[0]-36),t,STEP*6,.18,mf(c[0]-38))},.0]}; // the Dragon: a deep, slow snore // one soft, low hum every two bars (a quiet place)
 // Mixing levels: each part's loudness evened out (measured), so every room you add is clearly heard
-const MIX={knight:.42,rogue:2,merchant:.85,necromancer:1.5,priest:.8,wizard:.85,apothecary:.65,alchemist:2,druid:.85,blacksmith:2,monarch:1.2,traveler:4,farmer:1.35,well:.45,tavern:1.5,bard:1,library:.6,goblin:1.4}; // (the Well is kept quiet on purpose)
+const MIX={knight:.42,rogue:2,merchant:.85,necromancer:1.5,priest:.8,wizard:.85,apothecary:.65,alchemist:2,druid:.85,blacksmith:2,monarch:1.2,traveler:4,farmer:1.35,well:.45,tavern:1.5,bard:1,library:.6,goblin:1.4,dragon:1.6}; // (the Well is kept quiet on purpose)
 // ---------- group event themes: while a group event runs, the room parts fade down and the event plays its own tune ----------
 // Each theme has its own chords (one bar each) and parts; it starts and stops at the beginning of a bar. Levels in THEME_MIX (measured).
 const THEMES={
@@ -61,7 +62,10 @@ const THEMES={
  classic:{chords:[[62,65,69],[58,62,65],[60,64,67],[57,61,64]], // D minor, Bb, C, A: a heroic tune for the old adventuring party
   mel:[74,null,74,77,81,null,79,77, 77,null,74,null,70,null,null,null, 72,null,72,76,79,null,77,76, 76,null,null,null,73,null,null,null],
   play:(s,c,t,b,m)=>{if([0,3,4,6].includes(s%8))tone(b,'triangle',mf(c[0]-24),t,.18,.5);if(s%4===0)tone(b,'sine',130,t,.2,.7,40);if(s%8===4)noise(b,t,.14,.35,1500);if(m[s])tone(b,'square',mf(m[s]),t,STEP*1.6,.13)}}}; // galloping bass, drums, melody
-const THEME_MIX={market:2.1,feast:1.1,wellchat:1.45,classic:1.3}; // (about as loud as a full board; the calm Well chat a little softer)
+// the dragon battle: A minor, F, G, E, driving drums, a low pounding bass and a tense melody
+THEMES.dragon={chords:[[57,60,64],[53,57,60],[55,59,62],[52,56,59]],mel:[69,null,72,null,76,null,75,76, 72,null,69,null,65,null,null,null, 67,null,71,null,74,null,72,71, 68,null,null,null,64,null,null,null],
+ play:(s,c,t,b,m)=>{if(s%2===0)tone(b,'sawtooth',mf(c[0]-24),t,.12,.22);if(s%4===0)tone(b,'sine',120,t,.2,.9,40);if(s%8===4)noise(b,t,.16,.45,1200);if(m[s])tone(b,'square',mf(m[s]),t,STEP*1.6,.13)}};
+const THEME_MIX={market:2.1,feast:1.1,wellchat:1.45,classic:1.3,dragon:1.2}; // (about as loud as a full board; the calm Well chat a little softer)
 let themeK=null,themeBus=null,roomBus=null;
 // Which parts play: one per room on the board (the three Farmers share one; a buried Druid is silent)
 function activeLayers(){const on={};Object.values(U).forEach(u=>{if(u.dead)return;const k=isFarm(u.id)?'farmer':u.id;if(LAYERS[k])on[k]=1});return on}

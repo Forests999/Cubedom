@@ -1093,3 +1093,29 @@ function drawHoard(c,bx,by,n){const m=Math.min(Math.floor(n),48);for(let i=0;i<m
 function drawGoblinLife(c,bx,by,t){const f=Math.floor(t*8)%3;c.fillStyle='rgba(255,200,90,'+(.07+f*.02)+')';c.beginPath();c.arc(bx+48,by+64,16+f,0,Math.PI*2);c.fill()}
 // A dagger spinning in the Goblin's hand
 function drawSpinDagger(c,x,y,t){c.save();c.translate(Math.round(x),Math.round(y));c.rotate(Math.floor(t*10)*Math.PI/4);c.fillStyle=O;c.fillRect(-2,-7,4,11);c.fillStyle='#d0d4e0';c.fillRect(-1,-6,2,6);c.fillStyle='#5a3a20';c.fillRect(-1,0,2,3);c.restore()}
+
+// ---------- the Dragon ----------
+// Pixel rects for the dragon: each [x, y, w, h, color] relative to a center; an outline is drawn around all of them first
+const DRG={red:'#c03a2a',dark:'#8a2418',belly:'#e8a050',wing:'#a8302a',wingD:'#6a1a14',horn:'#e8e0c8',eye:'#ffd040'};
+function drawRects(c,R,flash){c.fillStyle=O;R.forEach(r=>c.fillRect(r[0]-1,r[1]-1,r[2]+2,r[3]+2));R.forEach(r=>{c.fillStyle=flash?'#ffffff':r[4];c.fillRect(r[0],r[1],r[2],r[3])})}
+// Flying over the board during the battle (x,y = its middle; wings flap; flash = just hit)
+function drawDragonFly(c,x,y,face,t,flash){const up=Math.floor(t*5)%2===0,D=DRG;c.save();c.translate(Math.round(x),Math.round(y));c.scale(face,1);
+ const wing=up?[[-10,-32,3,26,D.wingD],[-10,-32,26,3,D.wingD],[-7,-29,22,6,D.wing],[-7,-23,18,6,D.wing],[-7,-17,14,6,D.wing],[-7,-11,10,5,D.wing]]
+  :[[-10,4,3,22,D.wingD],[-10,23,24,3,D.wingD],[-7,6,10,5,D.wing],[-7,11,14,6,D.wing],[-7,17,18,6,D.wing]];
+ drawRects(c,[...wing,[-44,-5,6,5,D.dark],[-38,-2,12,4,D.red],[-28,-4,14,6,D.red],[-16,-7,30,13,D.red],[-12,2,24,4,D.belly],[-10,6,5,6,D.dark],[6,6,5,6,D.dark],
+  [12,-11,8,9,D.red],[18,-17,14,9,D.red],[26,-9,8,3,D.dark],[20,-21,2,4,D.horn],[24,-22,2,5,D.horn],[-8,-10,3,3,D.horn],[0,-10,3,3,D.horn],[8,-10,3,3,D.horn]],flash);
+ c.fillStyle=D.eye;c.fillRect(28,-15,2,2);c.restore()}
+// Its lair on the board: one wide cave (2 spaces, 192 x 96), a heap of gold, the dragon asleep on it (breathing, smoke from its nose)
+function drawDragonLair(c,x,y,t){x=Math.round(x);y=Math.round(y);const p=(a,b,w,h,col)=>{c.fillStyle=col;c.fillRect(x+a,y+b,w,h)},D=DRG;
+ p(0,0,192,96,'#3a2622');p(0,0,192,10,'#2a1a18');[[20,10,4,8],[52,10,6,10],[110,10,4,7],[150,10,5,11],[176,10,3,6]].forEach(q=>p(q[0],q[1],q[2],q[3],'#2a1a18')); // rock and stalactites
+ [[14,24,20,10],[70,18,26,8],[130,28,22,10],[164,46,20,8],[30,40,14,8]].forEach(q=>p(q[0],q[1],q[2],q[3],'#4a302a'));
+ p(0,68,192,28,'#4a2e22');p(0,68,192,2,'#5a3a2a'); // the floor
+ for(let i=0;i<140;i++){const a=((i*37)%100)/100,b=((i*53)%100)/100,hx=34+a*124,hy=90-Math.round(Math.sin(a*Math.PI)*24*b);p(hx,hy,3,2,i%3?'#f2c84a':'#d8a830')} // a heap of gold
+ p(66,82,3,3,'#3ac8e8');p(118,84,3,3,'#e83a5a');p(150,80,3,3,'#3ae87a');p(40,80,5,6,'#f2d070');p(41,79,3,1,'#fff0a0'); // gems and a goblet
+ c.save();c.translate(x,y+(Math.sin(t*1.4)>0?0:1)); // (it breathes)
+ drawRects(c,[[24,44,5,5,D.horn],[26,48,8,6,D.red],[30,54,12,6,D.red],[40,60,24,6,D.red],[76,38,40,14,D.wingD],[80,34,30,6,D.wing],[84,40,26,8,D.wing],
+  [62,50,76,18,D.red],[58,54,84,12,D.red],[66,62,64,5,D.belly],[64,66,10,6,D.dark],[136,46,14,12,D.red],[146,48,24,12,D.red],[166,52,10,7,D.red],[150,42,3,6,D.horn],[156,41,3,6,D.horn],[140,66,6,4,D.dark],
+  ...[70,82,94,106,118,128].map(sx=>[sx,46,3,4,D.horn])]);
+ c.fillStyle=D.dark;c.fillRect(158,51,5,1);c.fillRect(174,54,1,1);c.restore(); // a closed eye, a nostril
+ for(let i=0;i<3;i++){const k=(t*.6+i/3)%1;c.fillStyle='rgba(170,160,160,'+((1-k)*.45).toFixed(2)+')';c.beginPath();c.arc(x+178+k*8,y+52-k*26,2+k*4,0,Math.PI*2);c.fill()} // smoke from its nose
+ drawZ(c,x+160,y+30-Math.round((t*6)%8),.8)}

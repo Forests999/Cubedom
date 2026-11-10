@@ -1262,3 +1262,22 @@ FLAVOR.bresonance='The more the elf has lived, the richer the music. The neighbo
 const DEADLY={demon:1,murder:1,assassin:1,drain:1,gknightdie:1,gmob:1};
 // Passive abilities: shown in their own group at the top of a character's Compendium tab (not under Items and shops)
 const PASSIVES=['ghoard','bresonance'];
+
+// ---------- the Dragon: unlock the battle, win the battle, then it joins you as a 2-space character (Monstrous) ----------
+// 1) The dragon can attack once you have heard the Fruit Merchant's dragon rumor (S.dragonRumor), seen the Wizard and Bard's dragon story (bdragon)
+//    and held DRAGON_COINS coins at once: S.dragonReady, for good (quest Here Be Dragons).
+// 2) The battle, a group event: 3 Fighters, 2 Mages and 1 Merchant anywhere on the board, 6 different characters (each fills one role, DRAGON_ROLES).
+//    Everyone on the board is interrupted. The dragon has DRAGON_HP hit points (S.dragonHP, kept between battles); each attack does 1d6.
+//    A battle lasts DRAGON_FIGHT seconds (an attack every DRAGON_HIT_EVERY seconds, taking turns), or until the dragon falls.
+// 3) At 0 hit points it is beaten: a Dragon box appears on the shelf. On the board it is one wide box over 2 spaces side by side.
+const DRAGON_COINS=300,DRAGON_HP=100,DRAGON_FIGHT=45,DRAGON_HIT_EVERY=2.2,DRAGON_ROLES=['fighter','fighter','fighter','mage','mage','merchant'];
+CH.dragon={name:'Dragon',eye:O,p:[]};CLASS.dragon='monstrous';ALL_CHARS.push('dragon');NAMES.dragon='Dragon';TR.dragon={up:'fade',down:'fade'};
+SHELF_CLUE.dragon='Something huge circles high above the kingdom. Only a strong band can bring it down.';
+COMP_TABS.find(t=>t.id==='group').idle.push('grp:dragon');COMP_TABS.push({id:'dragon',name:'Dragon',pairs:[],idle:['grp:dragon'],items:[]});
+NAMES['grp:dragon']='The dragon attacks!';TITLES['grp:dragon']='Dragon Attack!';
+DESC['grp:dragon']='Once the dragon has been heard of (the Fruit Merchant\'s rumor and the Wizard and Bard\'s story) and you have held 300 coins: with 3 Fighters, 2 Mages and a Merchant on the board (6 different characters), the dragon can swoop down. Everyone stops what they are doing and those six attack it, 1d6 damage each. It has 100 hit points, and its wounds carry over to its next attack. When it is beaten, a Dragon box appears on the shelf.';
+FLAVOR['grp:dragon']='A shadow falls over the whole kingdom. Then a roar. Swords up, spells ready!';
+HINTS['grp:dragon']='Rumors, an old story and a full purse might draw something huge. It takes a whole band to fight it.';
+const DRAGON_SAY={fighter:['For the kingdom!','Have at you!','Take that, overgrown lizard!'],mage:['Feel my power!','Lightning, strike!','Arcane bolt!'],merchant:['Here, have some fruit! HARD fruit!','Catch this!','No refunds!'],other:['Run!','Hide!','A DRAGON?!','Eek!']};
+QUESTS.push({id:'dragons',name:'Here Be Dragons',text:'Hear the Fruit Merchant\'s dragon rumor, hear the Wizard and Bard\'s dragon story, and hold 300 coins at once.',reward:{event:'dragon'},
+ prog:()=>S.dragonReady?[3,3]:[[S.dragonRumor,S.seen&&S.seen.bdragon,(S.coins||0)>=DRAGON_COINS].filter(Boolean).length,3]});

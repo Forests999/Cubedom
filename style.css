@@ -138,3 +138,6 @@ h1 .ver{font-size:13px;color:#b8b0d8;text-shadow:2px 2px 0 #000;vertical-align:m
 #wrap.golden{border-color:#f2c84a;outline-color:#c8a030;box-shadow:0 0 16px rgba(242,200,74,.55)}
 /* The Goblin's stash count, bottom-right of his room */
 .lb.hoardlb{transform:translate(-100%,-100%);color:#f2c84a}.lb.hoardlb .tag{margin:0 2px 0 0}
+/* The dragon's health bar at the top of the board (only during a dragon battle) */
+#dragonbar{position:absolute;top:6px;left:50%;transform:translateX(-50%);width:min(60%,360px);display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.7);border:2px solid #000;padding:3px 8px;z-index:4;font-size:12px;color:#ffd0c8}
+#dragonbar .hp{flex:1;height:10px;background:#3a1a1a;border:2px solid #000}#dragonbar .hp i{display:block;height:100%;background:linear-gradient(#ff6a4a,#c02a1a);transition:width .3s}
