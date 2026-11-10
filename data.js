@@ -1055,8 +1055,8 @@ const QUESTS=[];
 const DAILY_COUNT=3,DAILY_QUESTS=[
  {id:'prosperity',name:'Prosperity',text:'Have a feast 3 times.',stat:'feasts',goal:3,reward:{coins:50},avail:()=>unlockedChars().length>=3},
  {id:'kingfeast',name:'Feast Fit for a King',text:'Have a feast that includes the Monarch.',stat:'royalFeasts',goal:1,reward:{artifact:1},avail:()=>unlockedChars().includes('monarch')},
- {id:'costdisc',name:'Cost of Discovery',text:'Have the Wizard die 15 times.',stat:'wizDeaths',goal:15,reward:{scroll:5},avail:()=>unlockedChars().includes('wizard')},
- {id:'bigspender',name:'Big Spender',text:'Spend 50 coins.',stat:'spent',goal:50,reward:{renown:1},avail:()=>true},
+ {id:'costdisc',name:'Cost of Discovery',text:'Have the Wizard die 5 times.',stat:'wizDeaths',goal:5,reward:{scroll:5},avail:()=>unlockedChars().includes('wizard')},
+ {id:'bigspender',name:'Big Spender',text:'Spend 50 coins buying from characters (their shops).',stat:'spent',goal:50,reward:{renown:1},avail:()=>true},
  {id:'blink',name:'Blink and You\'ll Miss It',text:'Have a rare event happen (a chance of 5% or less).',stat:'rare',goal:1,reward:{coins:15},avail:()=>true},
  {id:'missed',name:'They Will Be Missed',text:'Have a character die.',stat:'deaths',goal:1,reward:{coins:5},avail:()=>true},
  {id:'lore',name:'Lore Gatherer',text:'Discover 10 new interactions in the Compendium.',stat:'discover',goal:10,reward:{reveal:1},avail:()=>undiscoveredScenes().length>=10},
@@ -1201,7 +1201,7 @@ QUESTS.push({id:'oldfriend',name:'An Old Friend',text:'Discover everything on th
 
 // ---------- the Goblin (Monstrous): a little green thief in a cave camp. Unlocked by the quest The Rumors are True. ----------
 // Smaller than everyone (GOBLIN_SCALE). Neighbors visit him far less (GOBLIN_SHY: his share when they pick whom to visit). He always visits for his scenes (GOBLIN_VISITS).
-// His cave stash grows by 1 coin every GOBLIN_HOARD_EVERY seconds (3 minutes) (u.hoard, saved); when he dies, you get it all.
+// His cave stash grows by 1 coin every GOBLIN_HOARD_EVERY seconds (5 minutes) (u.hoard, saved); when he dies, you get it all.
 const GBC={body:'#6a5a3a',bodyD:'#52462c',pants:'#4a4030',boot:'#3a2a1a',belt:'#3a2a1a',skin:'#6aaa3a',skinD:'#4e8a2a'};
 const goblinP=[...B(GBC),[2,5,3,2,GBC.skin],[1,4,1,2,GBC.skin],[11,5,3,2,GBC.skinD],[14,4,1,2,GBC.skinD], // big pointy ears
  [4,2,8,1,'#5a4a30'],[5,1,6,1,'#5a4a30'],[4,10,1,6,'#5a4a30'],[11,10,1,5,'#3a3020'],[6,12,1,1,'#3a3020'],[9,13,1,1,'#3a3020']]; // a ragged hood and a patched tunic
@@ -1209,7 +1209,7 @@ CH.goblin={name:'Goblin',eye:'#f2d040',a:arms(GBC),p:goblinP};
 CH.goblin_helm=Object.assign({},CH.goblin,{p:[...goblinP,[4,1,4,2,'#a8acb8'],[8,0,4,2,'#a8acb8'],[4,1,4,1,'#d0d4e0'],[8,0,4,1,'#d0d4e0'],[11,2,2,1,'#8a8e98']]}); // a Knight's helmet, sitting crooked
 CLASS.goblin='monstrous';TR.goblin={up:'fade',down:'fade'};ALL_CHARS.push('goblin');NAMES.goblin='Goblin';
 SHELF_CLUE.goblin="You've been warned about the goblins coming.";
-const GOBLIN_SCALE=.78,GOBLIN_SHY=.25,GOBLIN_HOARD_EVERY=180,GOBLIN_NAP=10;
+const GOBLIN_SCALE=.78,GOBLIN_SHY=.25,GOBLIN_HOARD_EVERY=300,GOBLIN_NAP=10;
 IDLES.goblin=[['grummage','c'],['gdagger','c'],['gnap','c'],['gsteal','r','nbr']];
 // his scenes with each neighbor (any side; the Goblin always visits)
 VISIT_ANY.push(['goblin','alchemist','galch','c'],['goblin','apothecary','gherbs','c'],['goblin','apothecary','gherbcoin','r'],['goblin','bard','ginst','c'],['goblin','blacksmith','gsword','c'],
@@ -1227,7 +1227,7 @@ Object.assign(TITLES,{grummage:'One Goblin\'s Trash',gdagger:'Stabby Spin',gnap:
  gpriest:'Hiss!',gbite:'Ankle Biter',gtrinket:'Return to Sender'});
 Object.assign(DESC,{grummage:'The Goblin rummages through his pile of stolen goods and trash.',gdagger:'The Goblin plays with his dagger, spinning it around in his hand.',
  gnap:'The Goblin curls up in his dirty bedroll for a 10 second nap.',gsteal:'The Goblin sneaks into a neighbor\'s room and steals something (+2 coins to his stash).',
- ghoard:'The Goblin\'s cave stash grows by 1 coin every 3 minutes (the count is in the corner of his room). When he dies, you get every coin in it.',
+ ghoard:'The Goblin\'s cave stash grows by 1 coin every 5 minutes (the count is in the corner of his room). When he dies, you get every coin in it.',
  galch:'The Goblin and the Alchemist, any side. The Goblin runs around the lab smashing potions while the Alchemist tries to shoo him out.',
  gherbs:'The Goblin and the Apothecary, any side. While she is out picking herbs, the Goblin sneaks in and steals some.',
  gherbcoin:'The Goblin and the Apothecary, any side, rare. While she is out, the Goblin finds 5 coins and adds them to his stash.',
@@ -1259,10 +1259,10 @@ Object.assign(HINTS,{grummage:'A goblin and his junk are never parted.',gdagger:
 NOTE.gherbcoin='+5 coins to his stash.';NOTE.gknightdie='The Goblin dies.';NOTE.gmob='The Knight dies; the Goblin keeps the helmet.';NOTE.gsteal='+2 coins to his stash.';
 QUESTS.push({id:'rumorstrue',name:'The Rumors are True',text:'Hear the Fruit Merchant tell the Knight about goblins 5 times.',stat:'goblinRumors',goal:5,reward:{unlock:'goblin'},show:()=>compUnl('merchant')}); // (shown once the Fruit Merchant is unlocked)
 // ---------- the Bard's Resonance: for each tag the Bard has ----------
-// neighbors' chances of dying -RES_DEATH; their legendary idle activities +RES_LEGEND; +1 coin a minute from passers-by (RES_COIN_EVERY)
-const RES_DEATH=.1,RES_LEGEND=.1,RES_COIN_EVERY=60;
+// neighbors' chances of dying -RES_DEATH; their legendary idle activities +RES_LEGEND; +1 coin every 5 minutes from passers-by (RES_COIN_EVERY)
+const RES_DEATH=.1,RES_LEGEND=.1,RES_COIN_EVERY=300;
 COMP_TABS.find(t=>t.id==='bard').items.push('bresonance');NAMES.bresonance='Resonance';TITLES.bresonance='Resonance';
-DESC.bresonance='Passive, for each tag the Bard has: neighbors\' chances of dying are 10% lower, their legendary idle activities 10% more likely, and passers-by toss the Bard 1 coin a minute.';
+DESC.bresonance='Passive, for each tag the Bard has: neighbors\' chances of dying are 10% lower, their legendary idle activities 10% more likely, and passers-by toss the Bard 1 coin every 5 minutes.';
 FLAVOR.bresonance='The more the elf has lived, the richer the music. The neighbors feel it too.';HINTS.bresonance='A Bard who has picked up a tag or two plays with real power.';
 // Deadly events (a death in the roll itself): the Bard's Resonance makes them less likely for neighbors
 const DEADLY={demon:1,murder:1,assassin:1,drain:1,gknightdie:1,gmob:1};
@@ -1296,7 +1296,7 @@ Object.assign(HINTS,{gpotion:'A goblin might not know what to do with a potion.'
 const RENOWN_CHAR=10;
 // ---------- Time away (awayReport in game.js): when you come back after AWAY_MIN seconds or more, up to AWAY_MAX seconds count ----------
 // Coins are halved (AWAY_COIN); nothing is unlocked and no scenes or events play; each hour away has AWAY_REVEAL chance to reveal an undiscovered interaction.
-const AWAY_MIN=300,AWAY_MAX=8*3600,AWAY_COIN=.5,AWAY_REVEAL=.02;
+const AWAY_MIN=300,AWAY_MAX=8*3600,AWAY_COIN=.5,AWAY_REVEAL=.02,AWAY_PLAY_MIN=300; // (AWAY_PLAY_MIN: seconds of real play needed between two away reports, so moving the clock forward again and again does not pay)
 // What each character did meanwhile ({n} = about how many times; one line each for up to AWAY_LINES_MAX of them)
 const AWAY_LINES_MAX=4,AWAY_LINES={knight:'The Knight practiced with his weapon about {n} times.',wizard:'The Wizard read about {n} books. Some twice.',
  priest:'The Priest said about {n} prayers for the kingdom.',necromancer:'The Necromancer chatted with about {n} spirits.',merchant:'The Fruit Merchant shouted about his apples about {n} times.',

@@ -1187,9 +1187,6 @@ function dragonRestLayer(br){const cv=document.createElement('canvas');cv.width=
  pxPoly(c,[[167,52],[186,57],[192,61],[191,67],[169,69]],R);pxPoly(c,[[169,63],[191,64],[191,67],[169,69]],RD);pxPoly(c,[[169,53],[185,57],[180,58],[169,57]],RL); // the long snout, lit along the top
  // 2) scales: a fine pattern of darker marks on the red (only on what is drawn so far)
  c.globalCompositeOperation='source-atop';c.fillStyle='rgba(50,0,0,.28)';for(let y=0;y<96;y+=3)for(let x=(y%6?2:0);x<192;x+=4)c.fillRect(x,y,2,1);c.globalCompositeOperation='source-over';
- // 3) the belly: pale plates along the underside of the torso and up the throat
- c.save();c.beginPath();c.rect(64,65,96,12);c.clip();E(103,57-br,31,12+br,BELLYD);E(103,56-br,30,11+br,BELLY);c.fillStyle=BELLYD;for(let k=0;k<11;k++)c.fillRect(76+k*6,66,1,5);c.restore();
- for(let k=0;k<5;k++){const q=.15+k*.15,x=(1-q)*(1-q)*134+2*(1-q)*q*148+q*q*158+5,y=(1-q)*(1-q)*50+2*(1-q)*q*38+q*q*55+5;E(x,y,2.5,1.5,BELLY);c.fillStyle=BELLYD;c.fillRect(Math.round(x)-2,Math.round(y)+1,4,1)}
  // 4) the wing, folded along its back: a strong arm bone, two finger bones, darker membrane in between
  pxPoly(c,[[130,46],[114,22],[106,24],[72,40],[94,49]],MEMD);pxPoly(c,[[126,46],[112,26],[98,42]],MEM);pxPoly(c,[[110,27],[104,27],[80,40],[96,42]],MEM);
  pxLine(c,130,46,114,22,BONE);pxLine(c,129,46,113,22,BONE);pxLine(c,114,22,74,40,BONE);pxLine(c,114,22,96,47,BONE);pxLine(c,113,23,108,22,HORN);pxLine(c,112,25,100,27,'#b03a2c');
@@ -1201,7 +1198,7 @@ function dragonRestLayer(br){const cv=document.createElement('canvas');cv.width=
  [[143,73],[147,74],[151,74],[155,74],[71,76],[75,77],[79,77]].forEach(([x,y])=>{c.fillStyle=HORND;c.fillRect(x,y,1,2);c.fillStyle=HORN;c.fillRect(x,y,1,1)});
  // 7) light: a little brighter on top, darker underneath, warm light from the gold below
  c.globalCompositeOperation='source-atop';[[0,40,'rgba(255,230,200,.16)'],[40,48,'rgba(255,230,200,.07)'],[66,72,'rgba(0,0,0,.10)'],[72,96,'rgba(0,0,0,.18)']].forEach(b=>{c.fillStyle=b[2];c.fillRect(0,b[0],192,b[1]-b[0])});
- c.fillStyle='rgba(255,170,60,.16)';c.fillRect(0,68,192,28);c.globalCompositeOperation='source-over';
+ c.fillStyle='rgba(255,150,60,.08)';c.fillRect(0,74,192,22);c.globalCompositeOperation='source-over';
  // 8) one outline around the whole dragon
  const sil=document.createElement('canvas');sil.width=192;sil.height=96;const s=sil.getContext('2d');s.drawImage(cv,0,0);s.globalCompositeOperation='source-in';s.fillStyle=O;s.fillRect(0,0,192,96);
  const fin=document.createElement('canvas');fin.width=192;fin.height=96;const f=fin.getContext('2d');[[-1,0],[1,0],[0,-1],[0,1]].forEach(d=>f.drawImage(sil,d[0],d[1]));f.drawImage(cv,0,0);
