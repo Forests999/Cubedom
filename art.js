@@ -447,6 +447,8 @@ function drawRitualRoom(c,bx,by,t,a){if(a<=0)return;c.fillStyle='rgba(6,4,14,'+(
  for(let i=0;i<6;i++){const ang=i/6*Math.PI*2,x=Math.round(bx+48+Math.cos(ang)*32),y=Math.round(by+80+Math.sin(ang)*8),fl=Math.floor(t*8+i)%3;
   c.fillStyle='rgba(255,180,80,'+(.18*a)+')';c.beginPath();c.arc(x,y-8,8,0,Math.PI*2);c.fill();c.fillStyle='#e8e4d0';c.fillRect(x-1,y-6,3,6);c.fillStyle='#ffd060';c.fillRect(x,y-8-fl,1,2+fl)}}
 // Golden board space (philosopher's stone): a soft gold tint and a slow sparkle
+// While a box is dragged: a faint, slowly pulsing blue glow just inside the border of a room that still has Compendium entries to find
+function drawLeftGlow(c,bx,by,t){const a=.45+.15*Math.sin(t*3);c.fillStyle='rgba(110,180,255,.07)';c.fillRect(bx+2,by+2,CELL-4,CELL-4);for(let i=0;i<5;i++){c.strokeStyle='rgba(120,190,255,'+(a*(1-i/5)).toFixed(3)+')';c.lineWidth=2;c.strokeRect(bx+3+i*2,by+3+i*2,CELL-6-i*4,CELL-6-i*4)}}
 function drawGoldCell(c,bx,by,t){c.fillStyle='rgba(255,210,60,.16)';c.fillRect(bx+2,by+2,CELL-4,CELL-4);if(Math.floor(t*2)%3===0){c.fillStyle='#fff6c0';c.fillRect(bx+10+Math.floor(t*7)%76,by+10+Math.floor(t*5)%70,2,2)}}
 // Golden apples on the Fruit Merchant's crates (Apothecary above him)
 function drawGold(c,bx,by,t){c.fillStyle='#f2c84a';[[11,42,4,4],[16,41,4,4],[21,42,4,4],[13,38,4,4]].forEach(r=>c.fillRect(bx+r[0],by+r[1],r[2],r[3]));c.fillStyle='#fff6c0';[[12,42],[17,41],[22,42],[14,38]].forEach(q=>c.fillRect(bx+q[0],by+q[1],1,1));

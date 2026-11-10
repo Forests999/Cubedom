@@ -602,6 +602,8 @@ const foundCount=()=>ALL_KEYS.filter(k=>S.seen[k]).length;
 // Which characters have a Compendium tab (once unlocked, always; 'anyone' and tags count as unlocked), and the tiles a tab shows
 const compUnl=id=>id==='anyone'||id==='super'||id==='group'||!!TAG_NAMES[id]||SHELF_CHARS.includes(id)||!!S.un[id]||!!(S.ever&&S.ever[id]);
 const tabPairs=t=>t.pairs.filter(k=>(PAIR_WITH[k]||[]).every(compUnl)),tabKeys=t=>[...tabPairs(t),...t.idle,...t.items];
+// Does this box's Compendium tab still have entries to find (secrets and super secrets don't count)? Used for the faint blue glow while dragging a box.
+const hasLeft=id=>{const t=COMP_TABS.find(x=>x.id===(isFarm(id)?'farmer':id));return !!t&&tabKeys(t).some(k=>!EGGS.includes(k)&&!S.seen[k])};
 function checkDiscoveries(){const n=foundCount(),due=Math.floor(n/DISCOVER_EVERY);
  // a character's whole tab discovered (secrets too): +1 artifact, once per tab
  S.tabDone=S.tabDone||{};COMP_TABS.forEach(t=>{if(S.tabDone[t.id]||!compUnl(t.id))return;const all=tabKeys(t);if(all.length&&all.every(k=>S.seen[k])){S.tabDone[t.id]=1;addItem('artifact',1,null,null,true);toast('The '+t.name+' page of the Compendium is complete! +1 artifact')}});
@@ -1772,14 +1774,17 @@ function render(){
   for(let i=0;i<6;i++){const k=cl((t-.3-i*.08)/.5,0,1);if(k<=0||t>4.8)continue;let x=bx+48+Math.sin(t*2.6+i*1.1)*32,y=by+40+Math.cos(t*3.3+i*1.9)*18;
    if(i<3&&A&&t>1.4){const d=cl((t-1.4)/.8,0,1),ax=A.c*CELL+48+Math.sin(t*3+i*2)*26,ay=A.r*CELL+36+Math.cos(t*4+i)*14;x=lerp(x,ax,d);y=lerp(y,ay,d)}
    g.save();g.globalAlpha=k*cl((4.8-t)/.5,0,1);drawBat(g,x,y,t+i*.13);g.restore()}}});
+ if((drag&&drag.moved)||(td&&td.moved&&td.box))for(const id in U)if(id!==dm&&hasLeft(id))drawLeftGlow(g,U[id].c*CELL,U[id].r*CELL,T); // while a box is dragged: a faint blue glow on rooms that still have Compendium entries to find
  if(hover){g.strokeStyle='#f2a93b';g.lineWidth=3;g.strokeRect(hover[1]*CELL+3,hover[0]*CELL+3,CELL-6,CELL-6)}
  if(dm){const u=U[dm],x=drag.p.x-48,y=drag.p.y-48;g.globalAlpha=.9;box(g,dm,x,y,dm==='druid'?u.r:dm==='monarch'?u.pal:u.weapon);boxFrame(g,x,y,{t:1,b:1,l:1,r:1});spr(g,sid(u),'ok',x+48,y+FY,1,0);g.globalAlpha=1}
  bubs.forEach(placeBub);
 }
 let last=0;
 // One frame: update, then draw. The next frame is requested first, so a rare error can't freeze the game.
-function frame(ts){requestAnimationFrame(frame);const dt=Math.min(.05,(ts-last)/1000||0);last=ts;T=ts/1000;
- try{step(dt);render();if(!tabRef.hidden)anim.forEach(f=>{try{f(T)}catch(e){console.error(e)}})}catch(e){console.error(e)}}
+// Game speed (Settings): at 2x the game takes two steps every frame. T is the game clock, so it runs fast too. Kept in localStorage 'sq-speed', separate from the save.
+let SPEED=1;try{SPEED=localStorage.getItem('sq-speed')==='2'?2:1}catch(e){}
+function frame(ts){requestAnimationFrame(frame);const dt=Math.min(.05,(ts-last)/1000||0);last=ts;
+ try{for(let i=0;i<SPEED;i++){T+=dt;step(dt)}render();if(!tabRef.hidden)anim.forEach(f=>{try{f(T)}catch(e){console.error(e)}})}catch(e){console.error(e)}}
 
 // ---------- input ----------
 const inRect=(el,e)=>{const R=el.getBoundingClientRect();return e.clientX>=R.left&&e.clientX<=R.right&&e.clientY>=R.top&&e.clientY<=R.bottom};
@@ -1814,8 +1819,8 @@ cv.onpointercancel=()=>{drag=null;hover=null;tray.classList.remove('over')};
 const gh=$('#ghost'),gx=gh.getContext('2d');
 function firstFree(){for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c)&&!at(r,c))return[r,c]}
 // Shared drag behaviour for shelf buttons. onDrop(r,c) runs when dropped on a board cell; onTap when just tapped.
-function draggable(b,canStart,onDrop,onTap){
- b.onpointerdown=e=>{if(!canStart())return;b.setPointerCapture(e.pointerId);td={sx:e.clientX,sy:e.clientY,moved:false}};
+function draggable(b,canStart,onDrop,onTap,isBox){
+ b.onpointerdown=e=>{if(!canStart())return;b.setPointerCapture(e.pointerId);td={sx:e.clientX,sy:e.clientY,moved:false,box:!!isBox}};
  b.onpointermove=e=>{if(!td)return;
   if(!td.moved&&Math.hypot(e.clientX-td.sx,e.clientY-td.sy)>8){td.moved=true;gx.clearRect(0,0,96,96);gx.drawImage(b.firstChild,0,0);gh.style.display='block'}
   if(td.moved){gh.style.left=e.clientX-42+'px';gh.style.top=e.clientY-42+'px';const p=pt(e);hover=p.inb?cellOf(p):null}};
@@ -1841,7 +1846,7 @@ function buildShelf(){
    ask('Set up the '+nm+' for '+cost+' coins?','Pay '+cost,()=>{if(at(r,c)||U[id]||S.coins<cost)return;spend(cost);showCoins();addUnit(id,r,c,false);parts.push({k:'txt',s:'-'+cost,x:c*CELL+48,y:r*CELL+30,t:0,life:1.4,icon:'coin'})})};
   const tap=()=>{const f=firstFree();if(f)place(f[0],f[1],id==='wizard'?pick(WIZ_RANDOM):null);else toast('No free space. Tap a locked space to buy more room.')};
   const free=()=>!U[id]&&!(id==='traveler'&&S.travelRoam); // not on the board (the Traveling Merchant: not on the road either)
-  draggable(b,free,(r,c)=>{if(!isOpen(r,c))toast('That space is locked. Tap it to buy it.');else if(!at(r,c))place(r,c)},tap);
+  draggable(b,free,(r,c)=>{if(!isOpen(r,c))toast('That space is locked. Tap it to buy it.');else if(!at(r,c))place(r,c)},tap,true);
   b.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&free()){e.preventDefault();tap()}};
   tray.appendChild(b);
  });
@@ -1864,6 +1869,13 @@ function showItems(){itemsEl.querySelectorAll('.item').forEach(b=>{const k=b.dat
 // Reset: wipe the save and start a brand new game (default board, 0 coins, no items, nothing unlocked, Compendium cleared)
 // Reset: tap once to arm (the button asks you to tap again), tap again within 4 seconds to wipe everything.
 // No browser pop-up (some browsers and phone apps block them). Saving is switched off first so nothing can write the old game back.
+// Speed button (1x / 2x) and the How to play popup, both in Settings
+const showSpeed=()=>{$('#speedBtn').textContent='Speed: '+SPEED+'x';$('#speedBtn').classList.toggle('arm',SPEED>1)};showSpeed();
+$('#speedBtn').onclick=()=>{SPEED=SPEED>1?1:2;try{localStorage.setItem('sq-speed',String(SPEED))}catch(e){}showSpeed()};
+$('#helpBtn').onclick=()=>{$('#help').hidden=false;$('#helpClose').focus({preventScroll:true});$('#help .hbox').scrollTop=0};
+$('#helpClose').onclick=()=>{$('#help').hidden=true};
+$('#help').onclick=e=>{if(e.target.id==='help')$('#help').hidden=true}; // tap outside the box to close
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#help').hidden=true});
 let resetArm=0,resetting=false;
 $('#reset').onclick=()=>{const b=$('#reset');
  if(Date.now()-resetArm>4000){resetArm=Date.now();b.textContent='Tap again to reset';b.classList.add('arm');setTimeout(()=>{if(Date.now()-resetArm>=4000){b.textContent='Reset game';b.classList.remove('arm')}},4100);return}

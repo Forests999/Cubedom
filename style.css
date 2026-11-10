@@ -108,3 +108,15 @@ h1 .ver{font-size:13px;color:#b8b0d8;text-shadow:2px 2px 0 #000;vertical-align:m
 .log .tm{display:inline-block;min-width:4.5em;opacity:.6;font-size:12px}
 .log li.death{color:#ff9a8a}
 .log li.toast{color:#f2d88a}
+/* Settings: a small gear button in the top-right corner instead of a tab */
+.tab.gear{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:14px;padding:4px;line-height:0;z-index:5}
+.tab.gear svg{display:block}
+/* How to play popup (Settings) */
+#help{position:fixed;inset:0;background:rgba(10,8,20,.7);display:flex;align-items:center;justify-content:center;z-index:85;padding:12px}
+#help .hbox{background:var(--stone);border:4px solid #000;outline:3px solid #d8dee8;padding:12px 18px 16px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:14px;line-height:1.4}
+#help h2.sec{margin:4px 0 6px;font-weight:700}
+#help h3{font-size:15px;color:#d8c8a0;margin:12px 0 4px}
+#help ul{margin:0;padding-left:20px}#help li{margin:3px 0}
+#help .mrow{display:flex;justify-content:center;margin-top:14px}
+@media (max-width:480px){.tab.gear{top:calc(10px + env(safe-area-inset-top,0px));right:8px}}
+#speedBtn.arm{background:var(--amber);color:#1a1733}

@@ -15,7 +15,8 @@
 <link rel="stylesheet" href="style.css?v=42">
 </head><body>
 <h1>Squaredom <small class="ver">v1.0</small></h1>
-<div class="tabs"><button class="tab on" data-t="board">Board</button><button class="tab" data-t="ref">Compendium</button><button class="tab" data-t="log">Event Log</button><button class="tab" data-t="set">Settings</button></div>
+<div class="tabs"><button class="tab on" data-t="board">Board</button><button class="tab" data-t="ref">Compendium</button><button class="tab" data-t="log">Event Log</button></div>
+<button class="tab gear" data-t="set" title="Settings" aria-label="Settings"><svg viewBox="0 0 12 12" width="22" height="22" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M3 2h6v1h1v6h-1v1h-6v-1h-1v-6h1zM4 4v4h4v-4zM5 0h2v2h-2zM5 10h2v2h-2zM0 5h2v2h-2zM10 5h2v2h-2zM1 1h2v2h-2zM9 1h2v2h-2zM1 9h2v2h-2zM9 9h2v2h-2z"/></svg></button>
 <section id="tab-board">
 <div id="items"><div class="lbl">Items: drag onto a room while its owner is home</div></div>
 <div id="wrap"><canvas id="cv" aria-label="Squaredom board"></canvas><div id="labels"></div><div id="bub"></div></div>
@@ -24,6 +25,11 @@
 <section id="tab-ref" hidden><div id="refs"></div></section>
 <section id="tab-log" hidden><div id="logs"></div></section>
 <section id="tab-set" hidden>
+<h2 class="sec">Settings</h2>
+<div class="set"><button class="b" id="helpBtn">How to play</button></div>
+<h2 class="sec">Game speed</h2>
+<div class="set"><button class="b" id="speedBtn">Speed: 1x</button></div>
+<p class="cinfo">2x makes everything on the board happen twice as fast. The music keeps its own pace.</p>
 <h2 class="sec">Music</h2>
 <div class="set"><button class="b" id="musicBtn">Music: Off</button><label class="vol" title="Music volume">Volume <input type="range" id="musicVol" min="0" max="100" value="60"></label></div>
 <p class="cinfo">Every room on the board adds its own part to the tune. Group events play a theme of their own.</p>
@@ -34,6 +40,45 @@
 <div class="set"><button class="b" id="reset">Reset game</button></div>
 <p class="cinfo">Wipes your save: the board, coins, unlocks and the Compendium. Tap twice to confirm.</p>
 </section>
+<div id="help" hidden><div class="hbox" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+<h2 class="sec" id="helpTitle">How to play</h2>
+<h3>The board</h3>
+<ul>
+<li>Drag a box from the shelf (under the board) onto an empty space, or tap it to drop it on the first free space.</li>
+<li>Drag a box on the board to move it, or onto another box to swap them.</li>
+<li>Dragging a box back onto the shelf costs 10 coins.</li>
+<li>Dark spaces with a padlock are locked. Tap one to buy it with coins.</li>
+</ul>
+<h3>Characters</h3>
+<ul>
+<li>Each character lives in their own room. They do things on their own, wander around and visit their neighbors.</li>
+<li>Neighbors are the boxes touching a side: left, right, above and below. Corners don't count.</li>
+<li>Where you put each box matters. Who is next to whom, and on which side, decides what happens when they meet. Some things only happen in a certain row or space.</li>
+<li>Characters can get hurt or even die. A box whose character dies goes back to the shelf.</li>
+<li>New characters unlock when you do certain things. A locked box on the shelf shows a clue.</li>
+</ul>
+<h3>The Compendium</h3>
+<ul>
+<li>Everything you see happen is written down in the Compendium. Undiscovered entries show a "?"; hover over or tap one for a hint.</li>
+<li>Every 5 discoveries pays 10 coins. Finding everything in a character's page gives an artifact, and every 50 discoveries gives a random item.</li>
+<li>While you drag a box, rooms with a faint blue glow still have entries left to find (secrets not counted).</li>
+<li>Secrets are hidden until you stumble on them.</li>
+</ul>
+<h3>Coins and items</h3>
+<ul>
+<li>Coins come from scenes, sales, customers and discoveries. Nothing earns coins just by waiting.</li>
+<li>Shop rooms have a small gold coin in the bottom-right corner. Tap it to buy.</li>
+<li>Items (spell scroll, potion, artifact, ingot) go in the tray above the board. Drag one onto a room while its owner is home. Each character reacts in their own way. If nothing happens, you keep the item.</li>
+</ul>
+<h3>Events and buildings</h3>
+<ul>
+<li>Every few minutes a group event can happen when characters stand in the right shape, such as three in a row.</li>
+<li>Buildings like the Well have nobody living in them, but they give their neighbors new things to do.</li>
+</ul>
+<h3>Saving</h3>
+<ul><li>The game saves by itself in this browser.</li></ul>
+<div class="mrow"><button class="b" id="helpClose">Close</button></div>
+</div></div>
 <canvas id="ghost" width="96" height="96"></canvas>
 <div id="toast" role="status"></div>
 <div id="modal" hidden><div class="mbox" role="dialog" aria-modal="true"><p></p><div class="mrow"><button class="b" id="mYes">Buy</button><button class="b" id="mNo">Cancel</button></div></div></div>
