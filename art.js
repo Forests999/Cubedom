@@ -47,6 +47,7 @@ function bg(id,w){
   [6,25,3,3,'#f4ece0'],[16,27,3,2,'#f4ece0'],[44,20,4,3,'#f4ece0'],[58,23,3,3,'#f4ece0'],[78,27,3,3,'#f4ece0'],[88,29,3,2,'#f4ece0'],
   [24,60,2,6,'#e0d8c4'],[21,57,8,3,'#c04a6a'],[36,62,2,4,'#e0d8c4'],[34,60,6,2,'#9a60d0'],[66,62,2,4,'#e0d8c4'],[64,60,6,2,'#e07a40'],[16,76,2,4,'#e0d8c4'],[14,74,6,2,'#c04a6a'],[44,84,2,4,'#e0d8c4'],[42,82,6,2,'#7ae0c0'],[76,80,2,4,'#e0d8c4'],[74,78,6,2,'#9a60d0']];
  // Traveling Merchant: a dirt road through the meadow, a tree, flowers, a covered wagon with a mule, and a stand covered in striped cloth for the wares
+ if(id==='tree')return treeRects(); // the Druid's Massive Tree (a structure)
  if(id==='well')return wellRects(); // the Well (a structure: nobody lives here)
  if(id==='tavern')return tavernRects(); // the Tavern (a structure)
  if(id==='traveler')return [[0,50,96,16,'#7ab05a'],[0,56,30,10,'#6aa04a'],[60,56,36,10,'#6aa04a'],
@@ -985,3 +986,30 @@ function drawTavernLife(c,bx,by,t){const seg=Math.floor(t/7),s=t%7,i=seg%BARKEEP
  const px=ph<1.2?lerp(door,seat,cl((ph-.3)/.9,0,1)):ph>=15.6?lerp(seat,door,cl((ph-15.6)/.9,0,1)):seat,drink=sitting&&Math.floor(ph*.5)%3===0;
  spr(c,who,'happy',px,by+FY-2+(sitting?6:0),ph>=15.6?-1:1,0,a,.95,drink?'up':'none',sitting?0:stepOf(ph));
  if(sitting){drawItem(c,'ale',Math.round(px+8),Math.round(by+FY+4-(drink?36:22)),1);c.fillStyle='#8a5a30';c.fillRect(bx+32,by+74,18,3);c.fillStyle='#a8784a';c.fillRect(bx+32,by+74,18,1);c.fillStyle='#6a4426';c.fillRect(bx+33,by+77,16,6);c.fillStyle='#4a2e18';c.fillRect(bx+33,by+82,16,1)}} // seated: the table in front hides their legs
+
+// ---------- the Massive Tree (a structure the Druid conjures for a minute): a meadow with a huge old fruit tree ----------
+WALL.tree=['#8ac0e8','#5a9a3a'];OUTDOOR.tree={sky:['#5a9ad8','#cfe8f4']};
+function treeRects(){const R=[],p=(x,y,w,h,c)=>R.push([x,y,w,h,c]);
+ p(0,56,96,40,'#5a9a3a');p(0,56,96,2,'#7ab858');p(6,84,14,3,'#4e8a32');p(70,88,18,3,'#4e8a32'); // the meadow
+ p(14,74,68,5,'#3f7a2a'); // the tree's shadow
+ p(26,72,14,6,'#5a3a20');p(56,72,14,6,'#5a3a20');p(22,76,8,3,'#5a3a20');p(66,76,8,3,'#5a3a20');p(26,72,14,1,'#7a5030');p(56,72,14,1,'#7a5030'); // roots
+ p(36,24,24,54,'#6a4424');p(38,24,4,54,'#8a5a30');p(54,24,6,54,'#4a2e18');p(45,34,2,10,'#4a2e18');p(48,50,2,12,'#4a2e18');p(42,40,1,8,'#4a2e18');p(44,56,5,6,'#2a1a10'); // the huge trunk, bark and a knot hole
+ p(20,30,18,4,'#5a3a20');p(58,26,20,4,'#5a3a20');p(20,30,18,1,'#7a5030');p(58,26,20,1,'#7a5030'); // branches
+ p(30,2,64,30,'#2f7a2a');p(8,22,88,14,'#2f7a2a');p(26,6,6,18,'#2f7a2a'); // the canopy (the top-left stays clear for the name label)
+ p(36,4,30,8,'#4a9a3a');p(66,10,24,8,'#4a9a3a');p(14,24,20,5,'#4a9a3a');p(40,16,14,4,'#3a8a32');p(72,22,16,4,'#3a8a32');p(8,34,88,3,'#22601e'); // light and shade in the leaves
+ [[40,14],[58,8],[74,20],[86,12],[20,28],[52,26],[68,30],[32,30],[82,28],[46,6]].forEach((q,i)=>{p(q[0],q[1],3,3,i%3?'#d83030':'#f08a20');p(q[0],q[1],1,1,'#ff9a8a')}); // fruit
+ return R}
+// A unicorn walking through the background of a room (the Druid's Mythic Spotting); s = which step
+function drawUnicorn(c,x,y,face,a,t){if(a<=0)return;const s=Math.floor(t*6)%2;c.save();c.globalAlpha=a;c.translate(Math.round(x),Math.round(y));c.scale(face,1);
+ const R=[[-9,-15,16,7,'#f6f4ff'],[-8,-8,2,8-s,'#e0dcf0'],[-3,-8,2,7+s,'#e0dcf0'],[1,-8,2,8-s,'#e0dcf0'],[4,-8,2,7+s,'#e0dcf0'],[5,-22,6,8,'#f6f4ff'],[9,-19,4,4,'#f6f4ff'],
+  [3,-22,2,9,'#ff8ad8'],[2,-17,2,4,'#c890ff'],[-11,-15,2,6,'#c890ff'],[-12,-12,2,5,'#ff8ad8'],[10,-25,1,3,'#f2c84a'],[11,-28,1,3,'#f2c84a']];
+ c.fillStyle=O;R.forEach(r=>c.fillRect(r[0]-1,r[1]-1,r[2]+2,r[3]+2));R.forEach(r=>{c.fillStyle=r[4];c.fillRect(r[0],r[1],r[2],r[3])});
+ c.fillStyle='#2a2a3a';c.fillRect(9,-20,1,1);if(Math.floor(t*4)%2){c.fillStyle='#fff6ff';c.fillRect(-14,-20,2,2);c.fillRect(12,-30,1,1)}c.restore()}
+// The Druid's Fertile Land on a space next to him: a soft green glow, little sprouts and a sparkle
+function drawFertile(c,bx,by,t,a){if(a<=0)return;c.save();c.globalAlpha=a;c.fillStyle='rgba(120,220,90,.12)';c.fillRect(bx+2,by+2,CELL-4,CELL-4);
+ for(let i=0;i<8;i++){const x=bx+8+((i*37)%80),y=by+CELL-6-((i*13)%10),h=3+Math.floor((Math.sin(t*2+i)+1)*1.5);c.fillStyle='#3a8a2a';c.fillRect(x,y-h,1,h);c.fillStyle='#7ad04a';c.fillRect(x-1,y-h,3,1)}
+ if(Math.floor(t*3)%2===0){c.fillStyle='#d8ffb0';c.fillRect(bx+10+Math.floor(t*17)%76,by+20+Math.floor(t*11)%60,2,2)}c.restore()}
+// The Fruit Merchant's basket, n fruits piled up (more than 6 spill over the top)
+function drawBasket(c,x,y,n){const F=[[-4,-2],[-1,-2],[2,-2],[-3,-4],[0,-4],[3,-4],[-1,-6],[1,-8]].slice(0,Math.min(n,8));
+ c.fillStyle=O;c.fillRect(x-6,y-1,13,7);F.forEach(f=>c.fillRect(x+f[0]-1,y+f[1]-1,4,4));
+ c.fillStyle='#a87838';c.fillRect(x-5,y,11,5);c.fillStyle='#7a5228';c.fillRect(x-5,y+2,11,1);F.forEach((f,i)=>{c.fillStyle=i%3?'#d83030':'#f08a20';c.fillRect(x+f[0],y+f[1],2,2)})}

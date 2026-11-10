@@ -100,16 +100,16 @@ const SCROLL_COST=20,SLEEP_TIME=60;
 // wizard/knight = how the idle activity is picked. horse needs no box to the Knight's right.
 // eknightCat = extra chance the Eldritch Knight's idle activity is the black cat (needs a Wizard on the board).
 // priest/necromancer = how their idle activity is picked.
-const ODDS={visit:.2,visitFriend:.45,spar:.02,hangout:.25,idle:.4,zeal:.6,tentacle:.1,necro:.25,
+const ODDS={visit:.2,visitFriend:.45,spar:.02,hangout:.25,idle:.4,zeal:.6,tentacle:.1,necro:.5,
  wizard:{read:.6,magic:.38,demon:.02},
  knight:{prac:.75,orc:.2,horse:.05},
  priest:{pray:.5,farmer:.35,tithe:.1,exorcise:.05},
  necromancer:{spirits:.5,candles:.25,lightning:.24,raise:.01},
  eknightCat:.01};
 // Coins: +1 every COIN_EVERY seconds while the game is open; the Priest's tithe prayer gives TITHE.
-const COIN_EVERY=30,TITHE=5;
+const COIN_EVERY=30,TITHE=3;
 // Wizard brewing next to a Merchant costs BREW_COST coins; a crusade lasts CRUSADE_TIME seconds; holding MERCHANT_COINS coins at once unlocks the Fruit Merchant.
-const BREW_COST=5,CRUSADE_TIME=120,CRUSADE_GOLD=10,MERCHANT_COINS=30;
+const BREW_COST=5,CRUSADE_TIME=120,CRUSADE_GOLD=10,MERCHANT_COINS=50;
 Object.assign(ODDS,{wizBrew:.01,forge:.01,crusade:.02,crusadeGold:.7});
 const $=s=>document.querySelector(s),pick=a=>a[Math.floor(Math.random()*a.length)],cl=(v,a,b)=>Math.min(b,Math.max(a,v));
 
@@ -183,7 +183,7 @@ ODDS.hangout=.15; // plain hangouts are rarer, so arrangement scenes happen more
 Object.assign(ODDS,{massPrayer:.05,fruitfall:.5,murder:.005});
 PAIRS['priest>merchant']={left:'appleshop',below:'mabove',above:'curse'}; // below = Merchant above the Priest, above = Merchant below
 PAIRS['merchant>wizard']={above:'banana',below:'durian',right:'jokes',left:'advertW'};
-const MASS_PRAYER_TIME=20,MONKEY_TIME=120,ROT_TIME=60,BOOST_TIME=60,STARFRUIT_GAIN=5,DURIAN_GAIN=10,APOTH_PLACE_COST=20;
+const MASS_PRAYER_TIME=20,MONKEY_TIME=120,ROT_TIME=60,BOOST_TIME=60,STARFRUIT_GAIN=5,DURIAN_GAIN=5,APOTH_PLACE_COST=20;
 // The Apothecary's back door is on the LEFT of its room
 EXIT.backdoorL={x:24,y:66,ay:69};TR.apothecary={up:'backdoorL',down:'backdoorL'};
 // Monkey: what a spell scroll turns the Fruit Merchant into for MONKEY_TIME seconds
@@ -194,7 +194,7 @@ const JOKES=[
  [['wizard','What does a wizard eat for lunch?'],['merchant','Tell me.'],['wizard','A spell-ad sandwich!']],
  [['merchant','I tried a magic apple once.'],['wizard','And?'],['merchant','It made my pockets disappear. Coins too!']]];
 Object.assign(NAMES,{massprayer:'Great prayer (4 neighbors, 20 s)',fruitfall:'Fruit thrown down at the Priest',starfruit:'Starfruit for the Priest (+5 coins)',curse:'Cursed fruit rots (1 min, no coins)',
- banana:'A giant banana',durian:'Durian for the Wizard (+10 coins)',jokes:'Jokes and laughter',murder:'A dark turn (0.5%)',advertW:'Wizard advertises (2 coins / 30 s, 1 min)',
+ banana:'A giant banana',durian:'Durian for the Wizard (+5 coins)',jokes:'Jokes and laughter',murder:'A dark turn (0.5%)',advertW:'Wizard advertises (2 coins / 30 s, 1 min)',
  monkey:'Scroll on Fruit Merchant: monkey for 2 min',backwards:'Potion on Fruit Merchant: speaks backwards'});
 
 // ---------- Apothecary (now a woman), Farmer, scene pace ----------
@@ -297,7 +297,7 @@ const DESC={
  swap:'Necromancer below the Wizard. A spell swaps their whole rooms. Nobody asked the furniture.',
  curse:'Fruit Merchant below the Priest. The Priest curses his fruit; it rots for a minute and earns nothing.',
  banana:'Fruit Merchant above the Wizard. "Can you make it bigger?" The Wizard can. Much bigger.',
- durian:'Fruit Merchant below the Wizard. A durian sale, +10 coins. The Wizard regrets having a nose.',
+ durian:'Fruit Merchant below the Wizard. A durian sale, +5 coins. The Wizard regrets having a nose.',
  jokes:'Fruit Merchant right of the Wizard. Fruit puns. The Wizard laughs to be polite.',
  mtrade:'Fruit Merchant left of the Apothecary. Apples for potions. Everybody thinks they got the better deal.',
  goldapple:'Apothecary above the Fruit Merchant. A bubbling reaction turns all his apples to gold for a minute. Shiny!',
@@ -408,7 +408,7 @@ CH.rogue={name:'Rogue',eye:O,a:arms(RG),p:[...B(RG),[4,1,8,2,'#2e3a2e'],[3,3,2,6
 for(let i=1;i<SKINS.length;i++){const[s,d]=SKINS[i],m=k=>k===S1?s:k===S2?d:k,c=CH.rogue;CH['rogue~'+i]=Object.assign({},c,{a:Object.assign({},c.a,{skin:m(c.a.skin)}),p:c.p.map(r=>[r[0],r[1],r[2],r[3],m(r[4]),r[5]])})}
 SKIN_CHARS.push('rogue');ALL_CHARS.push('rogue');CLASS.rogue='fighter';NAMES.rogue='Rogue';
 TR.rogue={up:'rope',down:'trapdoor'};EXIT.rope={x:74,y:84,ay:84};EXIT.trapdoor={x:30,y:84,ay:84};
-const ROGUE_UNLOCK=50,ROGUE_DISGUISE_TIME=120;
+const ROGUE_UNLOCK=75,ROGUE_DISGUISE_TIME=120;
 // Rogue idles; assassin = any neighbor visit with the Rogue; rogueArtifact = idle chance to conjure an artifact while he has the Mage tag
 // Alchemist idles; ALC_LUCK = how much his potion raises his neighbors' rarest scene chances, for ALC_LUCK_TIME seconds
 Object.assign(ODDS,{rogue:{daggers:.5,smokebomb:.2,disguise:.05,count:.25},assassin:.005,rogueArtifact:.002,
@@ -638,8 +638,8 @@ NAMES.dungeon='Dungeon crawl (3 min)';
 const WEATHER_TIME=30,WEATHER_MAX=2;
 Object.assign(ODDS,{familiar:{bear:1/3,eagle:1/3,wolf:1/3}}); // the Druid's animal
 const DRUID_DISCOUNT=5; // secret: coins off an Apothecary potion while the Druid is next to her
-const WX_NAMES={overgrowth:'Overgrowth',shift:'Change the Weather'};
-const WX_SAY={overgrowth:'Grow, little seeds, grow!',shift:'Winds of change, turn the sky!'};
+const WX_NAMES={overgrowth:'Overgrowth',messenger:'Animal Messenger',heal:'Healing Word',fertile:'Fertile Land',blessing:"Nature's Blessing",tree:'Conjure Tree',unicorn:'Mythic Spotting',shift:'Winds of Change'};
+const WX_SAY={overgrowth:'Grow, little seeds, grow!',messenger:'Go, old friend. Take this to them.',heal:'Be well again. Rise and be whole.',fertile:'Soil, wake up and give!',blessing:'Earth, send us a tiller of fields!',tree:'Ancient roots, rise from the deep!',unicorn:'Hush... something rare is near.',shift:'Winds of change, turn the sky!'};
 // ---------- the board's weather (one for the whole board; changes every WX_EVERY seconds of play, saved) ----------
 // Tiers as everywhere else (RARITY). Effects: sunny = visits +WX_SUN_VISIT (taken from wandering); rainy = idle +WX_RAIN_IDLE (taken from visits);
 // fae wind = the rarest idle and visit scenes in each list x WX_FAE (taken from the common ones). Partly cloudy: nothing.
@@ -777,7 +777,7 @@ Object.assign(DESC,{
  cat:'The Eldritch Knight, while a Wizard is on the board: 1% of his idle activities. A black cat strolls through the Wizard\'s room. Spooky.',
  orc:'The Knight: 20% of his idle activities. He spots an orc in a neighbor\'s room and charges over to deal with it.',
  horse:'The Knight: 5% of his idle activities, if the space to his right has no box. He feeds hay to his horse.',
- tithe:'The Priest: 10% of his idle activities. He prays for fortune. Fortune answers: +5 coins.',
+ tithe:'The Priest: 10% of his idle activities. He prays for fortune. Fortune answers: +3 coins.',
  massprayer:'A Priest whose four neighbors are all free: 5% each time he decides what to do. Everyone squeezes into his room to pray for 20 seconds.',
  funeral:'A Fighter next to the Priest dies: 1.5 seconds later the Priest holds a 12 second funeral, and every free neighbor comes to pay respects.',
  raise:'The Necromancer: 1% of his idle activities. He raises a skeleton in a random free character\'s room. Fighters and Mages beat it; anyone else dies.',
@@ -843,7 +843,7 @@ const IDLES={knight:[['prac','c'],['orc','u','nbr'],['horse','r','noRight'],['ca
  priest:[['pray1','c'],['farmer','c'],['tithe','u'],['exorcise','r']],
  necromancer:[['spirits','c'],['candles','c'],['lightning','c'],['raise','l','target']],
  merchant:[['advert','c'],['sell','c','nbr'],['mcust','u'],['mob','l'],['promo','u','alc']],
- apothecary:[['abrew','c'],['herbs','c'],['acust','u'],['trip','r'],['tripbreak','r'],['promo','u','alc']],
+ apothecary:[['abrew','c'],['herbs','c'],['acust','u'],['trip','r'],['tripbreak','r'],['promo','u','alc'],['aretire','l']],
  alchemist:[['alcbrew','c'],['smoke','c'],['research','u'],['beast','u','madsci']],
  rogue:[['daggers','c'],['count','c'],['smokebomb','u'],['disguise','r','others'],['conjure','l','mageTag']],
  druid:[['grove','c'],['animals','c'],['weather','u'],['spirit','r','spirit']],
@@ -860,7 +860,7 @@ const VISIT_ANY=[['knight','wizard','spar','r'],['priest','tag:fighter','braver'
 // Group scenes in the visitor's own list (whoever the neighbor is): [visitor, key, tier]
 const VISIT_GROUP=[['priest','massprayer','r'],['alchemist','fourmage','u'],['blacksmith','adventure','u']];
 // The Druid's weather (instead of his visits)
-const WEATHER_TIERS={overgrowth:'c',shift:'r'};
+const WEATHER_TIERS={overgrowth:'c',messenger:'c',heal:'c',fertile:'u',blessing:'r',tree:'r',unicorn:'l',shift:'l'}; // the Druid's casts (instead of a visit); one that can't happen right now is left out (castOk)
 // Outcome chances inside a scene, set to the same tiers (deaths and special results)
 Object.assign(ODDS,{slip:RARITY.r,horde:RARITY.r,boomDeath:RARITY.l,alchemist:RARITY.u,reveal:RARITY.r,healFarm:RARITY.r,ntradePotion:RARITY.u,
  tempt:RARITY.r,betray:RARITY.u,sickDeath:RARITY.r,twopot:RARITY.u,stone:1-RARITY.u,adventureDeath:RARITY.u,advScroll:RARITY.u,advArtifact:RARITY.r,
@@ -931,7 +931,7 @@ Object.assign(DESC,{'ss:gold':'Super secret: every space on the board turned gol
  'ss:alltags':'Super secret: one character with every tag at once: Fighter, Mage, Merchant and Monstrous.'});
 // Shelf clues, as the owner wrote them
 Object.assign(SHELF_CLUE,{necromancer:'When death befalls a holy follower, a new worshipper may arrive.',blacksmith:'When the economy is booming, a new business arrives.',
- apothecary:'When commerce has access to magic...',rogue:'After 50 tales, he sneaks in...',druid:'Explore every mile of land.',merchant:'The sound of a heavy purse draws him in.',
+ apothecary:'When commerce has access to magic...',rogue:'After 75 tales, he sneaks in...',druid:'Explore every mile of land.',merchant:'The sound of a heavy purse draws him in.',
  monarch:'A large kingdom needs a leader.',traveler:'A market square brings new wares.',alchemist:'A maker of potions: wizardry and ingredients, side by side.'});
 // ---------- group events: checked every GROUP_EVERY seconds, ODDS.group chance one happens (if the board allows), lasting GROUP_TIME ----------
 // market = four Merchant-tagged characters in a 2x2 square (2d10 coins at the end); feast = any three characters side by side in a row
@@ -1056,3 +1056,68 @@ const QUESTS=[
  {id:'kingfeast',name:'Feast Fit for a King',text:'Have a feast that includes the Monarch.',stat:'royalFeasts',goal:1,reward:{artifact:1}},
  {id:'costdisc',name:'Cost of Discovery',text:'Have the Wizard die 15 times.',stat:'wizDeaths',goal:15,reward:{scroll:5}}];
 const ITEM_WORD={scroll:['spell scroll','spell scrolls'],potion:['potion','potions'],artifact:['artifact','artifacts'],ingot:['ingot','ingots']}; // for quest rewards (one, several)
+
+// ---------- the Druid's casts (instead of a visit; WEATHER_TIERS above, castOk / castFx in game.js) ----------
+// messenger: his animal runs a note or a coin (+MESSENGER_COIN, MESSENGER_GIFT of the time) to someone at home; heal: wakes a sleeper or cures the sick;
+// fertile: FERTILE_TIME seconds, coins earned in the spaces around him +FERTILE_BONUS; blessing: a Farmer on the nearest open space;
+// tree: a Massive Tree (a structure) on a random open space for TREE_TIME seconds; unicorn: one walks through another room's background (UNICORN_TIME)
+const MESSENGER_COIN=1,MESSENGER_GIFT=.5,FERTILE_TIME=30,FERTILE_BONUS=.5,TREE_TIME=60,UNICORN_TIME=5;
+for(const k in WX_NAMES)NAMES['wx:'+k]=WX_NAMES[k];NAMES['wx:shift']='Changing the weather';
+Object.assign(TITLES,{'wx:messenger':'Animal Messenger','wx:heal':'Healing Word','wx:fertile':'Fertile Land','wx:blessing':"Nature's Blessing",'wx:tree':'Conjure Tree','wx:unicorn':'Mythic Spotting'});
+{const dt=COMP_TABS.find(t=>t.id==='druid');Object.keys(WX_NAMES).forEach(k=>{if(!dt.idle.includes('wx:'+k))dt.idle.push('wx:'+k)})}
+Object.assign(DESC,{'wx:messenger':'The Druid sends his animal companion to someone at home on the board. It brings them a note, or a coin for you (+1 coin).',
+ 'wx:heal':'Only while someone is asleep or poisoned. The Druid speaks a healing word: a sleeper wakes up, or a sick character is cured.',
+ 'wx:fertile':'For 30 seconds the land around the Druid turns rich and green: coins earned in the spaces next to him are worth 50% more.',
+ 'wx:blessing':'A Farmer appears on the open space nearest the Druid and starts a field (up to 3 Farmers at once).',
+ 'wx:tree':'A Massive Tree bursts out of a random open space and stands there for 1 minute. It cannot be moved. Its neighbors climb it, nap under it, pick its fruit or admire it.',
+ 'wx:unicorn':'A unicorn trots through the background of another room for a moment. Blink and you miss it.'});
+Object.assign(FLAVOR,{'wx:messenger':'His animal friend trots off with something for a neighbor. Sometimes a note, sometimes a shiny coin.',
+ 'wx:heal':'A soft green word, and the sleepy wake and the sick feel fine.','wx:fertile':'The soil sighs, the grass leans in, and business is suddenly booming next door.',
+ 'wx:blessing':'The earth sends a farmer, hoe already in hand.','wx:tree':'Roots crack the ground and a tree older than kingdoms rises in a heartbeat.',
+ 'wx:unicorn':'For a moment, something white with a golden horn wanders past a window. Then it is gone.'});
+Object.assign(HINTS,{'wx:messenger':'The Druid\'s animal friend runs errands.','wx:heal':'Someone sleepy or sick might get a helping word from the grove.',
+ 'wx:fertile':'Business blooms in the Druid\'s neighborhood, now and then.','wx:blessing':'The grove sometimes sends help for the fields.',
+ 'wx:tree':'Something very big and very old might grow from an empty space.','wx:unicorn':'Keep your eyes on the background. Once in a blue moon...'});
+NOTE['wx:messenger']='Half the time a note, half the time +1 coin.';NOTE['wx:fertile']='+50% coins next to him for 30 s.';
+// ---------- the Massive Tree: a structure the Druid conjures (not on the shelf, never saved, can't be moved; gone after TREE_TIME) ----------
+CH.tree={name:'Massive Tree',eye:O,p:[]};CLASS.tree='structure';TR.tree={up:'fade',down:'fade'};NAMES.tree='Massive Tree';
+const TREE_ACTS=['treeclimb','treenap','treefruit','treeadmire']; // any neighbor, 25% each (the Fruit Merchant picks a whole basketful instead of one fruit)
+STRUCT_ACTS.tree={any:TREE_ACTS};
+COMP_TABS.push({id:'tree',name:'Massive Tree',pairs:[...TREE_ACTS,'treebasket'],idle:[],items:[]});
+Object.assign(PAIR_WITH,{treeclimb:['tree','anyone'],treenap:['tree','anyone'],treefruit:['tree','anyone'],treeadmire:['tree','anyone'],treebasket:['tree','merchant']});
+Object.assign(NAMES,{treeclimb:'Climbing the tree',treenap:'A nap under the tree',treefruit:'Fruit from the tree',treeadmire:'Admiring the tree',treebasket:'A basket overflowing'});
+Object.assign(TITLES,{treeclimb:'Up the Trunk',treenap:'Shady Nap',treefruit:'Fresh From the Branch',treeadmire:'A Thousand Rings',treebasket:'Overflowing Basket'});
+Object.assign(DESC,{treeclimb:'A neighbor of the Massive Tree climbs up into its branches, enjoys the view and climbs back down.',treenap:'A neighbor of the Massive Tree lies down in its shade for a short nap.',
+ treefruit:'A neighbor of the Massive Tree picks a fruit and eats it.',treeadmire:'A neighbor of the Massive Tree stands and admires it.',
+ treebasket:'The Fruit Merchant next to the Massive Tree gets very excited and picks far too much fruit. His basket overflows.'});
+Object.assign(FLAVOR,{treeclimb:'Up, up, up the giant trunk, for the best view in the land.',treenap:'Cool shade, rustling leaves. Five minutes. Just five.',
+ treefruit:'A fruit as big as a fist, sweet as honey.',treeadmire:'They stare up and up and up. It must be a thousand years old.',
+ treebasket:'So. Much. Fruit. He keeps picking long after the basket is full.'});
+Object.assign(HINTS,{treeclimb:'Anyone next to a giant tree might want a better view.',treenap:'Shade is the best place for a nap.',treefruit:'A tree that big must have fruit.',
+ treeadmire:'Some just like to look.',treebasket:'A fruit seller next to a fruit tree? He might get carried away.'});
+// ---------- Rogue at the Well, Traveling Merchant at the Tavern ----------
+// wellsteal: the Rogue fishes out a coin someone wished on (only after a Merchant tossed one in, h.wcoins); uncommon (RARITY.u) of his Well activities
+// tvelven: the Traveling Merchant's Tavern activity (instead of the usual Merchant delivery): a scroll of the ancient elves, kept by the barkeep
+COMP_TABS.find(t=>t.id==='well').pairs.push('wellsteal');COMP_TABS.find(t=>t.id==='tavern').pairs.push('tvelven');
+Object.assign(PAIR_WITH,{wellsteal:['well','rogue'],tvelven:['tavern','traveler']});
+Object.assign(NAMES,{wellsteal:'A wish stolen',tvelven:'A scroll of the ancient elves'});
+Object.assign(TITLES,{wellsteal:'Finders Keepers',tvelven:'The Elven Scroll'});
+Object.assign(DESC,{wellsteal:'The Rogue next to the Well fishes out a coin someone wished on. +1 coin. Only after a Merchant has tossed one in.',
+ tvelven:'The Traveling Merchant next to the Tavern delivers a spell scroll of the ancient elves. The barkeep keeps it safe for the right adventurer to come along.'});
+Object.assign(FLAVOR,{wellsteal:'A hook, a string, and someone\'s wish comes up dripping. Finders keepers.',tvelven:'An old scroll in flowing elven script. "Keep it behind the bar," says the merchant. "The right hero will ask for it."'});
+Object.assign(HINTS,{wellsteal:'Wishes in a well are not always safe from light fingers.',tvelven:'A merchant from far away might bring the tavern something special.'});
+NOTE.wellsteal='+1 coin.';
+Object.assign(WELL_PCT,{treeclimb:structPct(.25),treenap:structPct(.25),treefruit:structPct(.25),treeadmire:structPct(.25),treebasket:structPct(.25),wellsteal:structPct(RARITY.u),tvelven:structPct(1)});
+// who does each of these (shown in the tile's description instead of a tag)
+const STRUCT_WHO={treeclimb:'anyone',treenap:'anyone',treefruit:'anyone',treeadmire:'anyone',treebasket:'the Fruit Merchant',wellsteal:'the Rogue',tvelven:'the Traveling Merchant'};
+// ---------- the Apothecary retires (legendary idle): her box goes back to the shelf ----------
+NAMES.aretire='The Apothecary retires';TITLES.aretire='Well-Earned Rest';
+COMP_TABS.find(t=>t.id==='apothecary').idle.push('aretire');
+DESC.aretire='The Apothecary decides she has brewed enough for one lifetime. She retires, and her box goes back to the shelf.';
+FLAVOR.aretire='She hangs up her apron. "Enough potions for one lifetime. I am off to grow tomatoes."';
+HINTS.aretire='Even the busiest shopkeeper dreams of a quiet garden.';
+// what someone says when the Druid's animal brings a note, when a healing word reaches them, when a unicorn passes their room
+const MSG_NOTES=['A note from the Druid: "The oaks say hello."','A note! "Water your plants. -D"','"The mushrooms are watching. In a nice way." Hm.','A pressed flower and a note. How sweet!'];
+const HEAL_SAY=['I feel wonderful!','Huh? I feel much better.','What a lovely green light.','Thank you, Druid!'];
+const UNICORN_SAY=['Was that... a unicorn?!','Did anyone else see that?','A unicorn! Nobody will believe me.'];
+NOTE['wx:tree']='It stands for 1 minute and cannot be moved.';NOTE['wx:heal']='Only while someone is asleep or poisoned.';NOTE['wx:blessing']='Only while there is room for another Farmer.';

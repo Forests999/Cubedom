@@ -1,6 +1,7 @@
 const cv=$('#cv'),g=cv.getContext('2d'),W=COLS*CELL,H=ROWS*CELL,tray=$('#tray'),itemsEl=$('#items'),bub=$('#bub');cv.width=W;cv.height=H;g.imageSmoothingEnabled=false;
 let swarms=[]; // bee swarms: {r,c,t} (Knight left of the Apothecary)
 let weathers=[]; // the Druid's Overgrowth on board spaces: {r,c,k,t,by} (lasts WEATHER_TIME)
+let msgrs=[],unicorns=[]; // the Druid's animal on an errand {kind,by,to,x,y,face,t,coin}; a unicorn passing through a room's background {r,c,t,face}
 const TEMP_FORM={monkey:1,bear:1,beast:1}; // forms that take no part in anything for a while (not saved)
 let rf=null; // the grand funeral after the Monarch dies: {id, t}. While it lasts no coins are earned and no items are bought or gained.
 const mourning=()=>!!rf;
@@ -62,7 +63,7 @@ weapon:id==='knight'?(weapon||pick(WEAPONS)):null,form:form||null,color:color||(
 }
 // Clear everything an interaction leaves on a character (but not the teleport flag)
 function clearFx(u){if(u.melt||u.dive||u.jy||u.diveClip){u.melt=0;u.dive=0;u.diveClip=null;u.jy=0;u.sk=1} // (the Well's melt, dive and leap)
- u.dress=null;u.paint=null;u.show2=null;u.big=null;u.gather=null;u.gatherOf=null;u.crowd=null;u.table=null;u.show=null;u.feastHost=null;u.fall=false;u.act=null;u.orc=null;u.tent=null;u.und=null;u.lite=null;u.dark=null;u.ward=null;u.kneel=false;u.after=null;u.mv=false;u.npc=null;u.def=null;u.ghost=null;u.spirit=null;u.mobs=null;u.made=null;u.swapWith=null}
+ u.dress=null;u.paint=null;u.show2=null;u.big=null;u.gather=null;u.gatherOf=null;u.crowd=null;u.table=null;u.show=null;u.feastHost=null;u.fall=false;u.act=null;u.orc=null;u.tent=null;u.und=null;u.lite=null;u.dark=null;u.ward=null;u.kneel=false;u.after=null;u.mv=false;u.npc=null;u.def=null;u.ghost=null;u.spirit=null;u.mobs=null;u.made=null;u.swapWith=null;u.basket=null}
 function toHome(u){u.fxs=[];u.npcDoor=null; // drop every doorway/stairs this character had open
  clearFx(u);u.tp=false;u.inv=false;u.sneak=false;u.thenVisit=null;for(let i=demons.length-1;i>=0;i--)if(demons[i].owner===u.id)demons.splice(i,1);u.x=u.c*CELL+48;u.y=u.r*CELL+FY;u.path=[];u.st=u.dead?'dead':'idle';u.wait=1;u.al=1;u.sk=1;u.mood='ok';u.mt=0;u.gt=0;label(u)}
 function freeHost(h){h.hosting=null;h.st='idle';h.wait=2;h.act=null;h.kneel=false;h.ward=null;h.dress=null;h.lookAway=false;h.al=1;h.fall=false}
@@ -165,7 +166,7 @@ function tSell(u,kind){if(mourning())return false;addCoins(TRAVEL_BUY[kind],u.x,
 // While one runs its characters are busy (st 'grp'): nobody visits them and they stay in their rooms. Not saved.
 let grp=null,grpClock=0;
 // (a character busy with an idle activity is pulled out of it; scenes with others, and a few activities that must finish, are not interrupted)
-const NO_INTERRUPT={demon:1,retire:1,recruit:1,massprayer:1,funeral:1,fireball:1,relic:1,ascend:1,prisoners:1,wcast:1,harvest:1,sleepc:1,swapc:1};
+const NO_INTERRUPT={demon:1,retire:1,aretire:1,recruit:1,massprayer:1,funeral:1,fireball:1,relic:1,ascend:1,prisoners:1,wcast:1,harvest:1,sleepc:1,swapc:1};
 const grpReady=v=>v&&!v.dead&&atHome(v)&&!isFarm(v.id)&&!isStruct(v)&&(freeU(v)||(v.st==='act'&&!v.hosting&&!v.target&&!NO_INTERRUPT[v.act]&&v.form!=='dknight'&&!TEMP_FORM[v.form]&&!(v.sickT>0)));
 function groupOptions(){const ok=(r,c)=>{const v=U[at(r,c)];return grpReady(v)?v:null},out=[];
  for(let r=0;r<ROWS-1;r++)for(let c=0;c<COLS-1;c++){const q=[[r,c],[r,c+1],[r+1,c],[r+1,c+1]].map(p=>ok(p[0],p[1]));if(q.every(v=>v&&hasClass(v,'merchant')))out.push({kind:'market',us:q})} // four Merchants in a 2x2 square
@@ -239,15 +240,56 @@ const weatherAt=(r,c)=>{const w=weathers.find(q=>q.r===r&&q.c===c&&q.t<WEATHER_T
 const wxOf=u=>u?weatherAt(u.r,u.c):null;
 // A chance of dying (kept as a function so death rolls stay in one place)
 const doom=p=>p;
-// Instead of visiting a neighbor, the Druid casts (WEATHER_TIERS): Overgrowth on a random open space without it (at most WEATHER_MAX of his at once),
-// or, rarely, he changes the board's weather
-function startWeather(u){const k=rollList(Object.keys(WEATHER_TIERS).map(k=>[k,WEATHER_TIERS[k]]));if(!k)return false;
- if(k==='shift'){beginAct(u,'wcast',true);u.dur=3;u.wx={k};return true}
- if(weathers.filter(w=>w.by===u.id).length>=WEATHER_MAX)return false;
- const open=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c)&&!weathers.some(w=>w.r===r&&w.c===c))open.push([r,c]);if(!open.length)return false;
- const q=pick(open);beginAct(u,'wcast',true);u.dur=3;u.wx={k,r:q[0],c:q[1]};return true}
-function addWeather(r,c,k,by){const w={r,c,k,t:0,by};logEv(titleOf('wx:'+k),'cast by the Druid');weathers.push(w);markSeen('wx:'+k);poof(c*CELL+48,r*CELL+48,'#c8f0c0');return w}
-function stepWeather(dt){weathers.forEach(w=>{w.t+=dt});weathers=weathers.filter(w=>w.t<WEATHER_TIME+1)}
+// ---------- the Druid's casts (instead of visiting a neighbor; WEATHER_TIERS in data.js) ----------
+// A cast that can't happen right now is left out of the roll (castOk); u.wx = what and where (or who)
+const emptyOpen=()=>{const o=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c)&&!at(r,c))o.push([r,c]);return o};
+const grassSpots=()=>{const o=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c)&&!weathers.some(w=>w.r===r&&w.c===c))o.push([r,c]);return o};
+const sleepyOrSick=()=>Object.values(U).filter(v=>!isStruct(v)&&!v.dead&&(v.st==='sleep'||v.sickT>0));
+const msgTargets=u=>Object.values(U).filter(v=>v!==u&&freeU(v)&&atHome(v));
+const unicornRooms=u=>Object.values(U).filter(v=>v!==u&&!isStruct(v)&&!v.dead);
+function castOk(u,k){
+ if(k==='overgrowth')return weathers.filter(w=>w.by===u.id).length<WEATHER_MAX&&grassSpots().length>0;
+ if(k==='messenger')return !!u.pet&&!u.pet.away&&msgTargets(u).length>0;
+ if(k==='heal')return sleepyOrSick().length>0;
+ if(k==='fertile')return !(u.fertileT>0);
+ if(k==='blessing')return ['farmer','farmer2','farmer3'].some(f=>!U[f])&&emptyOpen().length>0;
+ if(k==='tree')return !U.tree&&emptyOpen().length>0;
+ if(k==='unicorn')return !unicorns.length&&unicornRooms(u).length>0;
+ return true}
+function startWeather(u){const ks=Object.keys(WEATHER_TIERS).filter(k=>castOk(u,k)),k=rollList(ks.map(k=>[k,WEATHER_TIERS[k]]));if(!k)return false;const wx={k};
+ if(k==='overgrowth'){const q=pick(grassSpots());wx.r=q[0];wx.c=q[1]}
+ if(k==='tree'){const q=pick(emptyOpen());wx.r=q[0];wx.c=q[1]}
+ if(k==='messenger')wx.to=pick(msgTargets(u)).id;
+ if(k==='heal')wx.to=pick(sleepyOrSick()).id;
+ if(k==='unicorn'){const v=pick(unicornRooms(u));wx.r=v.r;wx.c=v.c}
+ beginAct(u,'wcast',true);u.dur=3;u.wx=wx;return true}
+// The cast takes effect (1.6 s into his spell). Uncommon and rarer casts go in the event log.
+function castFx(u){const w=u.wx,k=w.k;markSeen('wx:'+k);if(WEATHER_TIERS[k]!=='c')logScene('wx:'+k,u);
+ if(k==='overgrowth'){addWeather(w.r,w.c,'overgrowth',u.id);return}
+ if(k==='shift'){druidWx();return}
+ if(k==='messenger'){const v=U[w.to];if(!v||!u.pet)return;u.pet.away=true;poof(u.pet.x,u.pet.y-10,'#c8f0c0');const bx=v.c*CELL,from=v.x<bx+48?bx+86:bx+10;
+  msgrs.push({kind:u.pet.kind,by:u.id,to:v.id,x:from,y:v.r*CELL+FY,face:v.x>from?1:-1,t:0,coin:Math.random()<MESSENGER_GIFT});poof(from,v.r*CELL+FY-10,'#c8f0c0');return}
+ if(k==='heal'){const v=U[w.to];if(!v)return;for(let i=0;i<3;i++)poof(v.x-8+i*8,v.y-30,'#7aff9a');parts.push({k:'h',x:v.x,y:v.y-44,t:0,life:1.3});
+  if(v.st==='sleep')wakeUnit(v);if(v.sickT>0){v.sickT=0;v.mood='happy';v.mt=1.5}say(v,pick(HEAL_SAY));return}
+ if(k==='fertile'){u.fertileT=FERTILE_TIME;[[0,1],[0,-1],[1,0],[-1,0]].forEach(d=>{const r=u.r+d[0],c=u.c+d[1];if(r>=0&&r<ROWS&&c>=0&&c<COLS&&isOpen(r,c))poof(c*CELL+48,r*CELL+64,'#9ae07a')});return}
+ if(k==='blessing'){spawnFarm(u,1);return}
+ if(k==='tree'){if(U.tree||at(w.r,w.c)||!isOpen(w.r,w.c))return;addUnit('tree',w.r,w.c,true);U.tree.lifeT=TREE_TIME;for(let i=0;i<5;i++)poof(w.c*CELL+24+i*12,w.r*CELL+70-(i%2)*14,'#6aba4a');toast('A Massive Tree bursts out of the ground!');return}
+ if(k==='unicorn'){unicorns.push({r:w.r,c:w.c,t:0,face:Math.random()<.5?1:-1});return}}
+// The Druid's animal on an errand, unicorns, Fertile Land and the Massive Tree's minute
+function stepCasts(dt){
+ msgrs.forEach(m=>{m.t+=dt;const v=U[m.to],D=U[m.by];m.walk=false;
+  if(v&&m.t<1.6){const tx=v.x-m.face*18,d=tx-m.x;if(Math.abs(d)>1){m.walk=true;m.x+=Math.sign(d)*Math.min(Math.abs(d),50*dt)}}
+  if(m.t>=1.8&&!m.given){m.given=1;if(v&&U[v.id]){if(m.coin){addCoins(MESSENGER_COIN,m.x,m.y-30);say(v,'A coin! Thank you, little friend.')}else say(v,pick(MSG_NOTES));v.mood='happy';v.mt=1.5}}
+  if(m.t>=3.6&&!m.back){m.back=1;poof(m.x,m.y-10,'#c8f0c0');if(D&&D.pet){D.pet.away=false;poof(D.pet.x,D.pet.y-10,'#c8f0c0')}}});
+ msgrs=msgrs.filter(m=>!m.back);
+ unicorns.forEach(q=>{q.t+=dt;if(q.t>=UNICORN_TIME-.5&&!q.said){q.said=1;const v=U[at(q.r,q.c)];if(v&&!isStruct(v)&&!v.dead&&v.st!=='away')say(v,pick(UNICORN_SAY))}});
+ unicorns=unicorns.filter(q=>q.t<UNICORN_TIME);
+ for(const id in U){const u=U[id];if(u.fertileT>0)u.fertileT-=dt}
+ const tr=U.tree;if(tr&&(tr.lifeT-=dt)<=0){for(let i=0;i<5;i++)poof(tr.c*CELL+24+i*12,tr.r*CELL+40+(i%2)*20,'#6aba4a');removeUnit('tree',true);toast('The Massive Tree sinks back into the earth.')}}
+// Fertile Land: coins earned in a space next to a Druid casting it are worth FERTILE_BONUS more
+function fertileBonus(n,x,y){if(x==null)return n;const c=Math.floor(x/CELL),r=cl(Math.floor((y+44)/CELL),0,ROWS-1);return Object.values(U).some(d=>d.fertileT>0&&Math.abs(d.r-r)+Math.abs(d.c-c)===1)?Math.ceil(n*(1+FERTILE_BONUS)):n}
+function addWeather(r,c,k,by){const w={r,c,k,t:0,by};logEv(titleOf('wx:'+k),'cast by the Druid');weathers.push(w);poof(c*CELL+48,r*CELL+48,'#c8f0c0');return w}
+function stepWeather(dt){weathers.forEach(w=>{w.t+=dt});weathers=weathers.filter(w=>w.t<WEATHER_TIME+1);stepCasts(dt)}
 // ---------- the board's weather (BOARD_WX in data.js): one for the whole board, rolled again every WX_EVERY seconds of play; saved ----------
 let bwx={k:'cloudy',t:0};
 const boardWx=()=>bwx.k;
@@ -295,7 +337,12 @@ function faeMult(list){const rt=boardWx()==='fae'?rarestTier(list):null;return e
 function idleMult(u,list){return faeMult(list)}
 // A structure next door (the Well): STRUCT_IDLE of idle rolls go to one of its activities, chosen by one of the character's tags (at random if several)
 function structIdle(u){if(!atHome(u)||u.as||u.form||Math.random()>=STRUCT_IDLE)return false;const s=[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filter(v=>isStruct(v)&&STRUCT_ACTS[v.id]&&!v.hosting&&!v.gather);if(!s.length)return false;
- const w=pick(s),SA=STRUCT_ACTS[w.id],tags=Object.keys(SA).filter(t=>hasClass(u,t));if(!tags.length)return false;const acts=SA[pick(tags)],k=acts.length>1?(Math.random()<STRUCT_SECOND[acts[1]]?acts[1]:acts[0]):acts[0];visit(u,w,k);return true}
+ const w=pick(s),SA=STRUCT_ACTS[w.id],tags=Object.keys(SA).filter(t=>t==='any'||hasClass(u,t));if(!tags.length)return false;const acts=SA[pick(tags)];
+ let k=w.id==='tree'?pick(acts):acts.length>1?(Math.random()<STRUCT_SECOND[acts[1]]?acts[1]:acts[0]):acts[0]; // (the Massive Tree: one of its four, 25% each)
+ if(k==='treefruit'&&u.id==='merchant')k='treebasket'; // the Fruit Merchant picks a whole basketful
+ if(w.id==='well'&&u.id==='rogue'&&(w.wcoins||0)>0&&Math.random()<RARITY.u)k='wellsteal'; // the Rogue fishes out a coin someone wished on
+ if(u.id==='traveler'&&(k==='tvdeliver'||k==='tvwine'))k='tvelven'; // the Traveling Merchant brings the elven scroll instead
+ visit(u,w,k);return true}
 function startAct(u){u.path=[];if(structIdle(u))return true;const list=idleList(u);if(!list.length)return false;const k=rollList(list,idleMult(u,list));if(!k)return false;const ok=doIdle(u,k),e=list.find(e=>e[0]===k);if(ok&&e&&e[1]!=='c')logScene(k,u);return ok} // (uncommon and rarer idle activities go in the event log)
 // Start the idle activity k (returns false if it could not start: the character wanders instead)
 function doIdle(u,k){const bx=u.c*CELL,dur=(a,d)=>{beginAct(u,a);u.dur=d};
@@ -324,6 +371,7 @@ function doIdle(u,k){const bx=u.c*CELL,dur=(a,d)=>{beginAct(u,a);u.dur=d};
  if(k==='advert'){dur('advert',4.5);return true}
  if(k==='sell'){visit(u,pick(nbrs(u)),'sell');return true}
  if(k==='mob'){dur('mob',7);mobEnter(u);return true}
+ if(k==='aretire'){dur('aretire',4);return true} // the Apothecary retires
  if(k==='trip'||k==='tripbreak'||k==='abrew'||k==='herbs'){dur(k,{trip:3,tripbreak:3.4,abrew:4.4,herbs:5}[k]);u.hx=bx+64;return true}
  if(k==='cat'){cats.push({t:0,dir:pick([1,-1])});markSeen('cat');u.st='idle';u.wait=3;return true} // a black cat crosses the Wizard's room
  if(k==='orc'){visit(u,pick(nbrs(u)),'orc');return true}
@@ -404,7 +452,10 @@ function acting(u,dt){
  if(u.act==='spirit'){once('s',1,()=>say(u,'Spirit of the wood... speak to me.'));once('r',4,()=>{revealSecret('A nature spirit whispered to the Druid!');u.mood='happy';u.mt=1.5})}
  if(u.act==='stash'){once('s',.3,()=>say(u,'I will save this for a rainy day.'))}
  // the Druid casts (instead of visiting a neighbor): Overgrowth on a space, or, rarely, a change of the board's weather
- if(u.act==='wcast'){once('s',.3,()=>say(u,WX_SAY[u.wx.k]));once('w',1.6,()=>{if(u.wx.k==='shift'){markSeen('wx:shift');logScene('wx:shift',u);druidWx('the Druid called the winds')}else addWeather(u.wx.r,u.wx.c,u.wx.k,u.id);u.mood='happy';u.mt=1.2})}
+ if(u.act==='wcast'){once('s',.3,()=>say(u,WX_SAY[u.wx.k]));once('w',1.6,()=>{castFx(u);u.mood='happy';u.mt=1.2})}
+ // the Apothecary retires (legendary idle): her box goes back to the shelf (she stays unlocked)
+ if(u.act==='aretire'){once('s',.3,()=>{say(u,'Enough potions for one lifetime. I am off to grow tomatoes!');gest(u,'wave',2);u.mood='happy';u.mt=4});if(u.at>2.4)u.al=cl(1-(u.at-2.4),0,1);
+  once('x',3.4,()=>{poof(u.x,u.y-24,'#f2d870');poof(u.x,u.y-8,'#ffffff');removeUnit(u.id,true);buildShelf();save();toast('The Apothecary has retired. Her box is back on the shelf.')});if(!U[u.id])return}
  // artifact on the Druid: he becomes the Archdruid
  if(u.act==='ascend'){once('a',.2,()=>{say(u,'This artifact... the forest is calling me.');u.glow=2.6});once('b',1.6,()=>{u.arch=true;setLabel(u);poof(u.x,u.y-30,'#9affb0');poof(u.x,u.y-10,'#f2d870');u.mood='happy';u.mt=2;save()});once('c',2.2,()=>say(u,'I am the Archdruid now.'))}
  // the Monarch holds court on the throne (generous or greedy orders)
@@ -573,7 +624,7 @@ function startGather(P,list,kind){beginAct(P,kind||'massprayer');P.dur=999;P.gat
 // Coins earned on the golden space (philosopher's stone) are doubled; (x,y) is where the coins pop up (usually above a character)
 const inGold=(x,y)=>x!=null&&(S.goldCells||[]).some(q=>Math.floor(x/CELL)===q[1]&&cl(Math.floor((y+44)/CELL),0,ROWS-1)===q[0]); // every golden space stays golden for good
 // (force = paid even during the grand funeral: the Compendium's discovery rewards)
-function addCoins(n,x,y,force){if(mourning()&&!force){if(x!=null)parts.push({k:'txt',s:'mourning',x,y,t:0,life:1.4});return}if(inGold(x,y))n*=2;S.coins=(S.coins||0)+n;showCoins();checkUnlocks();save();if(x!=null)parts.push({k:'txt',s:'+'+n,x,y,t:0,life:1.4})}
+function addCoins(n,x,y,force){if(mourning()&&!force){if(x!=null)parts.push({k:'txt',s:'mourning',x,y,t:0,life:1.4});return}n=fertileBonus(n,x,y);if(inGold(x,y))n*=2;S.coins=(S.coins||0)+n;showCoins();checkUnlocks();save();if(x!=null)parts.push({k:'txt',s:'+'+n,x,y,t:0,life:1.4})}
 // ---- unlocks that depend on what you hold ----
 function checkUnlocks(){checkEggs();
  // the Druid: every board space bought; the Blacksmith: SMITH_UNLOCK coins spent in total
@@ -594,7 +645,7 @@ function markSeen(k){k=SEEN_ALIAS[k]||k;if(!k||S.seen[k])return;S.seen[k]=1;save
 const ALL_KEYS=[...new Set(COMP_TABS.flatMap(t=>[...t.pairs,...t.idle,...t.items]))];
 const foundCount=()=>ALL_KEYS.filter(k=>S.seen[k]).length;
 // Which characters have a Compendium tab (once unlocked, always; 'anyone' and tags count as unlocked), and the tiles a tab shows
-const compUnl=id=>id==='anyone'||id==='super'||id==='group'||!!TAG_NAMES[id]||SHELF_CHARS.includes(id)||!!S.un[id]||!!(S.ever&&S.ever[id]);
+const compUnl=id=>id==='anyone'||id==='super'||id==='group'||(id==='tree'&&compUnl('druid'))||!!TAG_NAMES[id]||SHELF_CHARS.includes(id)||!!S.un[id]||!!(S.ever&&S.ever[id]);
 const tabPairs=t=>t.pairs.filter(k=>(PAIR_WITH[k]||[]).every(compUnl)),tabKeys=t=>[...tabPairs(t),...t.idle,...t.items];
 // Does this box's Compendium tab still have entries to find (secrets and super secrets don't count)? Used for the faint blue glow while dragging a box.
 const hasLeft=id=>{const t=COMP_TABS.find(x=>x.id===(isFarm(id)?'farmer':id));return !!t&&tabKeys(t).some(k=>!EGGS.includes(k)&&!S.seen[k])};
@@ -785,7 +836,7 @@ function potionTeleport(u){ // (uses up the potion even if nobody is free: he ju
 // Up/down: the ROOMS decide (TR in data.js): leave by this room's stairs, arrive by the other room's.
 // Not next door (potion teleport): a pair of portals.
 // Rooms without side doors, and a room's up/down exits (the Rogue's graveyard just fades)
-const noSideDoor=id=>isFarm(id)||id==='druid'||id==='traveler'||id==='well'||(id==='rogue'&&graveyardOn(U.rogue));
+const noSideDoor=id=>isFarm(id)||id==='druid'||id==='traveler'||id==='well'||id==='tree'||(id==='rogue'&&graveyardOn(U.rogue));
 const exitsOf=id=>id==='rogue'&&graveyardOn(U.rogue)?{up:'fade',down:'fade'}:TR[id];
 function route(u,r1,c1,r2,c2,fin){
  const ra=at(r1,c1)||u.id,rb=at(r2,c2)||u.id,dc=c2-c1,dr=r2-r1;
@@ -1514,7 +1565,7 @@ function talk(u,dt){
   if(u.tt>=.8&&u.tt<2){const q=(u.tt-.8)/1.2;u.x=lerp(u.jx0,u.jx1,q);u.jy=Math.sin(Math.PI*q)*28;u.face=u.jx1>u.jx0?1:-1;u.mv=true;u.t+=dt}
   once('c',2,()=>{u.jy=0;u.x=u.jx1;poof(u.x,u.y-2,'#c8b898');u.hop=.3});once('d',2.4,()=>{say(u,'Ta-da!');gest(u,'both',1);u.mood='happy';u.mt=2})}
  else if(k==='wellwish'){end=4.8;// a coin tossed in, a silent wish
-  once('a',.4,()=>{u.face=h.x>u.x?1:-1;gest(u,'fwd',.8);thrown.push({sx:u.x+u.face*8,sy:u.y-28,ex:h.x,ey:hy+57,t:0,icon:'coin',coin:1})});
+  once('a',.4,()=>{u.face=h.x>u.x?1:-1;gest(u,'fwd',.8);thrown.push({sx:u.x+u.face*8,sy:u.y-28,ex:h.x,ey:hy+57,t:0,icon:'coin',coin:1});h.wcoins=(h.wcoins||0)+1}); // (a coin in the well: the Rogue may fish it out later)
   once('b',1.2,()=>{u.mood='sleep';u.mt=1.8;parts.push({k:'h',x:u.x,y:u.y-44,t:0,life:1.3})});once('c',3.2,()=>{u.mood='happy';u.mt=1.5;u.hop=.3})}
  else if(k==='welldive'){end=7.4;// in the well, peek out (only the top of the head shows), climb back out
   once('a',.3,()=>say(u,pick(['Cannonball!','Geronimo!','Last one in is a rotten egg!'])));once('b',.8,()=>{u.hop=.5});
@@ -1522,6 +1573,37 @@ function talk(u,dt){
   if(u.tt>=1.1&&u.tt<1.5)u.dive=30*(u.tt-1.1)/.4;once('s',1.5,()=>{u.dive=30;poof(h.x,hy+56,'#8fd0ff');for(let i=0;i<6;i++)parts.push({k:'drop',col:'#8fd0ff',x:h.x+(Math.random()-.5)*20,y:hy+56,vx:(Math.random()-.5)*40,vy:-60-Math.random()*30,t:0,life:.6})});
   if(u.tt>=2.8&&u.tt<3.3)u.dive=30-26*(u.tt-2.8)/.5;once('p',3.3,()=>{u.dive=4;u.mood='ok'});
   once('x',5.2,()=>{u.dive=0;u.diveClip=null;u.hop=.5;poof(h.x,hy+56,'#8fd0ff')});once('y',5.8,()=>{say(u,'Refreshing!');u.mood='happy';u.mt=2})}
+ else if(k==='wellsteal'){end=6;// the Rogue fishes out a coin someone wished on
+  once('a',.4,()=>{u.face=h.x>u.x?1:-1;say(u,'Nobody is looking...');gest(u,'fwd',1.2)});
+  once('b',1.8,()=>{poof(h.x,hy+56,'#8fd0ff');thrown.push({sx:h.x,sy:hy+57,ex:u.x+u.face*8,ey:u.y-28,t:0,icon:'coin',coin:1})});
+  once('c',2.4,()=>{if(h.wcoins>0)h.wcoins--;addCoins(1,u.x,u.y-50);u.mood='happy';u.mt=2;say(u,'Finders keepers!');save()})}
+ // ---------- the Massive Tree (h = the tree, a structure the Druid conjured; its trunk is in the middle of the room) ----------
+ else if(k==='treeclimb'){end=7;// up the trunk, enjoy the view, back down (jy = how high)
+  once('a',.3,()=>{say(u,pick(['Up I go!','Race you to the top!','Hold on, branches!']));u.jx0=u.x;u.jx1=h.x+(u.x<h.x?-12:12)});
+  if(u.tt>=.5&&u.tt<1){u.x=lerp(u.jx0,u.jx1,(u.tt-.5)/.5);u.face=h.x>u.x?1:-1;u.mv=true;u.t+=dt}
+  if(u.tt>=1&&u.tt<2.4){u.x=u.jx1;u.jy=34*(u.tt-1)/1.4;u.mv=true;u.t+=dt}
+  once('c',2.4,()=>{u.jy=34;u.mood='happy';u.mt=2.4;gest(u,'wave',1.6);say(u,pick(['What a view!','I can see the whole kingdom!','Hello down there!']))});
+  if(u.tt>=4.4&&u.tt<5.6){u.jy=34*(1-(u.tt-4.4)/1.2);u.mv=true;u.t+=dt}
+  once('d',5.6,()=>{u.jy=0;u.hop=.3})}
+ else if(k==='treenap'){end=8;// a nap in the shade
+  once('a',.3,()=>{say(u,'Ahh, shade. Just five minutes...')});once('b',1.2,()=>{u.mood='sleep';u.mt=5.2});
+  if(u.tt>1.4&&u.tt<6.2&&!u.ev['z'+Math.floor(u.tt)]){u.ev['z'+Math.floor(u.tt)]=1;parts.push({k:'z',x:u.x+u.face*8,y:u.y-46,t:0,life:1.6})}
+  once('c',6.5,()=>{u.mood='happy';u.mt=1.5;u.hop=.3;say(u,'What a lovely nap.')})}
+ else if(k==='treefruit'){end=5.6;// one fruit, fresh from the branch
+  once('a',.3,()=>{u.face=h.x>u.x?1:-1;gest(u,'up',1);say(u,'That one looks ripe!')});
+  once('b',1.2,()=>thrown.push({sx:h.x+(u.x<h.x?-10:10),sy:hy+26,ex:u.x+u.face*8,ey:u.y-28,t:0,icon:'apple',fruit:1}));
+  once('c',1.6,()=>{u.show={icon:'apple',x:u.x+u.face*9,y:u.y-26}});once('d',2.8,()=>gest(u,'up',.8));
+  once('e',3.8,()=>{u.show=null;u.mood='happy';u.mt=1.5;say(u,'Delicious!')})}
+ else if(k==='treeadmire'){end=4.8;// just looking up at it
+  once('a',.3,()=>{u.face=h.x>u.x?1:-1;u.mood='happy';u.mt=4;say(u,pick(['What a magnificent tree!','It must be a thousand years old.','Nature is truly amazing.']))});
+  once('b',2.4,()=>parts.push({k:'h',x:u.x,y:u.y-44,t:0,life:1.3}))}
+ else if(k==='treebasket'){end=8.4;// the Fruit Merchant picks far too much fruit (u.basket = how many in his basket)
+  once('a',.3,()=>{u.face=h.x>u.x?1:-1;say(u,'Look at all this FRUIT!');u.hop=.5;gest(u,'both',1);u.mood='happy';u.mt=6;u.basket=0});
+  for(let i=0;i<8;i++)once('f'+i,1+i*.45,()=>{thrown.push({sx:h.x+(i%2?-12:12),sy:hy+24+(i%3)*4,ex:u.x+u.face*10,ey:u.y-16,t:0,icon:i%3?'apple':'orange',fruit:1});if(i%2)gest(u,'up',.4)});
+  for(let i=0;i<8;i++)once('g'+i,1.35+i*.45,()=>{u.basket=i+1});
+  once('c',3.4,()=>say(u,'More! MORE!'));
+  once('d',5.2,()=>{for(let i=0;i<4;i++)parts.push({k:'drop',col:i%2?'#d83030':'#f08a20',x:u.x+u.face*10,y:u.y-20,vx:(Math.random()-.5)*60,vy:-50-Math.random()*30,t:0,life:.7});u.basket=6;u.mood='roll';u.mt=1.5;say(u,'...Maybe that is enough.')});
+  once('e',7.6,()=>{u.basket=null;u.mood='happy';u.mt=1.5})}
  // ---------- the Tavern (h = the tavern, a structure; the barkeep is part of the room, BK = something he can speak through) ----------
  else if(k==='tvfizz'||k==='tvbubbles'){const big=k==='tvbubbles',BK=barkeepOf(h);end=big?9.4:5.6;
   once('a',.3,()=>{say(u,'One fizzy enchanted ale, please!');gest(u,'fwd',1)});once('b',1.2,()=>say(BK,'Coming right up.'));
@@ -1544,6 +1626,11 @@ function talk(u,dt){
  else if(k==='tvwine'){end=6.4;const BK=barkeepOf(h);
   once('a',.3,()=>{u.show={icon:'wine',x:u.x+u.face*9,y:u.y-26};say(u,'Dwarven wine, aged under a mountain!');gest(u,'fwd',1.2)});
   once('b',2.2,()=>say(BK,'Twenty coins? Worth every one!'));once('c',3,()=>{u.show=null;addCoins(TAVERN_WINE,u.x,u.y-50);u.mood='happy';u.mt=2;u.hop=.4})}
+ else if(k==='tvelven'){end=7;const BK=barkeepOf(h);// the Traveling Merchant brings a scroll of the ancient elves; the barkeep keeps it for the right adventurer
+  once('a',.3,()=>{u.show={icon:'scroll',x:u.x+u.face*9,y:u.y-26};say(u,'A scroll of the ancient elves. Keep it safe behind the bar.');gest(u,'fwd',1.6)});
+  once('b',2.4,()=>say(BK,'For the right adventurer? Aye, I will guard it.'));
+  once('c',3.4,()=>{u.show=null;poof(hx+80,hy+56,'#c8f0ff');poof(hx+84,hy+50,'#f2d870')});
+  once('d',4.4,()=>{u.mood='happy';u.mt=2;say(u,'The right hero will ask for it.')})}
  else if(k==='tvshoo'){end=5.4;const BK=barkeepOf(h);// the barkeep grabs an axe, comes round the bar and chases the monster out
   once('a',.3,()=>{h.bk={x:h.bkx||hx+74,axe:1,front:0,face:-1};say(BK,'Hey! No monsters in my tavern!')});
   if(h.bk&&u.tt>=1&&u.tt<2.4){h.bk.front=1;h.bk.x=lerp(hx+66,u.x+18,cl((u.tt-1)/1.4,0,1));h.bk.walk=1}else if(h.bk)h.bk.walk=0;
@@ -1671,6 +1758,7 @@ function render(){
   if(id==='merchant'&&u.goldT>0&&id!==dm&&!(u.rotT>0))drawGold(g,x,y,T); // golden apples
   if(id==='rogue'&&id!==dm&&graveyardOn(u))drawGraveyard(g,x,y,T); // secret: next to the Necromancer on the bottom row
   if(id!==dm)drawRoomLife(g,id,x,y,T)} // candle flames, clouds
+ unicorns.forEach(q=>{if(!isOpen(q.r,q.c))return;const bx=q.c*CELL,by=q.r*CELL,p=q.t/UNICORN_TIME,ux=q.face>0?bx+8+p*80:bx+88-p*80;g.save();g.beginPath();g.rect(bx+2,by+2,CELL-4,CELL-4);g.clip();drawUnicorn(g,ux,by+FY-14,q.face,cl(q.t/.6,0,1)*cl((UNICORN_TIME-q.t)/.6,0,1),q.t);g.restore()}); // a unicorn passing through a room's background (behind its characters)
  (S.goldCells||[]).forEach(q=>{if(isOpen(q[0],q[1]))drawGoldCell(g,q[1]*CELL,q[0]*CELL,T)}); // philosopher's stones: golden spaces
  if(grp)drawGroupBack(g,T); // a group event turns its rooms into one market square or feast hall
  Object.values(U).forEach(u=>u.fxs.forEach(f=>drawFx(f)));
@@ -1703,7 +1791,8 @@ function render(){
   const sink=u.act==='demon'?sinkOf(u.at):0,low=sink*46+(u.dive||0)+(u.kneel?6:0)+(u.fall?12:0)+(u.st==='sleep'?Math.round(Math.sin(T*2)):0);
   if(u.glow>0)drawGlow(g,u.x,u.y,T);
   if(u.wings>0)drawWings(g,u.x,u.y+low+hop,T);
-  if(u.pet&&u.pet.kind==='bear')drawBearPet(g,u.pet.x,u.pet.y,u.pet.face,u.pet.t||0,u.pet.walk,u.al); // the Druid's grizzly bear
+  if(u.pet&&u.pet.away){} // (his animal is off on an errand)
+  else if(u.pet&&u.pet.kind==='bear')drawBearPet(g,u.pet.x,u.pet.y,u.pet.face,u.pet.t||0,u.pet.walk,u.al); // the Druid's grizzly bear
   else if(u.pet&&u.pet.kind==='wolf')drawWolfPet(g,u.pet.x,u.pet.y,u.pet.face,u.pet.t||0,u.pet.walk,u.al); // his wolf
   else if(u.pet&&u.pet.kind==='eagle'){const bx=cellX(u)*CELL;drawEagle(g,cl(u.x+Math.sin(T*1.3)*22,bx+12,bx+84),u.y-58+Math.sin(T*2.6)*4,Math.cos(T*1.3)>0?1:-1,T,false,u.al)} // his eagle circles above him
   else if(u.pet)spr(g,'skeleton','ok',u.pet.x,u.pet.y,u.pet.face,0,u.al,.55*scl(u),'none',u.pet.walk?stepOf(u.pet.t):0); // the Necromancer's little skeleton
@@ -1723,6 +1812,7 @@ function render(){
    g.save();g.beginPath();g.rect(s.x-24,s.y-60,48,60);g.clip();spr(g,'skeleton',hit?'hurt':'mad',s.x,s.y+(1-rise)*44,u.x>s.x?1:-1,0,hit&&Math.floor(s.blink*14)%2?.2:1,1);g.restore()}
   if(u.mobs)u.mobs.forEach(m=>drawMob(g,m));
   if(u.show)drawItem(g,u.show.icon,Math.round(u.show.x),Math.round(u.show.y),1);
+  if(u.basket!=null)drawBasket(g,Math.round(u.x+u.face*10),Math.round(u.y-12),u.basket); // the Fruit Merchant's overflowing basket (the Massive Tree)
   if(u.show2)drawItem(g,u.show2.icon,Math.round(u.show2.x),Math.round(u.show2.y),1);
   if(u.big){const q=u.big;drawItem(g,'banana',Math.round(q.x),Math.round(q.y-6-q.s*4),Math.max(1,Math.round(q.s)))}
   if(u.beam){const Pr=U.priest;if(Pr){g.save();g.globalAlpha=cl(1-u.beam.t/.5,0,1);g.strokeStyle='rgba('+(u.beam.col||'255,236,150')+',.95)';g.lineWidth=5;g.beginPath();g.moveTo(Pr.x+Pr.face*8,Pr.y-36);g.lineTo(u.beam.x,u.beam.y);g.stroke();g.restore()}}
@@ -1761,6 +1851,8 @@ function render(){
  // bats and bee swarms fly on top of everything
  // the Druid's Overgrowth on board spaces (fades in and out)
  weathers.forEach(w=>{if(isOpen(w.r,w.c))drawWeather(g,w.c*CELL,w.r*CELL,w.k,w.t,cl(w.t/1,0,1)*cl((WEATHER_TIME+1-w.t)/1,0,1))});
+ for(const id in U){const d=U[id];if(d.fertileT>0){const a=cl(d.fertileT/1,0,1)*cl((FERTILE_TIME-d.fertileT)/1,0,1);[[0,1],[0,-1],[1,0],[-1,0]].forEach(q=>{const r=d.r+q[0],c=d.c+q[1];if(r>=0&&r<ROWS&&c>=0&&c<COLS&&isOpen(r,c))drawFertile(g,c*CELL,r*CELL,T,a)})}} // the Druid's Fertile Land on the spaces around him
+ msgrs.forEach(m=>{const a=cl(m.t/.3,0,1)*cl((3.6-m.t)/.3,0,1),k=m.kind;if(k==='bear')drawBearPet(g,m.x,m.y,m.face,m.t,m.walk,a);else if(k==='wolf')drawWolfPet(g,m.x,m.y,m.face,m.t,m.walk,a);else drawEagle(g,m.x,m.y-40+Math.sin(m.t*3)*3,m.face,m.t,false,a);if(m.t>=1.1&&m.t<1.9)drawItem(g,m.coin?'coin':'scroll',Math.round(m.x+m.face*6),Math.round(m.y-(k==='eagle'?54:32)),1)}); // the Druid's animal on an errand, carrying a coin or a note
  drawBoardWx(g,boardWx(),T); // the board's weather: rain or a pink Fae Wind over the whole board (Sunny and Partly Cloudy: nothing)
  swarms.forEach(s=>drawBees(g,s.c*CELL,s.r*CELL,s.t,cl(s.t/.5,0,1)*cl((BEES_TIME-s.t)/.8,0,1)));
  live.forEach(u=>{if(u.act==='bats'&&u.batTo){const A=U[u.batTo],t=u.at,bx=u.c*CELL,by=u.r*CELL;
@@ -1784,7 +1876,7 @@ const inRect=(el,e)=>{const R=el.getBoundingClientRect();return e.clientX>=R.lef
 function pt(e){const R=cv.getBoundingClientRect(),s=W/R.width;return{x:(e.clientX-R.left)*s,y:(e.clientY-R.top)*s,inb:inRect(cv,e)}}
 const cellOf=p=>[cl(Math.floor(p.y/CELL),0,ROWS-1),cl(Math.floor(p.x/CELL),0,COLS-1)];
 let lockTap=null; // a tap on a locked space (buy it on release)
-cv.onpointerdown=e=>{const p=pt(e),[r,c]=cellOf(p),id=at(r,c);lockTap=null;if(!id){if(!isOpen(r,c))lockTap=[r,c];return}if(id==='monarch'&&U[id].dead){toast('The Monarch lies in state. Their box cannot be moved during the funeral.');return}drag={id,sx:e.clientX,sy:e.clientY,moved:false,p};cv.setPointerCapture(e.pointerId)};
+cv.onpointerdown=e=>{const p=pt(e),[r,c]=cellOf(p),id=at(r,c);lockTap=null;if(!id){if(!isOpen(r,c))lockTap=[r,c];return}if(id==='tree'){toast('The Massive Tree is rooted to the spot. It cannot be moved.');return}if(id==='monarch'&&U[id].dead){toast('The Monarch lies in state. Their box cannot be moved during the funeral.');return}drag={id,sx:e.clientX,sy:e.clientY,moved:false,p};cv.setPointerCapture(e.pointerId)};
 // Shop coin button in the bottom-right of a room
 const onShopCoin=(u,p)=>p.x>=u.c*CELL+64&&p.x<u.c*CELL+CELL&&p.y>=u.r*CELL+64&&p.y<u.r*CELL+CELL;
 cv.onpointermove=e=>{if(!drag)return;const p=pt(e);drag.p=p;
@@ -1800,7 +1892,7 @@ cv.onpointerup=e=>{if(!drag){const p=pt(e);if(lockTap&&p.inb){const[r,c]=cellOf(
   if(u&&deskOn(u)&&onShopCoin(u,p)){writeScroll(u);return}
   if(u&&Math.hypot(p.x-u.x,p.y-(u.y-22))<30){u.hop=.5;u.mood='happy';u.mt=1;gest(u,'up',.6)}return}
  if(inRect(tray,e))sendToShelf(d.id);
- else if(p.inb){const[r,c]=cellOf(p),u=U[d.id];if(!isOpen(r,c))toast('That space is locked. Tap it to buy it.');else if(r!==u.r||c!==u.c)relocate(d.id,r,c)}
+ else if(p.inb){const[r,c]=cellOf(p),u=U[d.id];if(!isOpen(r,c))toast('That space is locked. Tap it to buy it.');else if(at(r,c)==='tree')toast('The Massive Tree is rooted to the spot. Nothing can swap with it.');else if(r!==u.r||c!==u.c)relocate(d.id,r,c)}
  save()};
 // Dragging a box back onto the shelf costs REMOVE_COST coins (asks first)
 function sendToShelf(id){const u=U[id];if(!u)return;
@@ -1918,6 +2010,7 @@ function infoText(k){const fl=flavorOf(k),note=NOTE[k]?' '+NOTE[k]:'',p=pctOf(k)
   return 'Idle ('+(pc?pc+' chance':'a common one')+'): '+who+'. '+fl+note}
  const wt=whereText(k);if(wt&&p!=null)return 'Visit ('+pc+' chance): '+wt+'. '+fl+note;
  if(k==='stone')return 'Item: artifact on the Alchemist. '+fl+note;
+ if(STRUCT_WHO[k]&&WELL_PCT[k]){const nm=CNAME((PAIR_WITH[k]||[])[0]);return 'Idle ('+WELL_PCT[k]+' chance): '+STRUCT_WHO[k]+' next to the '+nm+' ('+Math.round(STRUCT_IDLE*100)+'% of their idle activities use the '+nm+(k==='wellsteal'?'; only after a Merchant has wished on a coin there':'')+(nm==='Massive Tree'?'; the tree stands for 1 minute':'')+'). '+fl+note}
  if(WELL_PCT[k]){const sid2=(PAIR_WITH[k]||[])[0],tag=((PAIR_WITH[k]||[])[1]||'').slice(4),tg={mage:'Mage',fighter:'Fighter',merchant:'Merchant',monstrous:'Monstrous character'}[tag],nm=CNAME(sid2),sec=Object.keys(STRUCT_SECOND).find(q=>(STRUCT_ACTS[sid2]||{})[tag]&&STRUCT_ACTS[sid2][tag].includes(q));
   return 'Idle ('+WELL_PCT[k]+' chance): a '+tg+' next to the '+nm+' ('+Math.round(STRUCT_IDLE*100)+'% of their idle activities use the '+nm+'; with several tags, one is picked at random'+(sec?'; the rarer outcome happens '+Math.round(STRUCT_SECOND[sec]*100)+'% of the time':'')+'). '+fl+note}
  if(k.startsWith('grp:'))return 'Group event (checked every 5 minutes, it happens whenever the board allows): '+({'grp:market':'four Merchants in a 2x2 square','grp:feast':'any three characters side by side in a row','grp:wellchat':'characters on all four sides of the Well','grp:classic':'the Priest, Knight, Wizard and Rogue in the same row as the Tavern'}[k])+', at home and free'+', for 1 minute. '+fl+note;
@@ -2281,6 +2374,21 @@ function idleTile(kind,wp){
   else if(kind==='dpotion'||kind==='dscroll'){const tt=t%5,a=kind==='dpotion'?'stash':'storm';box(x,'druid',0,0);if(a==='storm'&&tt>2)drawWxIcon(x,['sunny','rainy','fae','cloudy'][Math.floor(t/5)%4],60,10,1.5);
    spr(x,'druid','happy',40,FY,1,0,1,1,poseOf(a,Math.min(tt,2.3)));drawAct(x,{act:a,at:Math.min(tt,2.3),x:40,y:FY,face:1})}
   // the Druid's weather: a room with that weather on it
+  else if(kind==='wx:messenger'){const tt=t%4;box(x,'knight',0,0,'longsword');spr(x,'knight',tt>2?'happy':'ok',30,FY,1,0);drawBearPet(x,Math.round(lerp(86,56,cl(tt/1.4,0,1))),FY,-1,tt,tt<1.4);if(tt>1.2&&tt<2.4)drawItem(x,'coin',58,FY-32,1)}
+  else if(kind==='wx:heal'){const tt=t%4;box(x,'priest',0,0);spr(x,'priest_f',tt<1.6?'sleep':'happy',48,FY,1,0);if(tt<1.4)drawZ(x,60,FY-44,1);if(tt>1.2&&tt<1.9)poofTile(x,48,FY-28,(tt-1.2)/.7,'#7aff9a')}
+  else if(kind==='wx:fertile'){box(x,'merchant',0,0);drawFertile(x,0,0,t,1);spr(x,'merchant','happy',48,FY,1,0);drawItem(x,'coin',62,Math.round(FY-40-Math.abs(Math.sin(t*2))*4),1)}
+  else if(kind==='wx:blessing'){const tt=t%4;box(x,'farmer',0,0);drawField(x,0,0,'wheat',.5,t);if(tt<.6)poofTile(x,48,FY-20,tt/.6,'#9ae07a');else spr(x,'farmer','happy',48,FY,1,0,1,1,'both')}
+  else if(kind==='wx:tree'){const tt=t%4;box(x,'tree',0,0);if(tt<.7)poofTile(x,48,60,tt/.7,'#6aba4a')}
+  else if(kind==='wx:unicorn'){box(x,'knight',0,0,'longsword');drawUnicorn(x,(t*18)%110-8,FY-14,1,1,t);spr(x,'knight','shock',66,FY,-1,0)}
+  // the Massive Tree's activities
+  else if(kind==='treeclimb'){const tt=t%5,jy=tt<1.4?34*tt/1.4:tt<3.4?34:tt<4.6?34*(1-(tt-3.4)/1.2):0;box(x,'tree',0,0);spr(x,'knight',jy>=34?'happy':'ok',36,FY-Math.round(jy),1,0,1,1,jy>=34?'wave':'up')}
+  else if(kind==='treenap'){box(x,'tree',0,0);spr(x,'priest_m','sleep',28,FY,1,0);drawZ(x,38,FY-46-Math.round((t*6)%6),1)}
+  else if(kind==='treefruit'){const tt=t%4;box(x,'tree',0,0);spr(x,'wizard_blue',tt>2?'happy':'ok',28,FY,1,0,1,1,tt<1.4?'up':'fwd');if(tt>=1&&tt<3.4)drawItem(x,'apple',38,FY-26,1)}
+  else if(kind==='treeadmire'){box(x,'tree',0,0);spr(x,'priest_f','happy',24,FY,1,0)}
+  else if(kind==='treebasket'){box(x,'tree',0,0);spr(x,'merchant','happy',26,FY,1,0,1,1,'both');drawBasket(x,36,FY-12,1+Math.floor(t*2)%8)}
+  else if(kind==='wellsteal'){const tt=t%4;box(x,'well',0,0);spr(x,'rogue_ninja',tt>2?'happy':'ok',20,FY,1,0,1,1,tt<2?'fwd':'none');if(tt>1&&tt<2.2)drawItem(x,'coin',Math.round(lerp(48,28,(tt-1)/1.2)),Math.round(lerp(57,FY-28,(tt-1)/1.2)),1)}
+  else if(kind==='tvelven'){box(x,'tavern',0,0);drawRoomLife(x,'tavern',0,0,2);spr(x,'traveler_m','happy',66,FY,1,0,1,1,'fwd');drawItem(x,'scroll',76,FY-26,1)}
+  else if(kind==='aretire'){const tt=t%4;box(x,'apothecary',0,0);if(tt<3.4)spr(x,'apothecary','happy',48,FY,1,0,tt>2.4?cl(1-(tt-2.4),0,1):1,1,'wave');else poofTile(x,48,FY-20,(tt-3.4)/.6,'#f2d870')}
   else if(kind==='wx:shift'){const ks=Object.keys(BOARD_WX);box(x,'druid',0,0);spr(x,'druid','happy',36,FY,1,0,1,1,'both');drawWxIcon(x,ks[Math.floor(t/1.5)%ks.length],60,10,1.5)}
   else if(kind.startsWith('wx:')){box(x,'apothecary',0,0);spr(x,'apothecary','ok',48,FY,1,0);drawWeather(x,0,0,'overgrowth',t%6,1)}
   else if(kind==='archdruid'){const tt=t%4;box(x,'druid',0,0);if(tt<1)drawItem(x,'artifact',48,Math.round(10+tt*30),2);if(tt>1.4){x.fillStyle='rgba(150,255,170,'+(.25+.1*Math.sin(t*3))+')';x.beginPath();x.arc(48+13,FY-41,7,0,Math.PI*2);x.fill()}
@@ -2349,7 +2457,7 @@ function idleTile(kind,wp){
  });
  return c}
 // Things a scene gives you, shown as small icons in the bottom-left of its Compendium tile
-const GAINS={tshop:['artifact'],tscroll:['coin'],tpotion:['coin'],tingot:['coin'],royalpatron:['artifact'],'rq:alchemist':['potion'],'rq:druid':['coin'],pour:['ingot'],leadgold:['coin'],adventure:['coin','scroll','artifact'],ingotshop:['ingot'],nefarious:['coin'],poisons:['coin'],wine:['coin'],promo:['coin'],twopot:['potion'],dungeon:['coin','artifact','scroll','potion'],bloodorange:['coin'],ntrade:['potion'],heal:['coin'],roguemage:['artifact'],stone:['coin'],greenapple:['coin'],cobrew:['potion'],mcust:['coin'],acust:['coin'],farm:['coin'],apcoins:['coin'],appotion:['potion'],starfruit:['coin'],durian:['coin'],advertW:['coin'],tithe:['coin'],crusade:['coin','artifact'],craft:['scroll'],forge:['scroll','potion'],brew:['potion'],sell:['coin'],apple:['coin'],apoth:['potion'],desk:['scroll']};
+const GAINS={tshop:['artifact'],tscroll:['coin'],tpotion:['coin'],tingot:['coin'],royalpatron:['artifact'],'rq:alchemist':['potion'],'rq:druid':['coin'],pour:['ingot'],leadgold:['coin'],adventure:['coin','scroll','artifact'],ingotshop:['ingot'],nefarious:['coin'],poisons:['coin'],wine:['coin'],promo:['coin'],twopot:['potion'],dungeon:['coin','artifact','scroll','potion'],bloodorange:['coin'],ntrade:['potion'],heal:['coin'],roguemage:['artifact'],stone:['coin'],greenapple:['coin'],cobrew:['potion'],mcust:['coin'],acust:['coin'],farm:['coin'],apcoins:['coin'],appotion:['potion'],starfruit:['coin'],durian:['coin'],advertW:['coin'],tithe:['coin'],crusade:['coin','artifact'],craft:['scroll'],forge:['scroll','potion'],brew:['potion'],sell:['coin'],apple:['coin'],apoth:['potion'],desk:['scroll'],'wx:messenger':['coin'],'wx:fertile':['coin'],'wx:blessing':['coin'],wellsteal:['coin']};
 const ICONURL={};function iconURL(k){if(!ICONURL[k]){const c=document.createElement('canvas');c.width=16;c.height=16;const x=c.getContext('2d');drawItem(x,k,8,9,1);ICONURL[k]=c.toDataURL()}return ICONURL[k]}
 const ITEMLBL={dingot:'ingot',tscroll:'scroll',tpotion:'potion',tingot:'ingot',archdruid:'artifact',bpotion:'potion',bscroll:'scroll',dpotion:'potion',dscroll:'scroll',drevive:'scroll',reinforce:'ingot',nscroll:'scroll',alcpotion:'potion',alcscroll:'scroll',stone:'artifact 80%',elixir:'artifact 20%',spook:'potion',roguemage:'scroll',apcoins:'potion',appotion:'scroll',monkey:'scroll',backwards:'potion',fireball:'scroll',glow:'scroll',banish:'scroll',raise:'scroll',teleport:'potion',flex:'potion',wings:'potion',sniff:'potion',relic:'artifact'};
 function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
@@ -2388,7 +2496,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
   fruitfall:[P('fruitfall'),pv*ODDS.fruitfall],starfruit:[P('starfruit'),pv*(1-ODDS.fruitfall)],curse:[P('curse'),pv],
   banana:[P('banana'),pv],durian:[P('durian'),pv],jokes:[P('jokes'),pv*(1-ODDS.murder)],murder:[P('murder'),pv*ODDS.murder],advertW:[P('advertW'),pv],
   massprayer:[I('massprayer'),'5% (4 neighbors)'],monkey:[I('monkey')],backwards:[I('backwards')],
-  trip:[I('trip'),AP.trip],tripbreak:[I('tripbreak'),AP.tripbreak],abrew:[I('abrew'),AP.abrew],herbs:[I('herbs'),AP.herbs],
+  aretire:[I('aretire')],trip:[I('trip'),AP.trip],tripbreak:[I('tripbreak'),AP.tripbreak],abrew:[I('abrew'),AP.abrew],herbs:[I('herbs'),AP.herbs],
   apgift:[P('apgift'),pv],mtrade:[P('mtrade'),pv*(1-ODDS.farm)],farm:[I('farm'),pv*ODDS.farm],apcoins:[I('apcoins')],appotion:[I('appotion')],
   blackwiz:[I('blackwiz'),'secret'],bronze:[I('bronze'),'secret'],skulls:[I('skulls'),'secret'],
   // Alchemist by tags, his secrets, the scroll on the Necromancer, the Rogue's neighbor scenes and secrets
@@ -2473,9 +2581,9 @@ function buildQuests(){const box=$('#quests');box.textContent='';S.qDone=S.qDone
 
 // ---------- state ----------
 function ui(){document.querySelectorAll('.it[data-id]').forEach(b=>b.classList.toggle('used',!!U[b.dataset.id]||(b.dataset.id==='traveler'&&!!S.travelRoam)))} // dimmed: on the board, or on the road
-function save(){if(resetting)return;try{const b={};for(const i in U)if(!isFarm(i))b[i]=[U[i].r,U[i].c,U[i].weapon,TEMP_FORM[U[i].form]?null:U[i].form,U[i].color,U[i].backwards?1:0,U[i].skin||0,U[i].mageTag?1:0,U[i].dead?1:0,U[i].reinforced?1:0,U[i].paladin?1:0,U[i].armor?1:0,U[i].fam||0,U[i].arch?1:0,U[i].trait||0,extras(U[i])];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,spent:S.spent||0,inv:S.inv,seen:S.seen,rewarded:S.rewarded||0,cells:S.cells,bought:S.bought||0,revealed:S.revealed,goldCells:S.goldCells,ever:S.ever,tabDone:S.tabDone||{},bigRewarded:S.bigRewarded||0,monarchs:S.monarchs||0,travelRoam:!!S.travelRoam,qs:S.qs||{},qDone:S.qDone||{},wx:{k:bwx.k,t:Math.round(bwx.t)}}))}catch(e){}}
+function save(){if(resetting)return;try{const b={};for(const i in U)if(!isFarm(i)&&i!=='tree')b[i]=[U[i].r,U[i].c,U[i].weapon,TEMP_FORM[U[i].form]?null:U[i].form,U[i].color,U[i].backwards?1:0,U[i].skin||0,U[i].mageTag?1:0,U[i].dead?1:0,U[i].reinforced?1:0,U[i].paladin?1:0,U[i].armor?1:0,U[i].fam||0,U[i].arch?1:0,U[i].trait||0,extras(U[i])];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,spent:S.spent||0,inv:S.inv,seen:S.seen,rewarded:S.rewarded||0,cells:S.cells,bought:S.bought||0,revealed:S.revealed,goldCells:S.goldCells,ever:S.ever,tabDone:S.tabDone||{},bigRewarded:S.bigRewarded||0,monarchs:S.monarchs||0,travelRoam:!!S.travelRoam,qs:S.qs||{},qDone:S.qDone||{},wx:{k:bwx.k,t:Math.round(bwx.t)}}))}catch(e){}}
 // [15] in a saved box: everything newer, by name (royal colors, requests made, grudges, the Monarch's gifts, the Traveling Merchant's time left)
-const EXTRA_KEYS=['pal','asked','grudge','sir','helper','staff','barrel','sacks','pine','minions','travelT'];
+const EXTRA_KEYS=['pal','asked','grudge','sir','helper','staff','barrel','sacks','pine','minions','travelT','wcoins'];
 const extras=u=>{const o={};EXTRA_KEYS.forEach(k=>{if(u[k])o[k]=k==='travelT'?Math.round(u[k]):u[k]});return o};
 function load(){let d=null;try{d=JSON.parse(localStorage.getItem(KEY))}catch(e){}
  if(d){S.un=d.un||{};S.coins=d.coins||0;S.inv=Object.assign({scroll:0,potion:0,artifact:0,ingot:0},d.inv);S.spent=d.spent||0;S.seen=d.seen||{};S.rewarded=d.rewarded!=null?d.rewarded:Math.floor(ALL_KEYS.filter(k=>S.seen[k]).length/DISCOVER_EVERY)}
