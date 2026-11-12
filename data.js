@@ -379,20 +379,20 @@ const KGOSSIP={
 // What the Knight / Wizard says when back from a date with the Apothecary
 const DATE_GOOD={knight:['What a wonderful evening!','She laughed at all my jokes!'],wizard:['The stars were perfect tonight.','I made the moon glow. She loved it!']};
 const DATE_BAD={knight:['She laughed at my helmet.','I talked about swords for an hour. Too long?'],wizard:['I turned the waiter into a toad. By accident!','She would not stop sniffing my robes.']};
-Object.assign(NAMES,{thief:'A thief!',lemons:'Out of lemons',greenapple:'Green apples (+2 coins)',rumors:'Rumors of goblins (or a dragon)',
+Object.assign(NAMES,{thief:'A thief!',lemons:'Out of lemons',greenapple:'Green apples (+2 coins)',rumors:'Rumors of goblins',drumor:'Rumors of a dragon',
  bear:'Grizzly bear potion (30 s)',kgossip:'Gossip about a Mage',kdate:'A date (1 min)',bees:'Bee swarm!',
  cobrew:'Brewing together (15%: the Alchemist)',boom:'Brewing gone wrong',wdate:'A date (30 s)',imp:'Imp blood for the Apothecary',purplepot:'A purple potion',
  bats:'Bats!'});
-COMP_TABS.forEach(t=>{const add={knight:['thief','lemons','greenapple','rumors','bear','kgossip','kdate','bees'],merchant:['thief','lemons','greenapple','rumors'],
+COMP_TABS.forEach(t=>{const add={knight:['thief','lemons','greenapple','rumors','drumor','bear','kgossip','kdate','bees'],merchant:['thief','lemons','greenapple','rumors','drumor'],
  apothecary:['bear','kgossip','kdate','bees','cobrew','boom','wdate','imp','purplepot','bats'],wizard:['cobrew','boom','wdate','imp','purplepot'],necromancer:['bats']}[t.id];if(add)t.pairs.push(...add)});
-Object.assign(PAIR_WITH,{thief:['knight','merchant'],lemons:['knight','merchant'],greenapple:['knight','merchant'],rumors:['knight','merchant'],
+Object.assign(PAIR_WITH,{thief:['knight','merchant'],lemons:['knight','merchant'],greenapple:['knight','merchant'],rumors:['knight','merchant'],drumor:['knight','merchant'],
  bear:['knight','apothecary'],kgossip:['knight','apothecary'],kdate:['knight','apothecary'],bees:['knight','apothecary'],
  cobrew:['wizard','apothecary'],boom:['wizard','apothecary'],wdate:['wizard','apothecary'],imp:['wizard','apothecary'],purplepot:['wizard','apothecary'],bats:['necromancer','apothecary']});
 Object.assign(DESC,{
  thief:'Knight right of the Fruit Merchant. A hooded thief grabs some fruit. The Knight has opinions about that.',
  lemons:'Knight left of the Fruit Merchant. The Knight wants lemons. A fruit shop with no lemons. Tragic.',
  greenapple:'Fruit Merchant above the Knight. Green apples today! Sour, but the Knight pays 2 coins anyway.',
- rumors:'Fruit Merchant below the Knight. Rumors of goblins (90%) or a dragon (10%). The Knight vows to slay them all.',
+ rumors:'Fruit Merchant below the Knight. Rumors of goblins in the hills. The Knight vows to slay them all.',drumor:'Fruit Merchant below the Knight, now and then: the rumors are not about goblins but about a DRAGON. The Knight vows to slay it.',
  bear:'Knight above the Apothecary. One sip of her potion and he is a grizzly bear for 30 seconds. Rawr.',
  kgossip:'Knight below the Apothecary. They gossip about whichever Mage lives nearby.',
  
@@ -870,7 +870,7 @@ const NOTE={horde:'The Knight dies 5% of the time.',apple:'The Priest slips and 
  cobrew:'15%: the Alchemist is unlocked (once he is, a free potion instead).',pstudy:'5%: a clue (an undiscovered interaction or a secret is revealed).',
  heal:'5%: the farmer stays and sets up a farm nearby.',ntrade:'With the Alchemist next to her, 15%: +1 potion.',bloodorange:'30%: there is one left (+3 coins).',
  tempt:'5%: he does it, and the Priest dies.',betray:'15%: the Rogue is sacrificed and the Necromancer gets a skeleton follower.',kdate:'It goes well 80% of the time.',
- wdate:'It goes well 40% of the time.',crusade:'They come back with 10 coins (70%) or an artifact (30%).',rumors:'15%: rumors of a dragon instead of goblins.',
+ wdate:'It goes well 40% of the time.',crusade:'They come back with 10 coins (70%) or an artifact (30%).',rumors:'Otherwise (15%) it is the dragon rumor, its own entry.',drumor:'15% of the rumor visits.',
  adventure:'Each one back: 15% did not make it; 1-10 coins per Fighter, 15% a scroll per Mage, 5% an artifact per Merchant.',
  dungeon:'Loot: 50 coins 20%, an artifact 10%, 2 scrolls 25%, 3 potions 25%, a clue 20%.',wine:'Sick for 1 minute; 5% fatal.',
  stone:'85% a philosopher\'s stone, 15% the elixir of life (secret).',elixir:'15% of artifacts on the Alchemist.',
@@ -949,7 +949,7 @@ NOTE['grp:market']='2d10 coins at the end.';
 // ---------- Compendium titles: short, professional names shown in bold (TITLES wins over NAMES) ----------
 const TITLES={friend:'Old Friends',learn:'Eldritch Awakening',bolt:'Thunderstruck',chat:'Tales of Old',spar:'Friendly Sparring',zeal:'Zeal',crusade:'Holy Crusade',
  pray:'Shared Prayer',bless:'Holy Water',sermon:'A Short Blessing',tentacle:'Eldritch Tentacles',sleep:'Sleep Spell',dknight:'The Death Knight',horde:'Undead Horde',nchat:'War Stories',
- cleanse:'Cleansing',braver:'Braver Than I',thief:'Stop, Thief!',lemons:'Out of Lemons',greenapple:'Green Apples',rumors:'Rumors',bear:'Grizzly Brew',kgossip:'Mage Gossip',
+ cleanse:'Cleansing',braver:'Braver Than I',thief:'Stop, Thief!',lemons:'Out of Lemons',greenapple:'Green Apples',rumors:'Rumors',drumor:'Here Be Dragons',bear:'Grizzly Brew',kgossip:'Mage Gossip',
  kdate:"A Knight's Date",bees:'Bee Swarm',dungeon:'Dungeon Crawl',rspar:'Star Sparring',drinks:'Drinks and Laughs',wgossip:'Wizard Gossip',haste:'Haste Potions',
  smithk:'Smithing Talk',reforge:'A New Weapon',adventure:'Adventure',
  'prac:shield':'Shield Training','prac:spear':'Spear Drills','prac:glaive':'Glaive Drills','prac:longsword':'Swordplay','prac:axe':'Axe Drills',
@@ -1305,3 +1305,4 @@ const AWAY_LINES_MAX=4,AWAY_LINES={knight:'The Knight practiced with his weapon 
  traveler:'The Traveling Merchant rearranged the wares about {n} times.',bard:'The Bard played about {n} songs for nobody in particular.',goblin:'The Goblin rummaged through his junk about {n} times.',
  dragon:'The Dragon snored about {n} times. The cave shook.',farmer:'The Farmer hoed about {n} rows.',well:'Someone tossed a coin in the Well and made a wish.',tavern:'The Tavern served about {n} ales.',library:'The Library gathered a little more dust.'};
 const AWAY_IDLE=['Nobody noticed you were gone. Mostly.','The kingdom carried on without you, a little bored.','A cat wandered across the whole board and left again.'];
+Object.assign(FLAVOR,{drumor:'"A dragon, I tell you! Big as a barn, breathes fire!" The Knight polishes his sword a little faster.'});HINTS.drumor='Sometimes the merchant\'s rumors are about something much, much bigger.';

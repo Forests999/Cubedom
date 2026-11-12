@@ -1110,7 +1110,7 @@ function dungeonLoot(v){const r=Math.random(),D=ODDS.dungeon;let s;
  else{addCoins(DUNGEON_GOLD,v.x,v.y-50);s='Fifty gold coins!'}
  say(v,'Back from the dungeon! '+s)}
 function arrive(u){u.inv=false;
- if(u.st==='out'){u.st='talk';u.tt=0;u.ev={};u.kind=u.vk;u.sc2=null;u.doom=null;u.ritEnd=null;markSeen(u.vk);return}
+ if(u.st==='out'){u.st='talk';u.tt=0;u.ev={};u.kind=u.vk;u.sc2=null;u.doom=null;u.ritEnd=null;if(u.vk!=='rumors')markSeen(u.vk);return} // (the rumors scene marks its own entry once it knows if it is goblins or the dragon)
  if(u.st==='gather'){u.st='gathered';return} // arrived for the great prayer
  u.tp=false;u.sneak=false;
  // Home from buying poison: he gives the poisoned wine to another free neighbor
@@ -1363,7 +1363,7 @@ function talk(u,dt){
   once('c',2.2,()=>{u.show=null;merchantGain(SELL_GAIN,Mr.x,Mr.y-50);K.mood='hurt';K.mt=1;say(K,'Sour! ...Delicious, actually.')});
   once('d',3.4,()=>{K.mood=Mr.mood='happy';K.mt=Mr.mt=1.2;K.hop=.4})}
  else if(k==='rumors'){const Mr=pp.merchant;// Merchant below the Knight: goblins (90%) or a dragon (10%); the Knight vows to slay them
-  if(!u.sc2){u.sc2=luck(ODDS.dragon,u,h)?RUMOR_DRAGON:RUMOR_GOBLIN;if(u.sc2===RUMOR_GOBLIN)questStat('goblinRumors');else{S.dragonRumor=true;checkUnlocks()}}lines(u.sc2); // (goblin rumors count toward the quest The Rumors are True)
+  if(!u.sc2){u.sc2=luck(ODDS.dragon,u,h)?RUMOR_DRAGON:RUMOR_GOBLIN;if(u.sc2===RUMOR_GOBLIN){markSeen('rumors');questStat('goblinRumors')}else{markSeen('drumor');S.dragonRumor=true;checkUnlocks()}}lines(u.sc2); // (goblin rumors count toward the quest The Rumors are True)
   once('m',.7,()=>{Mr.mood='shock';Mr.mt=1.6});once('k',.6+3*2.3+.1,()=>{gest(K,'up',1.4);K.mood='happy';K.mt=1.6;K.hop=.4})}
  // ---------- Knight + Apothecary ----------
  else if(k==='bear'){end=4.6;const Ap=pp.apothecary;// Knight above the Apothecary: a strength tonic turns him into a grizzly bear
@@ -2118,11 +2118,14 @@ const cellOf=p=>[cl(Math.floor(p.y/CELL),0,ROWS-1),cl(Math.floor(p.x/CELL),0,COL
 let lockTap=null; // a tap on a locked space (buy it on release)
 // While the dragon attacks (until it has breathed its fire and flown off) the board is locked: nothing can be moved, placed or used
 const boardLocked=()=>{if(grp&&grp.kind==='dragon'){toast('The dragon is attacking! Nothing can be moved until it leaves.');return true}return false};
+// Characters in a group event (and the structure a travelling one meets at) stay put until it ends
+const grpBusy=id=>{if(!grp||!(grp.ids.includes(id)||grp.host===id))return false;const v=U[id];toast('The '+(v?CH[idOf(v)].name:'box')+' is busy ('+titleOf('grp:'+grp.kind)+'). It can be moved once that is over.');return true};
 cv.onpointerdown=e=>{if(boardLocked())return;const p=pt(e),[r,c]=cellOf(p),id=at(r,c);lockTap=null;if(!id){if(!isOpen(r,c))lockTap=[r,c];return}if(id==='tree'){toast('The Massive Tree is rooted to the spot. It cannot be moved.');return}if(id==='monarch'&&U[id].dead){toast('The Monarch lies in state. Their box cannot be moved during the funeral.');return}drag={id,sx:e.clientX,sy:e.clientY,moved:false,p};cv.setPointerCapture(e.pointerId)};
 // Shop coin button in the bottom-right of a room
 const onShopCoin=(u,p)=>p.x>=u.c*CELL+64&&p.x<u.c*CELL+CELL&&p.y>=u.r*CELL+64&&p.y<u.r*CELL+CELL;
 cv.onpointermove=e=>{if(!drag)return;const p=pt(e);drag.p=p;
  if(Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>8)drag.moved=true;
+ if(drag.moved&&grpBusy(drag.id)){drag=null;hover=null;return} // (in a group event: can't be dragged; taps still work, e.g. a shop coin)
  hover=drag.moved&&p.inb?cellOf(p):null;tray.classList.toggle('over',drag.moved&&inRect(tray,e))};
 cv.onpointerup=e=>{if(!drag){const p=pt(e);if(lockTap&&p.inb){const[r,c]=cellOf(p);if(r===lockTap[0]&&c===lockTap[1])buyCell(r,c)}lockTap=null;return}
  const d=drag,p=pt(e);drag=null;hover=null;tray.classList.remove('over');
@@ -2134,7 +2137,7 @@ cv.onpointerup=e=>{if(!drag){const p=pt(e);if(lockTap&&p.inb){const[r,c]=cellOf(
   if(u&&deskOn(u)&&onShopCoin(u,p)){writeScroll(u);return}
   if(u&&Math.hypot(p.x-u.x,p.y-(u.y-22))<30){u.hop=.5;u.mood='happy';u.mt=1;gest(u,'up',.6)}return}
  if(inRect(tray,e))sendToShelf(d.id);
- else if(p.inb){const[r,c]=cellOf(p),u=U[d.id];if(!isOpen(r,c))toast('That space is locked. Tap it to buy it.');else if(d.id==='dragon'){const q=dragonSpot(r,c);if(!q)toast('The Dragon needs two open spaces side by side.');else if(q[0]!==u.r||q[1]!==u.c)moveDragon(q)}else if(at(r,c)==='dragon')toast('The Dragon is too big to swap with. Move it instead.');else if(at(r,c)==='tree')toast('The Massive Tree is rooted to the spot. Nothing can swap with it.');else if(r!==u.r||c!==u.c)relocate(d.id,r,c)}
+ else if(p.inb){const[r,c]=cellOf(p),u=U[d.id];if(!isOpen(r,c))toast('That space is locked. Tap it to buy it.');else if(d.id==='dragon'){const q=dragonSpot(r,c);if(!q)toast('The Dragon needs two open spaces side by side.');else if(q[0]!==u.r||q[1]!==u.c)moveDragon(q)}else if(at(r,c)&&at(r,c)!==d.id&&grpBusy(at(r,c))){}else if(at(r,c)==='dragon')toast('The Dragon is too big to swap with. Move it instead.');else if(at(r,c)==='tree')toast('The Massive Tree is rooted to the spot. Nothing can swap with it.');else if(r!==u.r||c!==u.c)relocate(d.id,r,c)}
  save()};
 // Dragging a box back onto the shelf costs REMOVE_COST coins (asks first)
 function sendToShelf(id){const u=U[id];if(!u)return;
@@ -2239,10 +2242,14 @@ function visitPct(k){const g=VISIT_GROUP.find(e=>e[1]===k);if(g)return(1-HANGOUT
  const w=sceneWhere(k)[0];if(!w)return null;const l=pairListIds(w.a,w.b,w.rels[0]),i=l.findIndex(e=>e[0]===k);return i<0?null:(1-HANGOUT)*listChances(l)[i]}
 const wxPct=k=>{const ks=Object.keys(WEATHER_TIERS),l=ks.map(x=>[x,WEATHER_TIERS[x]]);return listChances(l)[ks.indexOf(k)]};
 // The % shown on a tile (null = keep the tile's own label)
-function pctOf(k){if(k.startsWith('wx:'))return wxPct(k.slice(3));const ip=idlePct(k);if(ip!=null)return ip;return visitPct(k)}
+// Sub-outcomes of one visit scene that have their own entry: [the scene, its share] (the dragon rumor is 15% of the rumor visits; the goblin one gets the rest)
+const SUB_PCT={drumor:['rumors',()=>ODDS.dragon]};
+function pctOf(k){if(k.startsWith('wx:'))return wxPct(k.slice(3));const ip=idlePct(k);if(ip!=null)return ip;
+ if(SUB_PCT[k]){const b=visitPct(SUB_PCT[k][0]);return b==null?null:b*SUB_PCT[k][1]()}const par=Object.values(SUB_PCT).find(v=>v[0]===k);const vp=visitPct(k);return par&&vp!=null?vp*(1-par[1]()):vp}
 // "Necromancer right of the Knight", "Blacksmith and Druid, any side", ...
 function whereText(k){const g={massprayer:'A Priest whose four neighbors are all free',fourmage:'The Alchemist with Mages on all four sides',adventure:'The Blacksmith with 2 or more Fighter neighbors at home'}[k];if(g)return g;
  if(k==='drain')return 'Necromancer on the bottom row, the Druid beside him';
+ if(SUB_PCT[k])return whereText(SUB_PCT[k][0]); // (a sub-outcome happens where its scene happens)
  const any=VISIT_ANY.find(e=>e[2]===k);if(any)return CNAME(any[0])+' and '+(any[1]==='anyone'?'any neighbor':any[1].startsWith('tag:')?'any '+CNAME(any[1]):'the '+CNAME(any[1]))+', any side';
  const w=sceneWhere(k)[0];if(!w)return null;const rs=w.rels,ph=rs.length===4?'any side of':rs.length===2&&rs.includes('left')&&rs.includes('right')?'left or right of':rs.length===2&&rs.includes('above')&&rs.includes('below')?'above or below':rs.map(r=>r==='left'||r==='right'?r+' of':r).join(' or ');
  return rs.length===4?CNAME(w.a)+' and the '+CNAME(w.b)+', any side':CNAME(w.a)+' '+ph+' the '+CNAME(w.b)}
@@ -2319,7 +2326,7 @@ const PD={study:['wizard','right'],gossip:['wizard','left'],undead:['wizard','be
  crusade:['knight','above'],cleanse:['necromancer','left'],apple:['merchant','left'],slip:['merchant','left'],feast:['merchant','left'],
  fruitfall:['merchant','below'],starfruit:['merchant','below'],curse:['merchant','above'],
  apgift:['merchant','left','apothecary'],mtrade:['apothecary','left','merchant'],goldapple:['merchant','above','apothecary'],business:['merchant','below','apothecary'],
- thief:['merchant','right','knight'],lemons:['merchant','left','knight'],greenapple:['knight','above','merchant'],rumors:['knight','below','merchant'],
+ thief:['merchant','right','knight'],lemons:['merchant','left','knight'],greenapple:['knight','above','merchant'],rumors:['knight','below','merchant'],drumor:['knight','below','merchant'],
  bear:['apothecary','above','knight'],kgossip:['apothecary','below','knight'],kdate:['apothecary','right','knight'],bees:['apothecary','left','knight'],
  cobrew:['apothecary','right','wizard'],boom:['apothecary','left','wizard'],wdate:['apothecary','below','wizard'],imp:['apothecary','above','wizard'],purplepot:['apothecary','above','wizard'],
  bats:['apothecary','above','necromancer'],
@@ -2387,6 +2394,7 @@ function pairDiagram(k){
  if(k==='lemons'){pp='fwd';pm='hurt';op='both';dots(p[0]+36,p[1]+34)}
  if(k==='greenapple'){pp='fwd';om='hurt'}
  if(k==='rumors'){pp='fwd';om='happy';op='up';dots(p[0]+36,p[1]+34)}
+ if(k==='drumor'){pp='both';om='happy';op='up';pm='shock';drawDragonFly(x,p[0]+48,p[1]+22,1,1,false,.3)} // the dragon rumor: a tiny dragon over their heads
  if(k==='bear'){pp='fwd';od='bear';om='mad';pm='shock'}
  if(k==='kgossip'){pp=op='fwd';dots(p[0]+36,p[1]+34);dots(q[0]+36,q[1]+34)}
  if(k==='kdate'||k==='wdate'){pm=om='happy';heart(x,96,30);heart(x,v?48:96,v?96:20)}
@@ -2768,7 +2776,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
   spirits:[I('spirits'),NE.spirits],candles:[I('candles'),NE.candles],lightning:[I('lightning'),NE.lightning],raise:[I('raise'),NE.raise],
   mcust:[I('mcust'),MR.customer],acust:[I('acust'),AP.customer],
   braver:[I('braver'),'5% any side'],goldapple:[P('goldapple'),pv],business:[P('business'),pv],wave:[I('wave'),ODDS.wave],
-  thief:[P('thief'),pv],lemons:[P('lemons'),pv],greenapple:[P('greenapple'),pv],rumors:[P('rumors'),pv],
+  thief:[P('thief'),pv],lemons:[P('lemons'),pv],greenapple:[P('greenapple'),pv],rumors:[P('rumors'),pv*(1-ODDS.dragon)],drumor:[P('drumor'),pv*ODDS.dragon],
   bear:[P('bear'),pv],kgossip:[P('kgossip'),pv],kdate:[P('kdate'),pv],bees:[P('bees'),pv],
   plant:[P('plant'),pv],pstudy:[P('pstudy'),pv],psleep:[P('psleep'),pv],heal:[P('heal'),pv],funeral:[I('funeral'),'Fighter dies'],
   sacrifice:[P('sacrifice'),pv],chant:[P('chant'),pv],bloodorange:[P('bloodorange'),pv*ODDS.bloodorange],nrot:[P('nrot'),pv],ntrade:[P('ntrade'),pv],ritual:[P('ritual'),pv],
@@ -2932,7 +2940,7 @@ function load(){let d=null;try{d=JSON.parse(localStorage.getItem(KEY))}catch(e){
  if(d){S.un=d.un||{};S.coins=d.coins||0;S.inv=Object.assign({scroll:0,potion:0,artifact:0,ingot:0},d.inv);S.spent=d.spent||0;S.seen=d.seen||{};S.rewarded=d.rewarded!=null?d.rewarded:Math.floor(ALL_KEYS.filter(k=>S.seen[k]).length/DISCOVER_EVERY)}
  // Bought board spaces. An older save made before spaces were locked: any space that already holds a box stays open, free.
  S.cells=(d&&d.cells)||[];S.bought=(d&&d.bought)||0;S.revealed=(d&&d.revealed)||{};S.goldCells=(d&&d.goldCells)||(d&&d.goldCell?[d.goldCell]:[]);S.ever=(d&&d.ever)||{};S.tabDone=(d&&d.tabDone)||{};S.bigRewarded=(d&&d.bigRewarded)||0;S.travelRoam=!!(d&&d.travelRoam);
- S.qs=(d&&d.qs)||{};S.qDone=(d&&d.qDone)||{};S.elvenScroll=!!(d&&d.elvenScroll);S.goldBorder=!!(d&&d.goldBorder);S.bardMon=!!(d&&d.bardMon);S.dragonRumor=!!(d&&d.dragonRumor);S.dragonReady=!!(d&&d.dragonReady);S.dragonSlain=!!(d&&(d.dragonSlain||(d.un&&d.un.dragon)||(d.ever&&d.ever.dragon)));S.dragonHP=d&&d.dragonHP!=null?d.dragonHP:DRAGON_HP;S.daily=(d&&d.daily)||null;S.qShown=(d&&d.qShown)||{};S.renownBonus=(d&&d.renownBonus)||0;S.renownOff=!!(d&&d.renownOff);S.maxSeen=(d&&d.maxSeen)||0;S.playT=(d&&d.playT)||0;S.awayAt=d&&d.awayAt!=null?d.awayAt:null;showBorder();if(d&&d.wx&&BOARD_WX[d.wx.k])bwx={k:d.wx.k,t:d.wx.t||0};showWx(); // quests; the board's weather
+ S.qs=(d&&d.qs)||{};S.qDone=(d&&d.qDone)||{};S.elvenScroll=!!(d&&d.elvenScroll);S.goldBorder=!!(d&&d.goldBorder);S.bardMon=!!(d&&d.bardMon);S.dragonRumor=!!(d&&d.dragonRumor);S.dragonReady=!!(d&&d.dragonReady);if(S.dragonRumor)S.seen.drumor=1;S.dragonSlain=!!(d&&(d.dragonSlain||(d.un&&d.un.dragon)||(d.ever&&d.ever.dragon)));S.dragonHP=d&&d.dragonHP!=null?d.dragonHP:DRAGON_HP;S.daily=(d&&d.daily)||null;S.qShown=(d&&d.qShown)||{};S.renownBonus=(d&&d.renownBonus)||0;S.renownOff=!!(d&&d.renownOff);S.maxSeen=(d&&d.maxSeen)||0;S.playT=(d&&d.playT)||0;S.awayAt=d&&d.awayAt!=null?d.awayAt:null;showBorder();if(d&&d.wx&&BOARD_WX[d.wx.k])bwx={k:d.wx.k,t:d.wx.t||0};showWx(); // quests; the board's weather
  S.monarchs=d&&d.monarchs!=null?d.monarchs:d&&d.boxes&&d.boxes.monarch?1:0; // (an older save with a Monarch on the board: that one was the free one)
  if(d&&d.boxes&&!d.cells)for(const i in d.boxes){const q=d.boxes[i],k=q[0]+','+q[1];if(!isOpen(q[0],q[1]))S.cells.push(k)}
  showCoins();showItems();checkUnlocks();
