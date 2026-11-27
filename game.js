@@ -260,7 +260,7 @@ const graveyardOn=u=>!!u&&u.id==='rogue'&&u.r===ROWS-1&&!!U.necromancer&&U.necro
 // Potion on the Alchemist: for ALC_LUCK_TIME his neighbors' rarest scene chances are 30% higher (ALC_LUCK)
 const lucky=u=>!!u&&Object.values(U).some(a=>idOf(a)==='alchemist'&&a.luckT>0&&(a===u||rel(a,u)));
 const luck=(p,u,h)=>Math.random()<p*(lucky(u)||lucky(h)?1+ALC_LUCK:1);
-const nbrs=u=>[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filter(h=>freeU(h)&&h.id!=='traveler'&&h!==u); // (the Dragon: freeU is false for now, it has no scenes yet) // nobody visits the Traveling Merchant
+const nbrs=u=>[[0,1],[0,-1],[1,0],[-1,0]].map(d=>U[at(u.r+d[0],u.c+d[1])]).filter(h=>freeU(h)&&h.id!=='traveler'&&h!==u); // (the Dragon: freeU is false, its neighbors come to it through structIdle instead) // nobody visits the Traveling Merchant
 // ---------- the Druid's Overgrowth on board spaces ----------
 // Which effect is on a space right now (or null); wxOf(u) = the one on u's own space (only Overgrowth now, which is looks only)
 const weatherAt=(r,c)=>{const w=weathers.find(q=>q.r===r&&q.c===c&&q.t<WEATHER_TIME);return w?w.k:null};
@@ -910,7 +910,7 @@ function useItem(kind,r,c){
  if(kind==='potion'){const z=Object.values(U).find(v=>v.st==='sleep'&&cellX(v)===c&&cellY(v)===r);if(z){S.inv.potion--;showItems();save();poof(z.x,z.y-24,'#c890ff');wakeUnit(z);return}}
  const home=u&&u.form!=='dknight'&&u.form!=='bear'&&!u.target&&!u.hosting&&cellX(u)===u.c&&cellY(u)===u.r&&(u.st==='idle'||u.st==='walk'||(u.st==='act'&&!busy.includes(u.act)));
  // A spell scroll on the buried Druid's space revives him; nothing else works on him while he is buried
- if(isStruct(u)||u.id==='dragon'){no();return} // items do nothing on a structure (or on the Dragon, for now)
+ if(isStruct(u)||u.id==='dragon'){no();return} // items do nothing on a structure or on the Dragon
  if(u&&u.dead){if(kind!=='scroll'){no();return}S.inv.scroll--;showItems();revive(u);markSeen('drevive');save();return}
  const fx=u&&(ITEM_FX[kind][u.id]||ITEM_FX[kind]['*']); // '*' = works on anyone (the ingot)
  if(!fx||!(home||(kind==='ingot'&&u&&!u.dead&&u.st!=='away'))){no();return} // an ingot works even when the owner is busy or out (not away from the board)
@@ -1982,7 +1982,7 @@ function step(dt){
  refreshTags();
  stepWeather(dt);stepBoardWx(dt);stepEcon(dt);stepGoblinBard(dt);autoSave(dt);stepRoyal(dt);stepTraveler(dt);if(U.dragon&&!U.dragon.hosting)U.dragon.wake=0;if(S.dragonRest&&!dragonResting()){S.dragonRest=0;ui();toast('The Dragon has rested. Its box is ready on the shelf again.')}stepGroup(dt);
  for(const id in U){const u=U[id];
-  if(u.dead||isStruct(u)||u.id==='dragon')continue; // (the Dragon has no idles or scenes yet) a buried Druid does nothing at all; nor does a structure
+  if(u.dead||isStruct(u)||u.id==='dragon')continue; // a buried Druid does nothing at all; nor does a structure, or the Dragon (it never decides anything: its neighbors come to it)
   if(u.id==='druid'&&!u.pet)u.pet={kind:u.fam||'bear',x:u.x,y:u.y,face:1}; // his animal: grizzly bear, eagle or wolf
   if(u.mt>0&&(u.mt-=dt)<=0)u.mood='ok';
   if(u.hop>(u.hp||0)+1e-4)u.hd=u.hop;if(u.hop>0)u.hop-=dt;u.hp=u.hop;if(u.blink>0)u.blink-=dt;if(u.gt>0)u.gt-=dt;if(u.ward!=null)u.ward+=dt;if(u.wardHit>0)u.wardHit-=dt;
@@ -2251,7 +2251,7 @@ function buildShelf(){
  });
  ui();
 }
-// Consumables: infinite use for now. Drag onto a room; its owner must be at home.
+// Items (a counted inventory, S.inv): drag one onto a room; its owner must be at home.
 ITEMS.forEach(kind=>{
  const b=document.createElement('button');b.className='it item';b.dataset.item=kind;b.innerHTML='<canvas width="96" height="96"></canvas><span></span>';
  const t=b.firstChild.getContext('2d');t.imageSmoothingEnabled=false;t.fillStyle='#221e3c';t.fillRect(0,0,96,96);drawItem(t,kind,48,48,5);
@@ -2292,7 +2292,7 @@ const CNAME=id=>id==='anyone'?'anyone':TAG_NAMES[id]?TAG_NAMES[id].slice(2):((CO
 const IDLE_COND={nbr:'with a free neighbor',noRight:'with no box to his right',eknight:'only as the Eldritch Knight, with a Wizard on the board',brew:'next to a Merchant, while you have 5 coins',
  target:'with someone free on the board',alc:'next to the Alchemist',madsci:'the mad scientist (bottom-right space)',others:'with someone to copy',mageTag:'with the Mage tag',
  spirit:'with all four spaces around him open and empty'};
-const fakeU=id=>id==='madalc'?{id:'alchemist',r:ROWS-1,c:COLS-1}:({id,r:-9,c:-9}); // (madalc: a stand-in for a Monstrous neighbor, the mad Alchemist)
+const fakeU=id=>({id,r:-9,c:-9}); // a stand-in unit (off the board) for drawing and tag checks
 // Which character's idle list has key k, and its entry
 function idleEntry(k){if(k.startsWith('prac:'))k='prac';for(const id in IDLES){const e=IDLES[id].find(x=>x[0]===k);if(e)return[id,e]}const e=IDLE_ANY.find(x=>x[0]===k);return e?['anyone',e]:null}
 // % of an idle activity (commons share what the character's whole list leaves)

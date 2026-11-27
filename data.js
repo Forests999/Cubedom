@@ -67,7 +67,7 @@ const TAG_ICON={ // 7x7 pixel icons: [x,y,w,h,color]
  mage:[[3,0,1,7,'#c890ff'],[0,3,7,1,'#c890ff'],[2,2,3,3,'#f0e0ff'],[1,1,1,1,'#c890ff'],[5,1,1,1,'#c890ff'],[1,5,1,1,'#c890ff'],[5,5,1,1,'#c890ff']]};
 // Character boxes on the shelf. The Necromancer only appears once unlocked (see ODDS.necro).
 const SHELF_CHARS=['knight','wizard','priest'];
-const ITEMS=['scroll','potion','artifact']; // consumables: a counted inventory, earned in the game (artifacts are used later; for now only the Priest easter egg)
+const ITEMS=['scroll','potion','artifact']; // items: a counted inventory (S.inv), earned in the game; the ingot is added further down
 
 // Left/right: the Wizard always uses his portals; everyone else walks through the side door.
 // Up/down: each ROOM's own stairs. Leave by your room's exit and arrive by the other room's exit.
@@ -652,9 +652,6 @@ CH.druid_arch=Object.assign({},CH.druid,{name:'Archdruid',p:[...CH.druid.p,[4,0,
 // Blacksmith and Druid (any side): metal is SO uncomfortable. The Blacksmith rolls his eyes.
 PAIRS['blacksmith>druid']=SIDES('metalitch');
 const METALITCH=[['druid','How do you wear metal all day?'],['druid','It is cold. It pinches. It clanks!'],['druid','Bark and leaves breathe, you know.'],['blacksmith','...Bark. Right.']];
-// Werewolf (a sprite; no longer used by the Druid's weather)
-const WWC={body:'#5a5a66',bodyD:'#46464f',pants:'#3a3040',boot:'#2a2a30',belt:'#3a3040',skin:'#6a6a76',skinD:'#55555f'};
-CH.werewolf={name:'Werewolf',eye:'#ff3030',a:arms(WWC),p:[...B(WWC),[4,1,2,3,'#46464f'],[10,1,2,3,'#46464f'],[9,6,4,3,'#7a7a86'],[12,6,1,1,O],[6,9,1,1,'#f0ead0'],[10,9,1,1,'#f0ead0'],[5,10,6,2,'#7a7a86']]};
 Object.assign(NAMES,{metalitch:'Metal is uncomfortable',archdruid:'Artifact on Druid: the Archdruid',ddiscount:'Secret: herbal discount','wx:overgrowth':'Overgrowth','wx:shift':'Changing the weather'});
 EGGS.push('ddiscount');
 {const dt=COMP_TABS.find(t=>t.id==='druid');dt.pairs.push('metalitch');dt.idle.push(...Object.keys(WX_NAMES).map(k=>'wx:'+k));dt.items.splice(3,0,'archdruid');dt.items.push('ddiscount');

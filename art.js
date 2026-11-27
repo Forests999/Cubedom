@@ -742,21 +742,10 @@ function drawEagle(c,x,y,face,t,perch,a){const up=!perch&&Math.floor(t*6)%2;c.sa
 // The jester juggling three balls in the throne room
 function drawJester(c,bx,by,t){const x=bx+17,y=by+FY,hop=Math.round(Math.abs(Math.sin(t*3))*2);spr(c,'joker','happy',x,y-hop,1,0,1,.8,'both');
  ['#d03030','#3a6ad0','#f2d040'].forEach((col,i)=>{const an=(t*1.7+i/3)*Math.PI*2,px=Math.round(x+1+Math.cos(an)*7),py=Math.round(y-hop-40+Math.sin(an)*6);c.fillStyle=O;c.fillRect(px-2,py-2,4,4);c.fillStyle=col;c.fillRect(px-1,py-1,2,2)})}
-// The Druid's weather on a board space (k = kind, t = time since it began, a = strength 0..1 for fading in and out)
-function drawWeather(c,bx,by,k,t,a){if(a<=0)return;c.save();c.beginPath();c.rect(bx+2,by+2,CELL-4,CELL-4);c.clip();const P=(n,f)=>{for(let i=0;i<n;i++)f(i)};
- if(k==='blizzard'){c.fillStyle='rgba(210,230,255,'+(.3*a)+')';c.fillRect(bx,by,CELL,CELL);c.fillStyle='rgba(255,255,255,'+a+')';P(22,i=>c.fillRect(Math.round(bx+((i*37+t*30)%96)),Math.round(by+((t*40+i*29)%96)),2,2))}
- if(k==='sandstorm'){c.fillStyle='rgba(210,165,90,'+(.55*a)+')';c.fillRect(bx,by,CELL,CELL);P(24,i=>{c.fillStyle=i%2?'rgba(250,225,170,'+a+')':'rgba(160,115,55,'+a+')';c.fillRect(Math.round(bx+((t*120+i*53)%140)-24),Math.round(by+6+((i*29)%88)),12+(i%3)*4,2)})}
- if(k==='sunshine'){c.fillStyle='rgba(255,220,120,'+(.2*a)+')';c.fillRect(bx,by,CELL,CELL);c.fillStyle='rgba(255,240,170,'+(.35*a)+')';P(4,i=>{const s=Math.round(4+i*16+Math.sin(t*1.5+i)*3);c.fillRect(bx+s,by+2,6,90)});
-  c.fillStyle='rgba(255,250,210,'+a+')';P(6,i=>{if((Math.floor(t*4)+i)%3)return;c.fillRect(bx+8+((i*31)%80),by+10+((i*19+Math.floor(t))%70),2,2)})}
- if(k==='rain')drawRain(c,bx,by,t,a);
+// The Druid's Overgrowth on a board space (k = kind, t = time since it began, a = strength 0..1 for fading in and out)
+function drawWeather(c,bx,by,k,t,a){if(a<=0)return;c.save();c.beginPath();c.rect(bx+2,by+2,CELL-4,CELL-4);c.clip();
  if(k==='overgrowth'){c.globalAlpha=a;const g=cl(t/3,0,1);for(let i=0;i<24;i++){const side=i%4,q=Math.floor(i/4)*16+6,px=side===0?bx+3+q:side===1?bx+3+q:side===2?bx+3:bx+87,py=side===0?by+3:side===1?by+87:side===2?by+3+q:by+3+q;
    if(i/24>g)continue;const pk=(i+Math.floor(i/4))%2===0,pt=pk?'#f080b0':'#f8e070',ct=pk?'#f8e070':'#e08a20';c.fillStyle='#3a9a3a';c.fillRect(px+2,py+3,1,3);c.fillStyle=pt;c.fillRect(px+1,py,4,4);c.fillRect(px,py+1,6,2);c.fillStyle=ct;c.fillRect(px+2,py+1,2,2)}} // pink and yellow flowers (petals, center, a bit of stem)
- if(k==='moonlight'){c.fillStyle='rgba(8,4,20,'+(.6*a)+')';c.fillRect(bx,by,CELL,CELL);const gr=c.createRadialGradient(bx+48,by+40,4,bx+48,by+40,52);gr.addColorStop(0,'rgba(255,180,220,'+(.35*a)+')');gr.addColorStop(1,'rgba(255,180,220,0)');c.fillStyle=gr;c.fillRect(bx,by,CELL,CELL);
-  c.fillStyle='rgba(255,220,240,'+a+')';c.fillRect(bx+70,by+28,8,8);c.fillRect(bx+69,by+30,10,4);c.fillRect(bx+72,by+27,4,10);P(5,i=>{if((Math.floor(t*2)+i)%4)return;c.fillRect(bx+10+((i*29)%76),by+30+((i*17)%40),1,1)})}
- if(k==='decay'){c.fillStyle='rgba(90,90,30,'+(.3*a)+')';c.fillRect(bx,by,CELL,CELL);c.globalAlpha=a;c.fillStyle='#e8a0a8';[[14,86],[34,90],[58,84],[78,89]].forEach((q,i)=>{const w=Math.round(Math.sin(t*4+i)*2);c.fillRect(bx+q[0]+w,by+q[1],4,1);c.fillRect(bx+q[0]+w+3,by+q[1]-1,2,1)});
-  c.fillStyle='#1a1a1a';P(6,i=>c.fillRect(Math.round(bx+48+Math.sin(t*5+i*1.7)*30+Math.sin(t*13+i)*3),Math.round(by+50+Math.cos(t*4+i*2.3)*24),2,1))}
- if(k==='infest'){c.fillStyle='rgba(120,140,40,'+(.25*a)+')';c.fillRect(bx,by,CELL,CELL);c.globalAlpha=a;P(26,i=>{const px=Math.round(bx+48+Math.sin(t*3.3+i*1.3)*40+Math.sin(t*11+i)*3),py=Math.round(by+48+Math.cos(t*2.7+i*2.1)*38),up=Math.floor(t*14+i)%2;
-  c.fillStyle='#4a5a1a';c.fillRect(px,py,3,2);c.fillStyle='#c8d080';c.fillRect(px+(up?0:1),py-(up?1:0),2,1)})}
  c.restore()}
 // The buried Druid: a mound of earth with a sapling growing out of it (bx,by = room's top-left)
 function drawMound(c,bx,by,t){const x=bx+48,y=by+84;c.fillStyle=O;c.fillRect(x-17,y-7,34,8);c.fillStyle='#5a4024';c.fillRect(x-16,y-6,32,6);c.fillRect(x-12,y-8,24,3);c.fillStyle='#6a5030';c.fillRect(x-10,y-7,6,1);
@@ -777,8 +766,6 @@ function drawBoardWx(c,k,t){if(k!=='rainy'&&k!=='fae')return;const W2=c.canvas.w
    for(let j=0;j<36;j+=2)c.fillRect(Math.round(x0+j),Math.round(y0+Math.sin((x0+j)/18+i)*6),2,2)}
   c.fillStyle='rgba(255,220,245,.55)';for(let i=0;i<18;i++){if(Math.floor(t*3+i)%4)continue;c.fillRect(Math.round(((i*151+t*25)%W2)),Math.round((i*89+Math.sin(t+i)*10)%H2),2,2)}}
  c.restore()}
-function drawRain(c,bx,by,t,a){c.save();c.beginPath();c.rect(bx+2,by+2,CELL-4,CELL-4);c.clip();c.fillStyle='rgba(40,50,80,'+(.35*a)+')';c.fillRect(bx,by,CELL,CELL);
- c.fillStyle='rgba(170,200,255,'+(.8*a)+')';for(let i=0;i<22;i++){const px=bx+((i*37+Math.floor(t*40)*7)%92),py=by+((t*160+i*41)%96);c.fillRect(Math.round(px),Math.round(py),1,5)}c.restore()}
 // Leaves blowing around (Druid's weather magic)
 function drawLeaves(c,x,y,t){for(let i=0;i<8;i++){const an=t*3+i*.8,r=14+(i%3)*5;c.fillStyle=i%2?'#6aba4a':'#c8a040';c.fillRect(Math.round(x+Math.cos(an)*r*1.3),Math.round(y-26+Math.sin(an*1.3)*r*.7),2,2)}}
 // Deer and a bird for the Druid's animal friends
@@ -1171,7 +1158,7 @@ function drawDragonLair(c,x,y,t,wk){x=Math.round(x);y=Math.round(y);if(!LAIR_BG)
 // and ONE outline around the whole silhouette (so the parts read as one creature), then the face details.
 const DRAGON_REST=[];
 function dragonRestLayer(br){const cv=document.createElement('canvas');cv.width=192;cv.height=96;const c=cv.getContext('2d');c.translate(-12,0); // (drawn 12 px further left, so the head has room)
- const R='#a82a22',RD='#741a14',RL='#cc4434',HORN='#e8dcc0',HORND='#a89474',BELLY='#d8955a',BELLYD='#a8683a',MEM='#86221c',MEMD='#5e1610',BONE='#4a100c';
+ const R='#a82a22',RD='#741a14',RL='#cc4434',HORN='#e8dcc0',HORND='#a89474',MEM='#86221c',MEMD='#5e1610',BONE='#4a100c';
  const E=(x,y,rx,ry,col)=>pxEll(c,x,y,rx,ry,col);
  // a part, shaded: dark underneath, the body color, a lit top (light from the top-left)
  const P=(x,y,rx,ry)=>{E(x,y,rx,ry,RD);E(x-rx*.04,y-ry*.18,rx*.96,ry*.8,R);E(x-rx*.2,y-ry*.5,rx*.62,ry*.32,RL)};
