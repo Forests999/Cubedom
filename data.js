@@ -1179,7 +1179,11 @@ const DAILY_COUNT=3,DAILY_QUESTS=[
  {id:'blink',name:'Blink and You\'ll Miss It',text:'Have a rare event happen (a chance of 5% or less).',stat:'rare',goal:1,reward:{coins:15},avail:()=>true},
  {id:'missed',name:'They Will Be Missed',text:'Have a character die.',stat:'deaths',goal:1,reward:{coins:5},avail:()=>true},
  {id:'lore',name:'Lore Gatherer',text:'Discover 10 new interactions in the Compendium.',stat:'discover',goal:10,reward:{reveal:1},avail:()=>undiscoveredScenes().length>=10},
- {id:'marketday',name:'Market Day',text:'Have a market day.',stat:'markets',goal:1,reward:{coins:30},avail:()=>unlockedChars().filter(id=>hasClass({id},'merchant')).length>=4}];
+ {id:'marketday',name:'Market Day',text:'Have a market day.',stat:'markets',goal:1,reward:{coins:30},avail:()=>unlockedChars().filter(id=>hasClass({id},'merchant')).length>=4},
+ {id:'powerup',name:'Power Up!',text:'Upgrade the room of a character or building.',stat:'upgrades',goal:1,reward:{ingot:2},avail:()=>true},
+ {id:'wishing',name:'Wishing Well',text:'Have characters visit the Well 10 times.',stat:'wellVisits',goal:10,reward:{coins:10},avail:()=>true},
+ {id:'moveover',name:'Move Over',text:'Send a character or building back to the shelf.',stat:'shelved',goal:1,reward:{potion:1},avail:()=>true},
+ {id:'community',name:'Community',text:'Have 5 group events happen.',stat:'groups',goal:5,reward:{renown:1},avail:()=>unlockedChars().length>=3}];
 const ITEM_WORD={scroll:['spell scroll','spell scrolls'],potion:['potion','potions'],artifact:['artifact','artifacts'],ingot:['ingot','ingots']}; // for quest rewards (one, several)
 
 // ---------- the Druid's casts (instead of a visit; WEATHER_TIERS above, castOk / castFx in game.js) ----------

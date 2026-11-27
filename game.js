@@ -238,7 +238,7 @@ function endGroup(done){if(!grp)return;const g0=grp;grp=null;if(g0.kind==='drago
  if(done&&g0.kind==='feast')toast('The feast is over. Everyone heads home happy and full.');
  if(g0.kind==='goblins')raidEnd(g0,done)}
 function stepGroup(dt){grpClock+=dt;stepPlague(dt);
- if(grpClock>=GROUP_EVERY){let go=false;if(!grp&&!rf&&Math.random()<ODDS.group){const o=groupOptions();if(o.length){const p=pick(o);if(p.kind==='plague')startPlague(p);else if(p.host)startTravelGroup(p);else startGroup(p);go=true}}grpClock=go?0:GROUP_EVERY-5} // (if nobody is ready right then, it tries again every 5 seconds)
+ if(grpClock>=GROUP_EVERY){let go=false;if(!grp&&!rf&&Math.random()<ODDS.group){const o=groupOptions();if(o.length){const p=pick(o);if(p.kind==='plague')startPlague(p);else if(p.host)startTravelGroup(p);else startGroup(p);go=true;questStat('groups')}}grpClock=go?0:GROUP_EVERY-5} // (if nobody is ready right then, it tries again every 5 seconds)
  if(!grp)return;grp.t+=dt;if(grp.kind==='dragon'){stepDragon(dt);return}if(TRAVEL_GRP[grp.kind]){stepTravelGroup(dt);return}
  // it stops early if a character is gone, moved, or pulled away (a funeral, for example)
  if(grp.ids.some((id,i)=>{const v=U[id];return !v||v.st!=='grp'||v.r!==grp.pos[i][0]||v.c!==grp.pos[i][1]})){endGroup(false);return}
@@ -1207,7 +1207,8 @@ function dungeonLoot(v){const r=Math.random(),D=ODDS.dungeon;let s;
  else{addCoins(DUNGEON_GOLD,v.x,v.y-50);s='Fifty gold coins!'}
  say(v,'Back from the dungeon! '+s)}
 function arrive(u){u.inv=false;
- if(u.st==='out'){catchPlague(u,U[u.target]);u.st='talk';u.tt=0;u.ev={};u.kind=u.vk;u.sc2=null;u.doom=null;u.ritEnd=null;if(u.vk!=='rumors')markSeen(u.vk);return} // (the rumors scene marks its own entry once it knows if it is goblins or the dragon)
+ if(u.st==='out'){catchPlague(u,U[u.target]);if(U[u.target]&&U[u.target].id==='well')questStat('wellVisits'); // (quest: Wishing Well)
+ u.st='talk';u.tt=0;u.ev={};u.kind=u.vk;u.sc2=null;u.doom=null;u.ritEnd=null;if(u.vk!=='rumors')markSeen(u.vk);return} // (the rumors scene marks its own entry once it knows if it is goblins or the dragon)
  if(u.st==='gather'){u.st='gathered';return} // arrived for the great prayer
  u.tp=false;u.sneak=false;
  // Home from buying poison: he gives the poisoned wine to another free neighbor
@@ -2290,9 +2291,9 @@ cv.onpointerup=e=>{if(!drag){const p=pt(e);if(lockTap&&p.inb){const[r,c]=cellOf(
 // Dragging a box back onto the shelf costs REMOVE_COST coins (asks first)
 function sendToShelf(id){const u=U[id];if(!u)return;
  if(isFarm(id)){toast('The Farmer is only here for the harvest. Farmers cannot go on the shelf.');return}
- if(isStruct(u)){removeUnit(id);buildShelf();save();return} // structures go back to the shelf for free
+ if(isStruct(u)){removeUnit(id);buildShelf();questStat('shelved');save();return} // structures go back to the shelf for free (quest: Move Over)
  if((S.coins||0)<REMOVE_COST){toast('Moving a box back to the shelf costs '+REMOVE_COST+' coins. You have '+(S.coins||0)+'.');return}
- ask('Move the '+CH[u.id].name+' back to the shelf for '+REMOVE_COST+' coins?','Pay '+REMOVE_COST,()=>{if(!U[id]||S.coins<REMOVE_COST)return;spend(REMOVE_COST);showCoins();removeUnit(id);if(id==='traveler')S.travelRoam=false;buildShelf();save()})}
+ ask('Move the '+CH[u.id].name+' back to the shelf for '+REMOVE_COST+' coins?','Pay '+REMOVE_COST,()=>{if(!U[id]||S.coins<REMOVE_COST)return;spend(REMOVE_COST);showCoins();removeUnit(id);if(id==='traveler')S.travelRoam=false;buildShelf();questStat('shelved');save()})}
 cv.onpointercancel=()=>{drag=null;hover=null;tray.classList.remove('over')};
 const gh=$('#ghost'),gx=gh.getContext('2d');
 function firstFree(){for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isOpen(r,c)&&!at(r,c))return[r,c]}
@@ -2352,7 +2353,8 @@ function askUpgrade(id){const nm=CH[id]?CH[id].name:'box';
  if(!UPGRADES[id]){toast(isFarm(id)||id==='tree'?'The '+nm+' is only here for a little while. It cannot be upgraded.':'Upgrades for the '+nm+' come in a later update.');return}
  const n=lvl(id)+1;if(n>2){toast('The '+nm+'\'s room is fully upgraded.');return}if(n>UPGRADE_MAX){toast('Level '+n+' upgrades come in a later update.');return}
  const cost=UPGRADE_COST[n];if((S.coins||0)<cost){toast('Upgrading the '+nm+'\'s room to level '+n+' costs '+cost+' coins. You have '+(S.coins||0)+'.');return}
- ask('Upgrade the '+nm+'\'s room to level '+n+' for '+cost+' coins?','Pay '+cost,()=>{if(lvl(id)+1!==n||S.coins<cost)return;spend(cost);showCoins();S.lvl=S.lvl||{};S.lvl[id]=n;markSeen('lv:'+id);onUpgrade(id);
+ ask('Upgrade the '+nm+'\'s room to level '+n+' for '+cost+' coins?','Pay '+cost,()=>{if(lvl(id)+1!==n||S.coins<cost)return;spend(cost);showCoins();S.lvl=S.lvl||{};S.lvl[id]=n;markSeen('lv:'+id);onUpgrade(id);questStat('upgrades'); // (quest: Power Up!)
+ 
   const u=U[id];if(u){poof(u.c*CELL+20,u.r*CELL+80,'#f2c84a');poof(u.c*CELL+48,u.r*CELL+48,'#f2c84a');if(!isStruct(u)&&id!=='dragon'){u.hop=.6;u.mood='happy';u.mt=2}}
   toast('The '+nm+'\'s room is now level '+n+'! '+UPGRADES[id].gain);buildShelf();if(!tabRef.hidden)buildRef(compTab);save()})}
 // Item counts on the tray buttons; an item you have none of is greyed out
@@ -2468,7 +2470,8 @@ const escH=s=>String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;
 const titleOf=k=>(TITLES[k]||NAMES[k]||k).replace(/\s*\([^)]*%[^)]*\)/g,'').replace(/^(Super secret|Secret): /i,'');
 function showTip(tile,k,hint){tipEl.innerHTML='<b>'+escH(titleOf(k))+(/[.!?]$/.test(titleOf(k))?'':'.')+'</b> '+escH(hint?hintOf(k):infoText(k));tipEl.hidden=false;tipOn=tile;
  const R=tile.getBoundingClientRect(),w=Math.min(260,innerWidth-16);tipEl.style.width=w+'px';
- tipEl.style.left=cl(R.left+R.width/2-w/2,8,innerWidth-w-8)+scrollX+'px';tipEl.style.top=R.bottom+scrollY+6+'px'}
+ tipEl.style.left=cl(R.left+R.width/2-w/2,8,innerWidth-w-8)+scrollX+'px';const h=tipEl.offsetHeight,above=R.bottom+6+h>innerHeight-8&&R.top-6-h>=8; // (no room below the tile: open above it)
+ tipEl.style.top=(above?R.top-6-h:R.bottom+6)+scrollY+'px'}
 function hideTip(){tipEl.hidden=true;tipOn=null}
 document.addEventListener('click',hideTip);addEventListener('resize',hideTip);
 function mkc(w,h,title){const c=document.createElement('canvas');c.width=w;c.height=h;c.style.width=w*1.5+'px';c.setAttribute('role','img');c.setAttribute('aria-label',title);const x=c.getContext('2d');x.imageSmoothingEnabled=false;return[c,x]}
@@ -2664,7 +2667,7 @@ const DRAGON_TILE={dstudy:{s:'wizard_blue'},dscale:{s:'wizard_blue',wake:1,m:'sh
 const LV_SPR={alchemist:'alchemist_m',bard:'bard_f',blacksmith:'blacksmith_m',monarch:'monarch_m',priest:'priest_m',wizard:'wizard_blue',goblin:'goblin'};
 function lvTile(x,id,t){if(id==='dragon'){drawDragonLair(x,0,0,t,0);drawStars(x,6,83,1);return}
  box(x,id,0,0,id==='knight'?'longsword':id==='druid'?1:undefined);drawRoomLife(x,id,0,0,t);drawLvLife(x,id,0,0,t,1);
- if(CLASS[id]!=='structure'){const sx=id==='knight'?66:48,p=fakeU(id);p.x=sx;p.y=FY;p.face=1;p.act=id==='bard'?'bplay':null;drawLvOwner(x,p,t,1);spr(x,LV_SPR[id]||id,'ok',sx,FY,1,0,1,id==='goblin'?GOBLIN_SCALE:1)}drawStars(x,6,83,1)} // (the Knight stands aside so his dummy shows; the Bard plays so his friends come)
+ if(CLASS[id]!=='structure'){const sx=48,p=fakeU(id);p.x=sx;p.y=FY;p.face=1;p.act=id==='bard'?'bplay':null;drawLvOwner(x,p,t,1);spr(x,LV_SPR[id]||id,'ok',sx,FY,1,0,1,id==='goblin'?GOBLIN_SCALE:1)}drawStars(x,6,83,1)} // (the Bard plays so his woodland friends come)
 function idleTile(kind,wp){
  const wide=kind==='grp:market'||kind==='grp:feast'||kind==='grp:dragon'||kind==='grp:plague'||kind==='fireball'||kind==='raise'||kind==='nscroll'||kind==='wave'||kind==='alcpotion'||kind in DRAGON_TILE||kind==='dfly'||kind==='grp:goblins',[c,x]=mkc(wide?192:96,96,NAMES[kind]+(wp?' ('+wp+')':''));
  anim.push(t=>{x.clearRect(0,0,wide?192:96,96);
