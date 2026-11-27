@@ -3093,9 +3093,9 @@ function questCard(q,daily){const[n0,g]=questProg(q,daily),n=Math.min(n0,g),done
  d.innerHTML='<h3></h3><p class="qt"></p><div class="qbar"><i></i></div><p class="qr"></p>';d.querySelector('h3').textContent=q.name+(done?' ✓':'');d.querySelector('.qt').textContent=q.text;
  d.querySelector('.qbar i').style.width=(100*n/g)+'%';d.querySelector('.qbar').title=n+' / '+g;d.querySelector('.qr').textContent=(done?'Complete! Reward paid: ':n+' / '+g+'   Reward: ')+rewardText(q.reward);return d}
 function buildQuests(){const box=$('#quests');box.textContent='';dailyRefresh();
- const story=QUESTS.filter(questShown);if(story.length)story.forEach(q=>box.append(questCard(q,false)));else{const p=document.createElement('p');p.className='cinfo';p.textContent='No story quests yet. Keep exploring: they appear as your kingdom grows.';box.append(p)}
+ const story=QUESTS.filter(questShown);if(story.length)story.forEach(q=>box.append(questCard(q,false)));else{const p=document.createElement('p');p.className='cinfo';p.textContent='No story quests right now. Keep exploring to find more.';box.append(p)}
  const h=document.createElement('h2');h.className='sec';h.textContent='Daily quests';const now=new Date(),mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1),mins=Math.ceil((mid-now)/60000);
- const p=document.createElement('p');p.className='cinfo';p.textContent='Three new quests every day. New ones in '+Math.floor(mins/60)+' h '+(mins%60)+' min.';box.append(h,p);
+ const p=document.createElement('p');p.className='cinfo';p.textContent=['Three','Four','Five'][dailyCount()-3]+' new quests every day. New ones in '+Math.floor(mins/60)+' h '+(mins%60)+' min.';box.append(h,p);
  S.daily.ids.forEach(id=>{const q=DAILY_QUESTS.find(x=>x.id===id);if(q)box.append(questCard(q,true))})}
 // ---------- Renown: your kingdom's score (next to the Event Log tab): 1 per Compendium discovery, RENOWN_CHAR per character unlocked for the first time, plus quest rewards ----------
 const renownOf=()=>S.renownOff?0:ALL_KEYS.filter(k=>S.seen[k]).length+RENOWN_CHAR*Object.keys(S.ever||{}).filter(id=>S.ever[id]&&CLASS[id]!=='structure').length+(S.renownBonus||0);

@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Tiny5&display=swap" rel="stylesheet">
 <!-- ?v= is the release number: change it (all five together) with every update so browsers load the new files -->
-<link rel="stylesheet" href="style.css?v=63">
+<link rel="stylesheet" href="style.css?v=64">
 </head><body>
 <h1>Squaredom <small class="ver">v1.0</small></h1>
 <div class="tabs"><button class="tab on" data-t="board">Board</button><button class="tab" data-t="ref">Compendium</button><button class="tab" data-t="quest">Quests</button><button class="tab" data-t="log">Event Log</button><span id="renown" title="Renown: your kingdom's score. +1 for each Compendium discovery, +10 for each new character, more from quests." tabindex="0">Renown <b>0</b></span></div>
@@ -23,7 +23,7 @@
 <div id="tray"><div class="lbl">Shelf: drag a box up to the board</div></div>
 </section>
 <section id="tab-ref" hidden><div id="refs"></div></section>
-<section id="tab-quest" hidden><h2 class="sec">Quests</h2><p class="cinfo">Story quests appear as your kingdom grows and pay once.</p><div id="quests"></div></section>
+<section id="tab-quest" hidden><h2 class="sec">Quests</h2><p class="cinfo">Story quests appear as your kingdom grows, and each one can be completed only once.</p><div id="quests"></div></section>
 <section id="tab-log" hidden><div id="logs"></div></section>
 <section id="tab-set" hidden>
 <h2 class="sec">Settings</h2>
@@ -67,7 +67,7 @@
 <li>Secrets are hidden until you stumble on them.</li>
 </ul>
 <h3>Quests and renown</h3>
-<ul><li>Story quests appear in the Quests tab as your kingdom grows. Each pays once.</li><li>Three daily quests change every day, picked from what your kingdom can do.</li><li>Renown, next to the Event Log, is your kingdom's score: +1 for each Compendium discovery, +10 for each new character, and more from quests. Compare it with friends!</li><li>When you come back after a while, you get a report of what happened. Coins earned while away are halved, and only the last 8 hours count.</li></ul>
+<ul><li>Story quests appear in the Quests tab as your kingdom grows. Each one can be completed only once.</li><li>Three daily quests change every day, picked from what your kingdom can do.</li><li>Renown, next to the Event Log, is your kingdom's score: +1 for each Compendium discovery, +10 for each new character, and more from quests. Compare it with friends!</li><li>When you come back after a while, you get a report of what happened. Coins earned while away are halved, and only the last 8 hours count.</li></ul>
 <h3>Weather</h3>
 <ul>
 <li>The icon in the top-right corner of the board shows the weather. Tap it to see what the weather does.</li>
@@ -93,8 +93,8 @@
 <canvas id="ghost" width="96" height="96"></canvas>
 <div id="toast" role="status"></div>
 <div id="modal" hidden><div class="mbox" role="dialog" aria-modal="true"><p></p><div class="mrow"><button class="b" id="mYes">Buy</button><button class="b" id="mNo">Cancel</button></div></div></div>
-<script src="data.js?v=63"></script>
-<script src="art.js?v=63"></script>
-<script src="game.js?v=63"></script>
-<script src="audio.js?v=63"></script>
+<script src="data.js?v=64"></script>
+<script src="art.js?v=64"></script>
+<script src="game.js?v=64"></script>
+<script src="audio.js?v=64"></script>
 </body></html>
