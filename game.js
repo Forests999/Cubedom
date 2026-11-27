@@ -179,11 +179,23 @@ let grp=null,grpClock=0;
 // (a character busy with an idle activity is pulled out of it; scenes with others, and a few activities that must finish, are not interrupted)
 const NO_INTERRUPT={demon:1,retire:1,aretire:1,recruit:1,massprayer:1,funeral:1,fireball:1,relic:1,ascend:1,prisoners:1,wcast:1,harvest:1,sleepc:1,swapc:1};
 const grpReady=v=>v&&!v.dead&&atHome(v)&&!isFarm(v.id)&&!isStruct(v)&&v.id!=='dragon'&&(freeU(v)||(v.st==='act'&&!v.hosting&&!v.target&&!NO_INTERRUPT[v.act]&&v.form!=='dknight'&&!TEMP_FORM[v.form]&&!(v.sickT>0)));
+// ---- group event: the Plague (PLAGUE_* in data.js). Not a gathering: nobody is held in place. One character falls ill (u.plagueT); whoever an ill character
+// visits catches it for PLAGUE_CATCH seconds (in visit's arrival); after PLAGUE_TIME it is all over. Not saved.
+let plague=null;
+const plagueOk=v=>v&&!v.dead&&!isStruct(v)&&v.id!=='dragon'&&v.st!=='away';
+function startPlague(o){const v=pick(o.us);plague={t:0};v.plagueT=PLAGUE_FIRST;v.mood='hurt';v.mt=2;say(v,pick(PLAGUE_SAY));markSeen('grp:plague');
+ logEv(titleOf('grp:plague'),CH[idOf(v)].name+' falls ill first.');toast('A plague! The '+CH[idOf(v)].name+' has fallen ill. Whoever they visit may catch it...')}
+function catchPlague(u,h){if(!plague||!(u.plagueT>0)||!plagueOk(h)||h.plagueT>0)return;h.plagueT=PLAGUE_CATCH;h.mood='hurt';h.mt=1.5;setTimeout(()=>{if(U[h.id]===h&&h.plagueT>0)say(h,pick(PLAGUE_SAY))},900)}
+function stepPlague(dt){if(!plague)return;plague.t+=dt;const end=plague.t>=PLAGUE_TIME;
+ Object.values(U).forEach(v=>{if(!(v.plagueT>0))return;if(end||v.dead){v.plagueT=0;return}v.plagueT-=dt;if(v.plagueT<=0){v.plagueT=0;v.mood='happy';v.mt=1.2;return}
+  if(Math.random()<dt*2.5)parts.push({k:'sick',x:v.x+(Math.random()-.5)*12,y:v.y-30-Math.random()*8,t:0,life:1});if(Math.random()<dt*.08&&!v.bubT)say(v,pick(PLAGUE_SAY))});
+ if(end||!Object.values(U).some(v=>v.plagueT>0)){plague=null;toast('The plague has passed. Everyone breathes a little easier.')}}
 function groupOptions(){const ok=(r,c)=>{const v=U[at(r,c)];return grpReady(v)?v:null},out=[];
  for(let r=0;r<ROWS-1;r++)for(let c=0;c<COLS-1;c++){const q=[[r,c],[r,c+1],[r+1,c],[r+1,c+1]].map(p=>ok(p[0],p[1]));if(q.every(v=>v&&hasClass(v,'merchant')))out.push({kind:'market',us:q})} // four Merchants in a 2x2 square
  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS-2;c++){const q=[0,1,2].map(d=>ok(r,c+d));if(q.every(Boolean))out.push({kind:'feast',us:q})} // three side by side in a row
  if(S.dragonReady&&!S.dragonSlain&&dragonHP()>0&&!U.dragon&&!S.un.dragon&&!(S.ever&&S.ever.dragon)){const team=dragonTeam();if(team)out.push({kind:'dragon',us:team})} // the dragon battle: 3 Fighters, 2 Mages, 1 Merchant anywhere on the board
- return [...out,...travelOptions()]} // (plus the travelling ones: the Well, the Tavern)
+ const tr=travelOptions();if(!plague&&(out.length||tr.length)){const all=Object.values(U).filter(v=>plagueOk(v)&&!(v.st==='grp'));if(all.length>=PLAGUE_MIN)out.push({kind:'plague',us:all})} // the Plague: 6 characters anywhere, offered only when another group event could start too
+ return [...out,...tr]} // (plus the travelling ones: the Well, the Tavern)
 function startGroup(o){if(o.kind==='dragon'){startDragon(o);return}const rs=o.us.map(v=>v.r),cs=o.us.map(v=>v.c);logEv(titleOf('grp:'+o.kind),o.us.map(v=>CH[idOf(v)].name).join(', '));
  grp={kind:o.kind,ids:o.us.map(v=>v.id),pos:o.us.map(v=>[v.r,v.c]),t:0,box:[Math.min(...rs),Math.min(...cs),Math.max(...rs)-Math.min(...rs)+1,Math.max(...cs)-Math.min(...cs)+1]};
  o.us.forEach((v,i)=>{stopIdle(v);v.path=[];v.act=null;v.gx=null;v.st='grp';v.gwait=.5+Math.random()*2;v.mood='happy';v.mt=2;
@@ -194,8 +206,8 @@ function startGroup(o){if(o.kind==='dragon'){startDragon(o);return}const rs=o.us
 function endGroup(done){if(!grp)return;const g0=grp;grp=null;if(g0.kind==='dragon'){if(dragon&&dragon.hp!=null)S.dragonHP=dragon.hp;dragon=null;dshots=[];showDragonBar();save()}g0.ids.forEach(id=>{const v=U[id];if(v&&v.st==='grp'){v.st='idle';v.wait=1+Math.random()*2;v.mv=false;v.gx=null}});
  if(done&&g0.kind==='market'){const n=1+Math.floor(Math.random()*10)+1+Math.floor(Math.random()*10),M=U[g0.ids[0]];addCoins(n,M?M.x:null,M?M.y-50:null);toast('The market closes. Sales brought in '+n+' coins!')} // 2d10 coins
  if(done&&g0.kind==='feast')toast('The feast is over. Everyone heads home happy and full.')}
-function stepGroup(dt){grpClock+=dt;
- if(grpClock>=GROUP_EVERY){let go=false;if(!grp&&!rf&&Math.random()<ODDS.group){const o=groupOptions();if(o.length){const p=pick(o);if(p.host)startTravelGroup(p);else startGroup(p);go=true}}grpClock=go?0:GROUP_EVERY-5} // (if nobody is ready right then, it tries again every 5 seconds)
+function stepGroup(dt){grpClock+=dt;stepPlague(dt);
+ if(grpClock>=GROUP_EVERY){let go=false;if(!grp&&!rf&&Math.random()<ODDS.group){const o=groupOptions();if(o.length){const p=pick(o);if(p.kind==='plague')startPlague(p);else if(p.host)startTravelGroup(p);else startGroup(p);go=true}}grpClock=go?0:GROUP_EVERY-5} // (if nobody is ready right then, it tries again every 5 seconds)
  if(!grp)return;grp.t+=dt;if(grp.kind==='dragon'){stepDragon(dt);return}if(TRAVEL_GRP[grp.kind]){stepTravelGroup(dt);return}
  // it stops early if a character is gone, moved, or pulled away (a funeral, for example)
  if(grp.ids.some((id,i)=>{const v=U[id];return !v||v.st!=='grp'||v.r!==grp.pos[i][0]||v.c!==grp.pos[i][1]})){endGroup(false);return}
@@ -1123,7 +1135,7 @@ function dungeonLoot(v){const r=Math.random(),D=ODDS.dungeon;let s;
  else{addCoins(DUNGEON_GOLD,v.x,v.y-50);s='Fifty gold coins!'}
  say(v,'Back from the dungeon! '+s)}
 function arrive(u){u.inv=false;
- if(u.st==='out'){u.st='talk';u.tt=0;u.ev={};u.kind=u.vk;u.sc2=null;u.doom=null;u.ritEnd=null;if(u.vk!=='rumors')markSeen(u.vk);return} // (the rumors scene marks its own entry once it knows if it is goblins or the dragon)
+ if(u.st==='out'){catchPlague(u,U[u.target]);u.st='talk';u.tt=0;u.ev={};u.kind=u.vk;u.sc2=null;u.doom=null;u.ritEnd=null;if(u.vk!=='rumors')markSeen(u.vk);return} // (the rumors scene marks its own entry once it knows if it is goblins or the dragon)
  if(u.st==='gather'){u.st='gathered';return} // arrived for the great prayer
  u.tp=false;u.sneak=false;
  // Home from buying poison: he gives the poisoned wine to another free neighbor
@@ -2322,6 +2334,7 @@ function infoText(k){const fl=flavorOf(k),note=NOTE[k]?' '+NOTE[k]:'',p=pctOf(k)
  if(WELL_PCT[k]){const sid2=(PAIR_WITH[k]||[])[0],tag=((PAIR_WITH[k]||[])[1]||'').slice(4),tg={mage:'Mage',fighter:'Fighter',merchant:'Merchant',monstrous:'Monstrous character'}[tag],nm=CNAME(sid2),sec=Object.keys(STRUCT_SECOND).find(q=>(STRUCT_ACTS[sid2]||{})[tag]&&STRUCT_ACTS[sid2][tag].includes(q));
   return 'Idle ('+WELL_PCT[k]+' chance): a '+tg+' next to the '+nm+' ('+Math.round(STRUCT_IDLE*100)+'% of their idle activities use the '+nm+'; with several tags, one is picked at random'+(sec?'; the rarer outcome happens '+Math.round(STRUCT_SECOND[sec]*100)+'% of the time':'')+'). '+fl+note}
  if(k==='grp:dragon')return 'Boss battle (a group event, checked every 5 minutes): once the dragon has been heard of and you have held 300 coins, with 3 Fighters, 2 Mages and a Merchant anywhere on the board (6 different characters). After 30 seconds its fire breath kills whoever lives on one random space, and it flies off; its 100 hit points carry over between battles. '+fl+note;
+ if(k==='grp:plague')return 'Group event (checked every 5 minutes): with 6 or more characters on the board, but only when another group event could start at that moment too. One of them falls ill for 1 minute; whoever an ill character visits catches it for 30 seconds. After 3 minutes the plague is over. '+fl+note;
  if(k.startsWith('grp:'))return 'Group event (checked every 5 minutes, it happens whenever the board allows): '+({'grp:market':'four Merchants in a 2x2 square','grp:feast':'any three characters side by side in a row','grp:wellchat':'characters on all four sides of the Well','grp:classic':'the Priest, Knight, Wizard and Rogue in the same row as the Tavern','grp:dragon':'3 Fighters, 2 Mages and a Merchant anywhere on the board (6 different characters), until it is beaten'}[k])+', at home and free'+', for 1 minute. '+fl+note;
  if(k.startsWith('rq:')){const q=k.slice(3);return 'Visit (his first visit to the Monarch; granted 80% by a generous one, 10% by a greedy one): '+(q==='paladin'?'a Paladin':'the '+CNAME(q))+' next to the Monarch, any side. '+fl}
  for(const kind in ITEM_KEY)for(const c in ITEM_KEY[kind])if(ITEM_KEY[kind][c]===k)return 'Item: '+ITEM_NAME[kind].toLowerCase()+' on '+(c==='*'?'anyone without the Fighter tag':'the '+CNAME(c))+'. '+fl+note;
@@ -2552,7 +2565,7 @@ const flash=(on,tt)=>on&&Math.floor(tt*14)%2?.2:1;
 const DRAGON_TILE={dstudy:{s:'wizard_blue'},dscale:{s:'wizard_blue',wake:1,m:'shock'},dbottle:{s:'wizard_blue',wake:1,m:'happy',fire:[44,40]},dsteal:{s:'merchant',coin:1},
  dlullaby:{s:'merchant',wake:1,m:'happy',notes:1},dfight:{s:'knight',wake:1,m:'shock',fire:[34,46],fall:1},dslay:{s:'knight',wake:1,m:'mad',fire:[40,4]},dpeek:{s:'goblin',wake:1,m:'shock',flee:1}};
 function idleTile(kind,wp){
- const wide=kind==='grp:market'||kind==='grp:feast'||kind==='grp:dragon'||kind==='fireball'||kind==='raise'||kind==='nscroll'||kind==='wave'||kind==='alcpotion'||kind in DRAGON_TILE,[c,x]=mkc(wide?192:96,96,NAMES[kind]+(wp?' ('+wp+')':''));
+ const wide=kind==='grp:market'||kind==='grp:feast'||kind==='grp:dragon'||kind==='grp:plague'||kind==='fireball'||kind==='raise'||kind==='nscroll'||kind==='wave'||kind==='alcpotion'||kind in DRAGON_TILE,[c,x]=mkc(wide?192:96,96,NAMES[kind]+(wp?' ('+wp+')':''));
  anim.push(t=>{x.clearRect(0,0,wide?192:96,96);
 if(kind in DRAGON_TILE){const tt=t%4,d=DRAGON_TILE[kind],aw=d.wake&&tt>1.4&&tt<3.4;drawDragonLair(x,0,0,t,aw?1:0);   if(d.fire&&tt>1.8&&tt<2.8)for(let i=0;i<7;i++){const k=(tt*3+i/7)%1;x.fillStyle=k<.4?'#ffe070':k<.7?'#f08a20':'#c03018';x.fillRect(Math.round(178+(d.fire[0]-178)*k),Math.round(60+(d.fire[1]-60)*k),4,4)}   const gone=d.flee&&tt>1.9,dead=d.fall&&tt>2.8;if(!gone&&!dead)spr(x,d.s,aw?d.m:'ok',34,FY,1,d.s==='knight'&&aw?-3:0,1,d.s==='goblin'?GOBLIN_SCALE:1,tt>.5&&tt<1.5?'fwd':aw&&d.s==='knight'?'up':'none');if(dead)poofTile(x,34,60,cl((tt-2.8)/.6,0,1),'#9a9a9a');   if(d.coin&&tt>1.2&&tt<2.4)drawItem(x,'coin',Math.round(92-(92-44)*(tt-1.2)/1.2),Math.round(80-36*(tt-1.2)/1.2),2);if(d.notes&&aw)drawNote(x,46,Math.round(36-(tt*16)%14),1);return}
   if(kind==='read'||kind==='magic'){box(x,'wizard',0,0);spr(x,'wizard','ok',48,FY,1,0,1,1,poseOf(kind,t));drawAct(x,{act:kind,at:t,x:48,y:FY,face:1})}
@@ -2771,6 +2784,7 @@ if(kind in DRAGON_TILE){const tt=t%4,d=DRAGON_TILE[kind],aw=d.wake&&tt>1.4&&tt<3
   else if(kind==='wellwish'){const tt=t%4,k2=cl((tt-.6)/.5,0,1);box(x,'well',0,0);spr(x,'merchant',tt>1.2&&tt<2.8?'sleep':'ok',20,FY,1,0,1,1,tt>.4&&tt<1.2?'fwd':'none');if(tt>.6&&tt<1.1)drawItem(x,'coin',Math.round(lerp(28,48,k2)),Math.round(lerp(56,57,k2)-Math.sin(k2*Math.PI)*12),1);if(tt>1.2&&tt<2.4)heart(x,20,30-(tt-1.2)*10)}
   else if(kind==='welldive'){const tt=t%5,d=tt<1?0:tt<1.4?30*(tt-1)/.4:tt<2.4?30:tt<2.8?30-26*(tt-2.4)/.4:tt<4?4:0;box(x,'well',0,0);x.save();x.beginPath();x.rect(0,0,96,tt>=1&&tt<4?57:96);x.clip();spr(x,'goblin','happy',48,FY+d,1,0,1,GOBLIN_SCALE);x.restore()}
   else if(kind==='grp:market'){drawMarketBack(x,0,0,192,96);drawMarketCrowd(x,0,0,192,96,t);spr(x,'merchant','happy',40,FY,1,0,1,1,Math.floor(t)%3===0?'up':'none');spr(x,'apothecary','happy',136,FY,-1,0,1,1,Math.floor(t+1.5)%3===0?'up':'none')}
+  else if(kind==='grp:plague'){const tt=t%4,k=cl((tt-.6)/1.2,0,1),got=tt>2;box(x,'knight',0,0,'longsword');box(x,'wizard',96,0);spr(x,'wizard_blue',got?'hurt':'ok',144,FY,-1,0,1,1,'none');spr(x,'knight','hurt',Math.round(40+k*64),FY,1,0,1,1,'none',tt>.6&&tt<1.8?stepOf(tt):0);   const dots=(cx,n)=>{for(let i=0;i<n;i++){const q=(t*.8+i/n)%1;x.globalAlpha=1-q;x.fillStyle='#7ad040';x.fillRect(Math.round(cx-6+(i*7)%13),Math.round(FY-34-q*14),2,2)}x.globalAlpha=1};dots(40+k*64,5);if(got)dots(144,5)}
   else if(kind==='grp:dragon'){const tt=t%3;box(x,'knight',0,0,'longsword');box(x,'wizard',96,0);spr(x,'knight','mad',48,FY,1,tt<.5?-4:0,1,1,'up');spr(x,'wizard_blue','mad',144,FY,-1,0,1,1,'both');const dx=96+Math.sin(t*.8)*40,dy=34+Math.sin(t*1.6)*8;if(tt>1&&tt<1.6){const k=(tt-1)/.6;x.fillStyle='#c890ff';x.fillRect(Math.round(lerp(144,dx,k))-2,Math.round(lerp(FY-40,dy,k))-2,4,4)}drawDragonFly(x,dx,dy,Math.cos(t*.8)>0?1:-1,t,tt>1.6&&tt<1.9)}
   else if(kind==='grp:feast'){drawFeastBack(x,0,0,192,t);spr(x,'knight','happy',48,FY,1,Math.floor(t*2)%5===0?-3:0);spr(x,'wizard','happy',144,FY,-1,Math.floor(t*2+2)%5===0?-3:0,1,1,Math.floor(t)%4===0?'fwd':'none');drawFeastFront(x,0,0,192)}
   else if(kind==='ss:gold'){x.fillStyle='#1a1733';x.fillRect(0,0,96,96);for(let r=0;r<4;r++)for(let c=0;c<5;c++){x.fillStyle='#c8962a';x.fillRect(4+c*18,12+r*18,16,16);x.fillStyle='#f2c84a';x.fillRect(5+c*18,13+r*18,14,14);x.fillStyle='#fff0a8';x.fillRect(6+c*18,14+r*18,4,2);if(Math.floor(t*3+r+c*2)%7===0){x.fillStyle='#ffffff';x.fillRect(12+c*18,18+r*18,2,2)}}}
@@ -2872,7 +2886,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
  for(const wk in WELL_PCT)T[wk]=[I(wk),WELL_PCT[wk]]; // the Well's activities (labels: share of a neighbor's idle activities)
  Object.assign(T,{bplay:[I('bplay')],bhum:[I('bhum')],bspell:[I('bspell')],bwisdom:[I('bwisdom')],blisten:[I('blisten')],bstory:[I('bstory')],bsoothe:[I('bsoothe')],bdragon:[I('bdragon')],bfruit:[I('bfruit')],'ss:elven':[I('ss:elven'),'super secret']}); // the Bard
  ['grummage','gdagger','gnap','gsteal','ghoard','bresonance','gpotion','gscroll',...Object.keys(GOBLIN_WITH)].forEach(k=>{T[k]=[I(k)]});T.ghoard[1]='passive';T.bresonance[1]='passive'; // the Goblin; the Bard's Resonance
- Object.assign(T,{'grp:wellchat':[I('grp:wellchat'),'secret'],'grp:classic':[I('grp:classic'),'secret'],'grp:market':[I('grp:market'),'every 5 min'],'grp:dragon':[I('grp:dragon'),'boss'],'grp:feast':[I('grp:feast'),'every 5 min'],'ss:gold':[I('ss:gold'),'super secret'],'ss:alltags':[I('ss:alltags'),'super secret'],dingot:[I('dingot')],rqdeny:[P('rqdeny'),'20% / 90%'],drain:[P('drain'),pv*ODDS.drain],royalfuneral:[I('royalfuneral'),'on death'],regicide:[I('regicide'),'secret'],royalpatron:[I('royalpatron'),'secret'],
+ Object.assign(T,{'grp:plague':[I('grp:plague'),'every 5 min'],'grp:wellchat':[I('grp:wellchat'),'secret'],'grp:classic':[I('grp:classic'),'secret'],'grp:market':[I('grp:market'),'every 5 min'],'grp:dragon':[I('grp:dragon'),'boss'],'grp:feast':[I('grp:feast'),'every 5 min'],'ss:gold':[I('ss:gold'),'super secret'],'ss:alltags':[I('ss:alltags'),'super secret'],dingot:[I('dingot')],rqdeny:[P('rqdeny'),'20% / 90%'],drain:[P('drain'),pv*ODDS.drain],royalfuneral:[I('royalfuneral'),'on death'],regicide:[I('regicide'),'secret'],royalpatron:[I('royalpatron'),'secret'],
   wares:[I('wares'),'100%'],troad:[I('troad'),'5 min'],tshop:[I('tshop'),TRAVEL_ARTIFACT+' coins'],tscroll:[I('tscroll')],tpotion:[I('tpotion')],tingot:[I('tingot')]});
  ROGUE_SCENES.forEach(k=>{if(!T[k])T[k]=[P(k),pv]});
  WEAPONS.forEach(w=>T['prac:'+w]=[I('prac',w),K.prac]);
