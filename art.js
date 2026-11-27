@@ -1204,12 +1204,49 @@ let LV_FORCE=null;
 function drawUpIcon(c,x,y){const R=[[-14,10,28,12,'#5a5590'],[-14,10,28,3,'#7a74b0'],[-4,-6,8,16,'#f2c84a'],[-12,-6,24,4,'#f2c84a'],[-8,-10,16,4,'#f2c84a'],[-4,-14,8,4,'#f2c84a'],[-2,-4,2,14,'#ffe9a0']];
  c.fillStyle=O;R.forEach(r=>c.fillRect(x+r[0]-2,y+r[1]-2,r[2]+4,r[3]+4));R.forEach(r=>{c.fillStyle=r[4];c.fillRect(x+r[0],y+r[1],r[2],r[3])})}
 // A room's level: n little gold stars (bottom-left of the box)
-function drawStars(c,x,y,n){for(let i=0;i<n;i++){const sx=x+i*9;c.fillStyle=O;c.fillRect(sx+2,y-1,3,7);c.fillRect(sx-1,y+1,9,3);c.fillRect(sx,y+3,7,3);
- c.fillStyle='#f2c84a';c.fillRect(sx+3,y,1,5);c.fillRect(sx,y+2,7,1);c.fillRect(sx+1,y+3,5,1);c.fillRect(sx+1,y+4,2,1);c.fillRect(sx+4,y+4,2,1);c.fillStyle='#fff3b0';c.fillRect(sx+3,y+2,1,1)}}
-// The look of an upgraded room, painted once into the room's picture (box): level 1 for now (L = level)
-function paintLevel(q,id,w,L){const R=LV_ROOM[id]?LV_ROOM[id](w):[];R.forEach(r=>{q.fillStyle=r[4];q.fillRect(r[0],r[1],r[2],r[3])})}
-const LV_ROOM={};
-// Moving details of an upgraded room (drawn with the room's other life, drawRoomLife), L = level
-function drawLvLife(c,id,bx,by,t,L){if(!L)return}
+const STAR_PX=['...#...','..###..','#######','.#####.','..###..','.##.##.','.#...#.'];function drawStars(c,x,y,n){for(let i=0;i<n;i++){const sx=x+i*10;c.fillStyle=O;STAR_PX.forEach((row,j)=>[...row].forEach((ch,k)=>{if(ch==='#')c.fillRect(sx+k-1,y+j-1,3,3)}));c.fillStyle='#f2c84a';STAR_PX.forEach((row,j)=>[...row].forEach((ch,k)=>{if(ch==='#')c.fillRect(sx+k,y+j,1,1)}));c.fillStyle='#fff3b0';c.fillRect(sx+3,y+2,1,1)}}
+// The look of each room at level 1: [x, y, w, h, color, flat] in room pixels. Every piece gets a 1px dark outline, except flat details (6th = 1).
+const LV_ROOM={
+ knight:()=>[[41,44,3,22,'#6a4428'],[36,64,13,3,'#5a3a20'],[33,43,19,3,'#6a4428'],[37,40,11,16,'#c8a860'],[45,40,3,16,'#a88a48',1],[37,48,11,2,'#8a6a3a',1],[41,43,3,3,'#c04040',1],
+  [38,32,9,8,'#d8bc70'],[40,35,1,1,'#5a3a20',1],[44,35,1,1,'#5a3a20',1],[41,37,3,1,'#5a3a20',1]], // a straw training dummy with a red target
+ priest:()=>[[9,56,5,12,'#7a4a24'],[5,66,13,3,'#5a3418'],[3,50,17,6,'#8a5a2a'],[3,50,17,1,'#a8763a',1],[5,47,13,3,'#f0e8d0'],[11,47,1,3,'#a08a50',1],[12,50,1,4,'#c03030',1]], // a podium with an open book
+ necromancer:()=>[[4,64,14,4,'#d8d0b0'],[7,61,6,3,'#e8e4d0'],[13,60,5,4,'#e8e4d0'],[14,61,1,1,'#1a1a1a',1],[16,61,1,1,'#1a1a1a',1]], // swept-up bones in the corner
+ merchant:()=>[[55,54,16,8,'#8a5a2a'],[55,54,16,2,'#a8763a',1],[56,62,5,5,'#5a3a20'],[65,62,5,5,'#5a3a20'],[58,64,1,1,'#c8a060',1],[67,64,1,1,'#c8a060',1],
+  [56,49,6,5,'#3a8a3a'],[62,48,6,6,'#2f7a32'],[59,45,6,5,'#3a8a3a'],[58,50,1,3,'#9ad07a',1],[64,49,1,4,'#9ad07a',1],[61,46,1,3,'#9ad07a',1]], // a cart of striped melons
+ apothecary:()=>[54,64,74,84].flatMap((x,i)=>[[x+2,0,1,4,'#8a6a3a',1],[x,4,5,9,i%2?'#8a6ab0':'#5a8a3a'],[x+1,13,3,2,i%2?'#b89ad8':'#7aa84a',1],[x,5,5,1,'#c8a060',1]]), // herbs and lavender drying from the ceiling
+ alchemist:()=>[[50,13,46,3,'#b8862a'],[50,13,46,1,'#e8c060',1],[89,13,3,52,'#b86a3a'],[89,13,1,52,'#e0905a',1],[87,12,7,5,'#c89a3a'],[72,9,7,7,'#c04040'],[75,12,1,1,'#f0d0a0',1],[87,58,7,4,'#c89a3a'],[60,16,3,6,'#b86a3a']], // brass and copper pipes with a red valve
+ rogue:()=>[[52,24,20,18,'#c8a040'],[54,26,16,14,'#3a5a7a',1],[54,34,16,6,'#3a6a3a',1],[64,28,3,3,'#f0d060',1],[54,26,16,1,'#8a6a20',1]], // a landscape painting (a vault hides behind it)
+ druid:w=>{const k=[['#2a5a2a','#4ac0e0'],['#3a8a3a','#f080b0'],['#8a7a2a','#f0a030'],['#3a7a4a','#b080e0']][w|0]||['#3a8a3a','#f080b0'],R=[];
+  for(let i=0;i<16;i++){const x=(i*37+11)%86+5,y=72+(i*23)%20;if(x<28&&y>78)continue;if(i%2)R.push([x,y,5,2,k[0],1],[x+1,y-1,3,1,k[0],1]);else R.push([x+1,y-2,1,2,'#2a6a2a',1],[x,y-4,3,2,k[1],1])}return R}, // moss and flowers, by the forest's row
+ blacksmith:()=>[[80,63,6,3,'#9aa4b4'],[87,63,6,3,'#9aa4b4'],[83,60,6,3,'#aab4c4'],[84,57,6,3,'#b8c2d0'],[81,63,4,1,'#cfd6e0',1],[88,63,4,1,'#cfd6e0',1],[84,60,4,1,'#e0e6ee',1],[85,57,4,1,'#eef2f8',1]], // a stack of steel ingots
+ monarch:()=>[60,16].flatMap(x=>[[x-1,24,9,2,'#c8a030'],[x,26,7,18,'#e8b830'],[x,44,3,2,'#e8b830'],[x+4,44,3,2,'#e8b830'],[x+2,31,3,3,'#8a1030',1],[x,26,7,1,'#fff0a0',1]]), // golden banners
+ goblin:()=>[[87,34,2,30,'#6a4428'],[80,36,8,10,'#8a2a2a'],[80,44,3,3,'#8a2a2a'],[85,44,3,2,'#8a2a2a'],[83,39,2,2,'#e8e4d0',1]], // a ragged goblin war banner
+ well:()=>[[30,48,36,4,'#8a5a2a'],[30,48,36,1,'#a8763a',1],[40,48,1,4,'#5a3a20',1],[52,48,1,4,'#5a3a20',1],[46,45,4,3,'#5a3a20'],
+  [6,40,2,14,'#6a4428'],[20,40,2,14,'#6a4428'],[4,28,20,14,'#8a5a2a'],[6,30,6,7,'#f0e8d0',1],[13,31,8,5,'#f0e8d0',1],[8,38,6,3,'#e8d8a0',1],[16,37,4,3,'#e8d8a0',1],
+  [70,74,8,7,'#b8603a'],[69,73,10,2,'#d07a4a'],[71,70,2,3,'#e05a8a',1],[75,69,2,3,'#f0d040',1],[73,68,1,2,'#3a9a3a',1],[24,74,8,7,'#b8603a'],[23,73,10,2,'#d07a4a'],[25,69,2,3,'#f0f0f0',1],[29,70,2,3,'#e05a8a',1]], // a well cover, a quest board, flower pots
+ library:()=>[...[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>[42+i*4,52,3,2,'#8a8a96',1]),[64,51,6,6,'#c8a040'],[65,48,4,3,'#8a8a96'],[66,53,2,2,'#5a4010',1],[44,43,13,5,'#8a1a1a'],[46,45,9,1,'#e8c060',1]]}; // a chained, padlocked shelf
+// (paintLevel draws these: first every outline, then the colors)
+function paintLevel(q,id,w,L){const R=LV_ROOM[id]?LV_ROOM[id](w):[];q.fillStyle=O;R.forEach(r=>{if(!r[5])q.fillRect(r[0]-1,r[1]-1,r[2]+2,r[3]+2)});R.forEach(r=>{q.fillStyle=r[4];q.fillRect(r[0],r[1],r[2],r[3])})}
+// pieces of pixel art from rects relative to (x, y), outlined
+function pxParts(c,x,y,R){c.fillStyle=O;R.forEach(r=>c.fillRect(x+r[0]-1,y+r[1]-1,r[2]+2,r[3]+2));R.forEach(r=>{c.fillStyle=r[4];c.fillRect(x+r[0],y+r[1],r[2],r[3])})}
+// a little rabbit and a squirrel (the Bard's woodland friends)
+function drawRabbit(c,x,y,f,t){x=Math.round(x);y=Math.round(y-(Math.max(0,Math.sin(t*5))*2|0));pxParts(c,x,y,[[0,-6,7,6,'#b8a088'],[f>0?5:-3,-9,5,5,'#c8b098'],[f>0?6:-1,-14,2,5,'#c8b098'],[f>0?-1:6,-5,2,2,'#f4f0e8']]);c.fillStyle=O;c.fillRect(x+(f>0?8:-2),y-8,1,1)}
+function drawSquirrel(c,x,y,f,t){x=Math.round(x);y=Math.round(y);pxParts(c,x,y,[[f>0?-6:4,-12,5,10,'#c07a3a'],[0,-6,6,6,'#a0602a'],[f>0?4:-3,-9,5,4,'#a0602a'],[f>0?5:-2,-11,2,2,'#a0602a']]);c.fillStyle=O;c.fillRect(x+(f>0?7:-2),y-8,1,1);
+ if(Math.sin(t*3)>.6){c.fillStyle='#8a5a2a';c.fillRect(x+(f>0?6:-3),y-6,2,2)}} // (nibbling an acorn now and then)
+// Moving details of an upgraded room (drawn with drawRoomLife, before the characters), L = level
+function drawLvLife(c,id,bx,by,t,L){if(!L)return;
+ if(id==='necromancer'){const ph=t%24;if(ph<12){const k=ph/12,pp=k<.5?k*2:2-k*2,x=bx+22+pp*44,f=k<.5?1:-1,y=by+FY-4,sw=Math.round(Math.sin(t*6)*3),bx2=Math.round(x+f*6);
+   spr(c,'skeleton','ok',x,y,f,0,1,.5,'fwd',stepOf(t*.6));c.fillStyle='#8a6a3a';c.fillRect(bx2,y-16,1,14);c.fillStyle='#c8a860';c.fillRect(bx2-2+sw,y-3,5,3);
+   if(Math.sin(t*6)>.8){c.fillStyle='rgba(200,190,170,.6)';c.fillRect(bx2+3+sw,y-4,2,2)}}} // a skeleton sweeping the floor now and then
+ if(id==='monarch'){const k=(t/14)%1,pp=k<.5?k*2:2-k*2,x=bx+22+pp*50,f=k<.5?1:-1,y=by+FY-6,sx=Math.round(x+f*6);spr(c,'knight','ok',x,y,f,0,1,.7,'hold',stepOf(t*.7));
+  c.fillStyle='#6a4428';c.fillRect(sx,y-38,1,36);c.fillStyle='#cfd6e0';c.fillRect(sx-1,y-42,3,4); // a guard pacing with a spear
+  spr(c,'knight','ok',bx+84,by+FY-8,-1,0,1,.65,'hold');c.fillStyle='#6a4428';c.fillRect(bx+79,by+FY-44,1,36);c.fillStyle='#cfd6e0';c.fillRect(bx+78,by+FY-48,3,4)} // and one standing watch by the door
+ if(id==='tavern'){const drink=Math.floor(t*.4)%4===0;c.fillStyle=O;c.fillRect(bx+55,by+FY-3,12,4);c.fillStyle='#8a5a2a';c.fillRect(bx+56,by+FY-2,10,2);c.fillStyle='#6a4426';c.fillRect(bx+57,by+FY,2,6);c.fillRect(bx+63,by+FY,2,6); // a stool at the bar
+  spr(c,'farmer','happy',bx+61,by+FY-2,1,0,1,.95,drink?'up':'fwd');if(!drink){c.fillStyle=O;c.fillRect(bx+67,by+FY-25,6,7);c.fillStyle='#d8a040';c.fillRect(bx+68,by+FY-24,4,5);c.fillStyle='#f4f0e8';c.fillRect(bx+68,by+FY-24,4,1)}} // the regular, always with a mug
+ if(id==='rogue'&&typeof U!=='undefined'&&U.rogue&&U.rogue.act==='rvault'&&U.rogue.c*CELL===bx&&U.rogue.r*CELL===by){const k=cl(U.rogue.at/.6,0,1); // the painting swings aside: a vault full of coins
+  c.fillStyle='#1a1418';c.fillRect(bx+52,by+24,20,18);c.fillStyle='#2a2a30';c.fillRect(bx+54,by+26,16,14);c.fillStyle='#f2c84a';[[55,34,5,5],[60,32,5,7],[65,35,4,4],[57,30,4,4]].forEach(q=>c.fillRect(bx+q[0],by+q[1],q[2],q[3]));
+  c.fillStyle='#fff3b0';c.fillRect(bx+61,by+33,1,1);c.fillRect(bx+56,by+35,1,1);c.fillStyle=O;c.fillRect(bx+52+Math.round(k*18),by+23,3,20);c.fillStyle='#c8a040';c.fillRect(bx+52+Math.round(k*18),by+24,2,18)}}
 // Things an upgraded character carries around (drawn just before the sprite), L = level
-function drawLvOwner(c,u,t,L){if(!L)return}
+function drawLvOwner(c,u,t,L){if(!L)return;
+ if(u.id==='wizard')['#e04a4a','#4ac0f0','#f0d040'].forEach((col,i)=>{const a=t*1.1+i*2.094,x=Math.round(u.x+Math.cos(a)*14),y=Math.round(u.y-50+Math.sin(a)*4);c.fillStyle=O;c.fillRect(x-3,y-3,6,6);c.fillStyle=col;c.fillRect(x-2,y-2,4,4);c.fillStyle='#ffffff';c.fillRect(x-1,y-2,1,1)}); // three orbs circling his head
+ if(u.id==='bard'&&(u.act==='bplay'||u.act==='bhum'||u.act==='bspell')){const f=u.face||1;drawRabbit(c,u.x-f*22,u.y,f,t);drawSquirrel(c,u.x+f*24,u.y,-f,t)}} // woodland friends gather while the elf plays

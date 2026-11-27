@@ -2616,7 +2616,7 @@ const DRAGON_TILE={dstudy:{s:'wizard_blue'},dscale:{s:'wizard_blue',wake:1,m:'sh
 const LV_SPR={alchemist:'alchemist_m',bard:'bard_f',blacksmith:'blacksmith_m',monarch:'monarch_m',priest:'priest_m',wizard:'wizard_blue',goblin:'goblin'};
 function lvTile(x,id,t){if(id==='dragon'){drawDragonLair(x,0,0,t,0);drawStars(x,6,83,1);return}
  box(x,id,0,0,id==='knight'?'longsword':id==='druid'?1:undefined);drawRoomLife(x,id,0,0,t);drawLvLife(x,id,0,0,t,1);
- if(CLASS[id]!=='structure'){const p=fakeU(id);p.x=48;p.y=FY;p.face=1;drawLvOwner(x,p,t,1);spr(x,LV_SPR[id]||id,'ok',48,FY,1,0,1,id==='goblin'?GOBLIN_SCALE:1)}drawStars(x,6,83,1)}
+ if(CLASS[id]!=='structure'){const sx=id==='knight'?66:48,p=fakeU(id);p.x=sx;p.y=FY;p.face=1;p.act=id==='bard'?'bplay':null;drawLvOwner(x,p,t,1);spr(x,LV_SPR[id]||id,'ok',sx,FY,1,0,1,id==='goblin'?GOBLIN_SCALE:1)}drawStars(x,6,83,1)} // (the Knight stands aside so his dummy shows; the Bard plays so his friends come)
 function idleTile(kind,wp){
  const wide=kind==='grp:market'||kind==='grp:feast'||kind==='grp:dragon'||kind==='grp:plague'||kind==='fireball'||kind==='raise'||kind==='nscroll'||kind==='wave'||kind==='alcpotion'||kind in DRAGON_TILE,[c,x]=mkc(wide?192:96,96,NAMES[kind]+(wp?' ('+wp+')':''));
  anim.push(t=>{x.clearRect(0,0,wide?192:96,96);
