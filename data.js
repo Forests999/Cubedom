@@ -1004,7 +1004,7 @@ Object.assign(FLAVOR,{welllook:'They peer into the dark water and wonder how dee
 Object.assign(HINTS,{welllook:'Mages love a quiet well next door.',wellsplash:'Mages and water do not always mix... rarely, anyway.',welljump:'Fighters living by the well like to show off.',
  wellwish:'Shopkeepers by the well are a superstitious lot.',welldive:'Something monstrous living by the well might take a dip.'});
 // Compendium labels: the share of a neighbor's idle activities (STRUCT_IDLE x the outcome's share for that tag; with several tags it is shared)
-const structPct=f=>Math.floor(STRUCT_IDLE*f*100+1e-9)+'%';
+const structPct=f=>{const v=STRUCT_IDLE*f*100,d=v<1?100:10;return String(Math.floor(v*d+1e-6)/d)+'%'}; // (like fmtPct: one decimal, two below 1%)
 const WELL_PCT={welllook:structPct(1-WELL_SPLASH),wellsplash:structPct(WELL_SPLASH),welljump:structPct(1),wellwish:structPct(1),welldive:structPct(1)};
 TAG_ICON.structure=[[2,1,3,2,'#c0603a'],[2,1,3,1,'#e08a5a'],[0,4,3,2,'#c0603a'],[0,4,3,1,'#e08a5a'],[4,4,3,2,'#a84e2e'],[4,4,3,1,'#d07a4a']]; // a little stack of bricks: two below, one on top
 
@@ -1306,3 +1306,34 @@ const AWAY_LINES_MAX=4,AWAY_LINES={knight:'The Knight practiced with his weapon 
  dragon:'The Dragon snored about {n} times. The cave shook.',farmer:'The Farmer hoed about {n} rows.',well:'Someone tossed a coin in the Well and made a wish.',tavern:'The Tavern served about {n} ales.',library:'The Library gathered a little more dust.'};
 const AWAY_IDLE=['Nobody noticed you were gone. Mostly.','The kingdom carried on without you, a little bored.','A cat wandered across the whole board and left again.'];
 Object.assign(FLAVOR,{drumor:'"A dragon, I tell you! Big as a barn, breathes fire!" The Knight polishes his sword a little faster.'});HINTS.drumor='Sometimes the merchant\'s rumors are about something much, much bigger.';
+
+// ---------- the Dragon's neighbors (it works like a structure for them: STRUCT_IDLE of their idle rolls, by one of their tags; DRAGON_ACTS has the tiers) ----------
+// Mage: study it C, take a scale U, bottle some of its fire R. Merchant: steal a coin C (+1), the dragon wakes and they sing it back to sleep U.
+// Fighter: provoke it and die in its fire C, or slay it L (+DRAGON_SLAY_GOLD coins; the Dragon goes back to the shelf and can't be placed for DRAGON_REST_TIME seconds). Monstrous: a peek, then flee C.
+const DRAGON_ACTS={mage:[['dstudy','c'],['dscale','u'],['dbottle','r']],merchant:[['dsteal','c'],['dlullaby','u']],fighter:[['dfight','c'],['dslay','l']],monstrous:[['dpeek','c']]};
+const DRAGON_SLAY_GOLD=500,DRAGON_REST_TIME=300;
+STRUCT_ACTS.dragon=Object.fromEntries(Object.keys(DRAGON_ACTS).map(t=>[t,DRAGON_ACTS[t].map(e=>e[0])]));
+{const dt=COMP_TABS.find(t=>t.id==='dragon');dt.pairs.push('dstudy','dscale','dbottle','dsteal','dlullaby','dfight','dslay','dpeek')}
+Object.assign(PAIR_WITH,{dstudy:['dragon','tag:mage'],dscale:['dragon','tag:mage'],dbottle:['dragon','tag:mage'],dsteal:['dragon','tag:merchant'],dlullaby:['dragon','tag:merchant'],dfight:['dragon','tag:fighter'],dslay:['dragon','tag:fighter'],dpeek:['dragon','tag:monstrous']});
+Object.assign(NAMES,{dstudy:'Studying the dragon',dscale:'A dragon scale',dbottle:'Fire in a bottle',dsteal:'A coin from the hoard',dlullaby:'A dragon lullaby',dfight:'Provoking the dragon',dslay:'Dragonslayer',dpeek:'A peek into the den'});
+Object.assign(TITLES,{dstudy:'Field Notes',dscale:'One Scale Lighter',dbottle:'Bottled Fury',dsteal:'Finders Keepers, Dragon Edition',dlullaby:'Hush, Little Dragon',dfight:'A Very Bad Idea',dslay:'Dragonslayer',dpeek:'Nope'});
+Object.assign(DESC,{dstudy:'A Mage next to the Dragon tiptoes into its lair and studies it while it sleeps.',dscale:'A Mage next to the Dragon carefully plucks one of its scales to study.',
+ dbottle:'A Mage next to the Dragon pokes it awake and catches some of its fire breath in a glass bottle.',dsteal:'A Merchant next to the Dragon quietly takes a coin from its hoard. +1 coin.',
+ dlullaby:'A Merchant next to the Dragon goes for a coin, the Dragon wakes, and the Merchant sings it back to sleep.',
+ dfight:'A Fighter next to the Dragon provokes it to a fight. The Dragon wins: the Fighter dies in its fire.',
+ dslay:'A Fighter next to the Dragon provokes it to a fight and slays it! +500 coins. The Dragon goes back to the shelf and can\'t be placed again for 5 minutes.',
+ dpeek:'Something Monstrous next to the Dragon peeks into its den and flees in terror.'});
+Object.assign(FLAVOR,{dstudy:'"Scales like rubies... breathing like a forge..." Furious note-taking, very quietly.',dscale:'One scale, plucked like a loose tooth. The dragon twitches. Nobody breathes.',
+ dbottle:'One poke, one roar, one cork. Fire, bottled, for science.',dsteal:'One coin. It will never miss one coin. Probably.',dlullaby:'The eye opens. The merchant sings. Very, very softly.',
+ dfight:'"Wake up, beast!" It did.',dslay:'Against all odds, the dragon falls. The hoard is yours: five hundred coins!',dpeek:'Two eyes peek in. One huge yellow eye opens. Footsteps, running.'});
+Object.assign(NOTE,{dsteal:'+1 coin.',dfight:'The Fighter dies.',dslay:'+500 coins; the Dragon rests for 5 minutes, off the board.'});
+Object.assign(WELL_PCT,{dstudy:structPct(.8),dscale:structPct(RARITY.u),dbottle:structPct(RARITY.r),dsteal:structPct(1-RARITY.u),dlullaby:structPct(RARITY.u),dfight:structPct(1-RARITY.l),dslay:structPct(RARITY.l),dpeek:structPct(1)});
+DEADLY.dfight=1;
+// ---------- group event: the Plague (any 6 characters on the board; only offered when another group event could happen too) ----------
+// One character falls ill for PLAGUE_FIRST seconds; whoever an ill character visits catches it for PLAGUE_CATCH seconds; it all ends after PLAGUE_TIME. Looks and spreading only.
+const PLAGUE_MIN=6,PLAGUE_FIRST=60,PLAGUE_CATCH=30,PLAGUE_TIME=180;
+COMP_TABS.find(t=>t.id==='group').idle.push('grp:plague');
+NAMES['grp:plague']='The plague';TITLES['grp:plague']='Plague!';
+DESC['grp:plague']='With 6 or more characters on the board (and only when another group event could happen too): one of them falls ill for 1 minute. Whoever an ill character visits catches it for 30 seconds. After 3 minutes the plague is gone.';
+FLAVOR['grp:plague']='A cough, a sneeze, and soon half the kingdom is green around the gills.';
+const PLAGUE_SAY=['*cough* *cough*','I don\'t feel so good...','Achoo!','Ugh, my head...'];

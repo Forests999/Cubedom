@@ -1163,9 +1163,9 @@ function lairBack(){const cv=document.createElement('canvas');cv.width=192;cv.he
  c.fillStyle=O;c.fillRect(165,72,3,18);c.fillStyle='#d0d4e0';c.fillRect(166,78,1,11);c.fillStyle='#ffffff';c.fillRect(166,78,1,3);c.fillStyle=O;c.fillRect(162,74,9,4);c.fillStyle='#e0b040';c.fillRect(163,75,7,2);c.fillStyle='#6a3a1e';c.fillRect(166,71,1,4);c.fillStyle='#e0b040';c.fillRect(166,70,1,1); // a sword stuck in the gold
  [[78,88,'#e83a5a'],[94,84,'#3ae87a'],[126,90,'#3ac8e8'],[50,90,'#c890ff'],[152,90,'#e83a5a']].forEach(q=>{c.fillStyle=O;c.fillRect(q[0]-1,q[1]-1,4,4);c.fillStyle=q[2];c.fillRect(q[0],q[1],2,2);c.fillStyle='#ffffff';c.fillRect(q[0],q[1],1,1)}); // gems
  return cv}
-function drawDragonLair(c,x,y,t){x=Math.round(x);y=Math.round(y);if(!LAIR_BG)LAIR_BG=lairBack();c.save();c.translate(x,y);c.beginPath();c.rect(0,0,192,96);c.clip();c.drawImage(LAIR_BG,0,0);
+function drawDragonLair(c,x,y,t,wk){x=Math.round(x);y=Math.round(y);if(!LAIR_BG)LAIR_BG=lairBack();c.save();c.translate(x,y);c.beginPath();c.rect(0,0,192,96);c.clip();c.drawImage(LAIR_BG,0,0);
  [[70,80],[98,88],[126,84],[84,93],[146,92]].forEach((q,i)=>{const k=(t*.7+i*.21)%1;if(k<.2){const a=1-Math.abs(k-.1)*10;c.fillStyle='rgba(255,255,240,'+a.toFixed(2)+')';c.fillRect(q[0],q[1]-1,1,3);c.fillRect(q[0]-1,q[1],3,1)}}); // sparkles twinkling on the gold
- drawDragonRest(c,t);c.restore()}
+ drawDragonRest(c,t,wk);c.restore()}
 // The dragon asleep on its hoard (lair coordinates). It is painted once per breath (2 frames, DRAGON_REST) on its own canvas:
 // every part first, then scales, belly, wing, spines and horns, then light from above and a warm glow from the gold,
 // and ONE outline around the whole silhouette (so the parts read as one creature), then the face details.
@@ -1206,7 +1206,7 @@ function dragonRestLayer(br){const cv=document.createElement('canvas');cv.width=
  f.translate(-12,0);f.fillStyle=RD;f.fillRect(157,54,10,1);f.fillStyle='#4a0e0a';f.fillRect(168,65,22,1);f.fillStyle='#fff8e8';[172,178,184].forEach(x=>f.fillRect(x,66,1,2));f.fillStyle=O;f.fillRect(188,60,2,1);
  f.fillStyle=RL;f.fillRect(155,62,7,1);
  return fin}
-function drawDragonRest(c,t){const br=Math.sin(t*1.4)>0?1:0;if(!DRAGON_REST[br])DRAGON_REST[br]=dragonRestLayer(br);c.drawImage(DRAGON_REST[br],0,0);c.save();c.translate(-12,0);
- if((t%9)<1.2){c.fillStyle=O;c.fillRect(161,57,6,3);c.fillStyle='#ffd040';c.fillRect(162,58,4,1);c.fillStyle=O;c.fillRect(164,58,1,1)}else{c.fillStyle='#3a0c0a';c.fillRect(161,58,6,1);c.fillRect(162,59,4,1)} // asleep... or is it? (now and then an eye opens)
+function drawDragonRest(c,t,wk){const br=Math.sin(t*1.4)>0?1:0;if(!DRAGON_REST[br])DRAGON_REST[br]=dragonRestLayer(br);c.drawImage(DRAGON_REST[br],0,0);c.save();c.translate(-12,0);
+ if(wk||(t%9)<1.2){c.fillStyle=O;c.fillRect(161,57,6,3);c.fillStyle='#ffd040';c.fillRect(162,58,4,1);c.fillStyle=O;c.fillRect(164,58,1,1)}else{c.fillStyle='#3a0c0a';c.fillRect(161,58,6,1);c.fillRect(162,59,4,1)} // asleep... or is it? (now and then an eye opens)
  for(let i=0;i<3;i++){const k=(t*.6+i/3)%1;c.fillStyle='rgba(170,160,160,'+((1-k)*.45).toFixed(2)+')';c.beginPath();c.arc(190+k*3,58-k*24,1.5+k*4,0,Math.PI*2);c.fill()} // smoke from its nose
- drawZ(c,170,32-Math.round((t*6)%8),.8);c.restore()}
+ if(!wk)drawZ(c,170,32-Math.round((t*6)%8),.8);c.restore()} // (wk: awake, during a neighbor's scene)
