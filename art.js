@@ -1152,7 +1152,7 @@ function lairBack(){const cv=document.createElement('canvas');cv.width=192;cv.he
  return cv}
 function drawDragonLair(c,x,y,t,wk){x=Math.round(x);y=Math.round(y);if(!LAIR_BG)LAIR_BG=lairBack();c.save();c.translate(x,y);c.beginPath();c.rect(0,0,192,96);c.clip();c.drawImage(LAIR_BG,0,0);
  [[70,80],[98,88],[126,84],[84,93],[146,92]].forEach((q,i)=>{const k=(t*.7+i*.21)%1;if(k<.2){const a=1-Math.abs(k-.1)*10;c.fillStyle='rgba(255,255,240,'+a.toFixed(2)+')';c.fillRect(q[0],q[1]-1,1,3);c.fillRect(q[0]-1,q[1],3,1)}}); // sparkles twinkling on the gold
- drawDragonRest(c,t,wk);c.restore()}
+ if(wk!=='gone')drawDragonRest(c,t,wk);c.restore()} // (gone: the Dragon is out flying)
 // The dragon asleep on its hoard (lair coordinates). It is painted once per breath (2 frames, DRAGON_REST) on its own canvas:
 // every part first, then scales, belly, wing, spines and horns, then light from above and a warm glow from the gold,
 // and ONE outline around the whole silhouette (so the parts read as one creature), then the face details.

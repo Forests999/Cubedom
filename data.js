@@ -1472,3 +1472,37 @@ const UPGRADES={
  tavern:{name:'The Regular',gain:'A regular who never leaves the bar, and while the Tavern is on the board, fallen characters rest 20% less.'},
  library:{name:'The Restricted Section',gain:'A new idle for any visitor: once in a blue moon they find an undiscovered Compendium entry.'}};
 for(const id in UPGRADES){NAMES['lv:'+id]='Level 1: '+UPGRADES[id].name;TITLES['lv:'+id]='Level 1: '+UPGRADES[id].name;DESC['lv:'+id]=UPGRADES[id].gain+' Drag this box onto the upgrade slot next to your coins: '+UPGRADE_COST[1]+' coins. Upgrades last for the rest of the game, even if the character dies.'}
+// Level 1 numbers: the Knight dies 5% less often; the Wizard's scrolls and the Blacksmith's ingots cost 10% less; the Alchemist's luck lasts 50% longer;
+// the Fruit Merchant's monkey form and rotten fruit last half as long; the Bard's Resonance goes from 10% to 15%; the Apothecary's brewing makes a potion 5% of the time (rare)
+const KNIGHT_SAFE=.05,LV_DISCOUNT=.9,ALC_LUCK_LV=1.5,MERCHANT_HALF=.5,RES_LV=.15,APOTH_POTION=RARITY.r;
+// New idles that come with a room's level 1 (condition 'lv1')
+IDLES.priest.push(['psermon','c','lv1']);IDLES.rogue.push(['rvault','c','lv1']);IDLES.monarch.push(['mplea','r','lv1']);
+COMP_TABS.find(t=>t.id==='priest').idle.push('psermon');COMP_TABS.find(t=>t.id==='rogue').idle.push('rvault');COMP_TABS.find(t=>t.id==='monarch').idle.push('mplea');
+Object.assign(NAMES,{psermon:'A sermon at the podium',rvault:'Checking the vault',mplea:'A commoner\'s plea'});
+Object.assign(TITLES,{psermon:'Sunday Best',rvault:'Still All There',mplea:'A Plea to the Crown'});
+Object.assign(DESC,{psermon:'With his room at level 1, the Priest steps up to his podium and preaches to a few commoners who wander in.',
+ rvault:'With his room at level 1, the Rogue swings his painting aside and admires the vault of coins behind it. Looks only: the coins are his.',
+ mplea:'With the throne room at level 1, a commoner comes to ask for rations or gold for their family. A generous Monarch says yes 80% of the time, a greedy one 10%.'});
+Object.assign(FLAVOR,{psermon:'"...and so, my friends, be kind to your neighbors." Three commoners nod very seriously.',rvault:'One painting, one hinge, one very full vault. He counts it twice, just to be sure.',
+ mplea:'"Please, Your Majesty, my children are hungry." The court holds its breath.'});
+Object.assign(HINTS,{psermon:'The faithful one, once his room is upgraded, has something to say from on high.',rvault:'The shadow, once his room is upgraded, keeps checking on something behind a painting.',
+ mplea:'The crown, once the throne room is upgraded, hears from the humblest of subjects.'});
+const SERMON=['Be kind to your neighbors, and they will be kind to you.','Share your bread, and your table will never be empty.','The light shines on all of us, friends.','Forgive the Rogue. Then lock your doors.'];
+const PLEA=['Please, Your Majesty, my children are hungry.','A little bread for my family, I beg you.','Our harvest failed, Your Majesty. Could you spare some gold?'];
+// Library level 1: any visitor, once in a blue moon, finds an undiscovered Compendium entry (librev)
+COMP_TABS.find(t=>t.id==='library').pairs.push('librev');PAIR_WITH.librev=['library','anyone'];NAMES.librev='The restricted section';TITLES.librev='Forbidden Knowledge';
+DESC.librev='With the Library at level 1, anyone next to it may slip past the chain into the restricted section and find an undiscovered Compendium entry.';
+FLAVOR.librev='A chain, a padlock, and a sign that says KEEP OUT. Naturally, someone reads the book anyway.';HINTS.librev='Once the library is upgraded, a chained shelf may hold more than dust.';
+WELL_PCT.librev=structPct(RARITY.l);
+// Dragon level 1: now and then it takes off and circles the board, just for show (dfly)
+COMP_TABS.find(t=>t.id==='dragon').idle.push('dfly');NAMES.dfly='A flight over the kingdom';TITLES.dfly='Stretching Its Wings';
+DESC.dfly='With its lair at level 1, the Dragon now and then wakes, takes off and circles the board for a while, then settles back on its hoard. Just for show.';
+FLAVOR.dfly='A shadow sweeps over every roof in the kingdom. Then, with a satisfied rumble, it goes back to bed.';HINTS.dfly='Once its lair is upgraded, the hoard-sleeper gets restless wings.';
+const DRAGON_FLY_EVERY=8,DRAGON_FLY_TIME=14; // every 8 s the upgraded Dragon rolls its idle: a flight is rare (RARITY.r); it lasts 14 s
+// Goblin level 1: a group event, the goblin raid (grp:goblins): the Goblin next to two Fighters; a horde attacks them for 30 s
+COMP_TABS.find(t=>t.id==='group').idle.push('grp:goblins');COMP_TABS.find(t=>t.id==='goblin').idle.push('grp:goblins');
+NAMES['grp:goblins']='A goblin raid';TITLES['grp:goblins']='Goblin Raid!';
+DESC['grp:goblins']='With his cave at level 1 and two Fighters next to him, the Goblin may lead a horde against them (a group event, 30 seconds). Afterwards the Goblin flees and lives (common), is killed (uncommon), or a Fighter falls (rare).';
+FLAVOR['grp:goblins']='A war cry, a lot of tiny feet, and suddenly there are goblins EVERYWHERE.';HINTS['grp:goblins']='Once his cave is upgraded, the little green thief may call his friends against two fighters close by.';
+const GOBLIN_RAID_TIME=30,GOBLIN_RAID=[['gflee','c'],['gdie','u'],['gwin','r']];
+STRUCT_WHO.librev='Anyone';
