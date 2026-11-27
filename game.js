@@ -144,7 +144,7 @@ function kill(v){
  ui();save();
 }
 // The Druid dies: buried in his own space. He keeps his box, tags and place, but does nothing and nobody visits him.
-function bury(v){clearFx(v);v.target=null;v.hosting=null;v.fxs=[];v.npcDoor=null;v.sickT=0;v.tinyT=0;v.dead=true;v.asked=false;v.grudge=false; // dying lets him ask the Monarch againtoHome(v);v.al=1;dropBub(v);v.lb.style.opacity=.6;
+function bury(v){clearFx(v);v.target=null;v.hosting=null;v.fxs=[];v.npcDoor=null;v.sickT=0;v.tinyT=0;v.dead=true;v.asked=false;v.grudge=false;toHome(v);v.al=1;dropBub(v);v.lb.style.opacity=.6; // (dying lets him ask the Monarch again)
  poof(v.c*CELL+48,v.r*CELL+70,'#6a5030');markSeen('dburied');toast('The Druid has died and is buried in his grove. A spell scroll on his space could bring him back.')}
 function revive(v){v.dead=false;v.st='idle';v.wait=2;v.lb.style.opacity=1;v.mood='happy';v.mt=2;v.hop=.5;poof(v.x,v.y-20,'#6aba4a');poof(v.x,v.y-6,'#f2d870');say(v,'The grove gives me back my life!');save()}
 // ---- the grand funeral: the Monarch lies in state for ROYAL_FUNERAL_TIME seconds and EVERYONE on the board comes, whatever they were doing ----
@@ -179,17 +179,20 @@ let grp=null,grpClock=0;
 // (a character busy with an idle activity is pulled out of it; scenes with others, and a few activities that must finish, are not interrupted)
 const NO_INTERRUPT={demon:1,retire:1,aretire:1,recruit:1,massprayer:1,funeral:1,fireball:1,relic:1,ascend:1,prisoners:1,wcast:1,harvest:1,sleepc:1,swapc:1};
 const grpReady=v=>v&&!v.dead&&atHome(v)&&!isFarm(v.id)&&!isStruct(v)&&v.id!=='dragon'&&(freeU(v)||(v.st==='act'&&!v.hosting&&!v.target&&!NO_INTERRUPT[v.act]&&v.form!=='dknight'&&!TEMP_FORM[v.form]&&!(v.sickT>0)));
-// ---- group event: the Plague (PLAGUE_* in data.js). Not a gathering: nobody is held in place. One character falls ill (u.plagueT); whoever an ill character
-// visits catches it for PLAGUE_CATCH seconds (in visit's arrival); after PLAGUE_TIME it is all over. Not saved.
+// ---- group event: the Plague (PLAGUE_* in data.js). Not a gathering: nobody is held in place. One character is poisoned (the usual sickness, u.sickT,
+// marked u.plague): green bubbles, nobody visits them, a small chance of dying when it wears off, Healing Word cures it. Unlike poisoned wine, a plague-sick
+// character still goes visiting, and whoever they visit catches it for PLAGUE_CATCH seconds (in arrive). After PLAGUE_TIME every case is over. Not saved.
 let plague=null;
 const plagueOk=v=>v&&!v.dead&&!isStruct(v)&&v.id!=='dragon'&&v.st!=='away';
-function startPlague(o){const v=pick(o.us);plague={t:0};v.plagueT=PLAGUE_FIRST;v.mood='hurt';v.mt=2;say(v,pick(PLAGUE_SAY));markSeen('grp:plague');
+const plagueSick=v=>!!(v&&v.plague&&v.sickT>0);
+function infect(v,t){v.sickT=t;v.plague=true;v.mood='hurt';v.mt=1.5;poof(v.x,v.y-30,'#5ad040')}
+function startPlague(o){const v=pick(o.us);plague={t:0};infect(v,PLAGUE_FIRST);say(v,pick(PLAGUE_SAY));markSeen('grp:plague');
  logEv(titleOf('grp:plague'),CH[idOf(v)].name+' falls ill first.');toast('A plague! The '+CH[idOf(v)].name+' has fallen ill. Whoever they visit may catch it...')}
-function catchPlague(u,h){if(!plague||!(u.plagueT>0)||!plagueOk(h)||h.plagueT>0)return;h.plagueT=PLAGUE_CATCH;h.mood='hurt';h.mt=1.5;setTimeout(()=>{if(U[h.id]===h&&h.plagueT>0)say(h,pick(PLAGUE_SAY))},900)}
+function catchPlague(u,h){if(!plague||!plagueSick(u)||!plagueOk(h)||h.sickT>0)return;infect(h,PLAGUE_CATCH);setTimeout(()=>{if(U[h.id]===h&&h.sickT>0)say(h,pick(PLAGUE_SAY))},900)}
 function stepPlague(dt){if(!plague)return;plague.t+=dt;const end=plague.t>=PLAGUE_TIME;
- Object.values(U).forEach(v=>{if(!(v.plagueT>0))return;if(end||v.dead){v.plagueT=0;return}v.plagueT-=dt;if(v.plagueT<=0){v.plagueT=0;v.mood='happy';v.mt=1.2;return}
-  if(Math.random()<dt*2.5)parts.push({k:'sick',x:v.x+(Math.random()-.5)*12,y:v.y-30-Math.random()*8,t:0,life:1});if(Math.random()<dt*.08&&!v.bubT)say(v,pick(PLAGUE_SAY))});
- if(end||!Object.values(U).some(v=>v.plagueT>0)){plague=null;toast('The plague has passed. Everyone breathes a little easier.')}}
+ Object.values(U).forEach(v=>{if(!v.plague)return;if(!(v.sickT>0)){v.plague=false;return}if(end){v.sickT=0;v.plague=false;v.mood='happy';v.mt=1.2;return} // (when the plague is over, nobody dies of it)
+  if(Math.random()<dt*.08&&!v.bubT)say(v,pick(PLAGUE_SAY))});
+ if(end||!Object.values(U).some(plagueSick)){plague=null;toast('The plague has passed. Everyone breathes a little easier.')}}
 function groupOptions(){const ok=(r,c)=>{const v=U[at(r,c)];return grpReady(v)?v:null},out=[];
  for(let r=0;r<ROWS-1;r++)for(let c=0;c<COLS-1;c++){const q=[[r,c],[r,c+1],[r+1,c],[r+1,c+1]].map(p=>ok(p[0],p[1]));if(q.every(v=>v&&hasClass(v,'merchant')))out.push({kind:'market',us:q})} // four Merchants in a 2x2 square
  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS-2;c++){const q=[0,1,2].map(d=>ok(r,c+d));if(q.every(Boolean))out.push({kind:'feast',us:q})} // three side by side in a row
@@ -1032,7 +1035,7 @@ function visitRoll(u){const id=idOf(u),M=U.monarch;
  // The Druid never visits: he casts weather instead, except once to make his request of a Monarch next to him
  if(id==='druid'){if(!u.as&&!u.asked&&M&&rel(M,u)&&freeU(M)&&!(u.sickT>0)){visit(u,M,'request');return true}return !u.as&&startWeather(u)}
  // A greedy Monarch never visits; the Traveling Merchant has no scenes; sick (poisoned wine): no neighbor scenes
- if((id==='monarch'&&u.trait==='greedy')||u.id==='traveler'||u.sickT>0)return false;
+ if((id==='monarch'&&u.trait==='greedy')||u.id==='traveler'||(u.sickT>0&&!u.plague))return false; // (plague-sick characters still visit: that is how it spreads)
  // Priest and Necromancer are neighbors (any side) while a Death Knight exists: the Priest goes to cleanse him
  if(Object.values(U).some(v=>v.form==='dknight')&&(u.id==='priest'||u.id==='necromancer')&&U.priest&&U.necromancer&&rel(U.priest,U.necromancer)&&freeU(U.priest)&&freeU(U.necromancer)){visit(U.priest,U.necromancer,'cleanse');return true}
  const opts=nbrs(u).filter(h=>pairKind(u,h)!=='none');if(!opts.length)return false; // 'none' pairs never visit each other
@@ -1858,6 +1861,10 @@ function talk(u,dt){
   once('c',3,()=>say(u,pick(['Hush now, great one...','Sleep, sleep, mighty beast...','Lullaby, and good night...'])));
   if(u.tt>=3&&u.tt<7.4&&Math.random()<dt*3)parts.push({k:'note',x:u.x+u.face*8+(Math.random()-.5)*6,y:u.y-40,t:0,life:1.6});
   once('d',7.6,()=>{u.mood='happy';u.mt=1.6;say(u,'Phew...')})}
+ else if(k==='dretreat'){end=4.6;u.face=1;// a Fighter provokes the Dragon, sees it wake, and runs home
+  once('a',.4,()=>{say(u,pick(['Wake up, beast! Face me!','Have at thee, worm!','Your hoard is mine!']));gest(u,'up',1);u.mood='mad';u.mt=1.4});
+  h.wake=u.tt>=1.6&&u.tt<4.4?1:0;once('b',1.6,()=>{u.mood='shock';u.mt=3;u.hop=.6});
+  once('c',2.4,()=>say(u,pick(['...On second thought, carry on sleeping!','Tactical retreat!','I just remembered something urgent!'])))}
  else if(k==='dfight'){end=99;u.face=1;let dead=false;// a Fighter provokes the Dragon: its fire wins
   once('a',.4,()=>{say(u,pick(['Wake up, beast! Face me!','Have at thee, worm!','Your hoard is mine!']));gest(u,'up',1);u.mood='mad';u.mt=2});
   h.wake=u.tt>=1.6?1:0;once('b',1.6,()=>{u.mood='shock';u.mt=2;u.hop=.3});
@@ -1995,7 +2002,7 @@ function step(dt){
   if(u.pet){const p=u.pet,bx=cellX(u)*CELL,tx=cl(u.x-u.face*(p.kind==='bear'?32:p.kind==='wolf'?26:16),bx+(p.kind==='bear'?20:12),bx+(p.kind==='bear'?76:84));if(Math.abs(tx-p.x)>60||Math.abs(u.y-p.y)>3){p.x=tx;p.y=u.y;p.walk=false}else{const d=tx-p.x;p.walk=Math.abs(d)>1;if(p.walk){p.face=d>0?1:-1;p.x+=Math.sign(d)*Math.min(Math.abs(d),40*dt);p.t=(p.t||0)+dt}else p.face=u.face}}
   // poisoned wine: sick for SICK_TIME (no neighbor scenes); 5% it is fatal when it wears off
   if(u.sickT>0){if(Math.random()<dt*1.5)parts.push({k:'sick',x:u.x+Math.random()*12-6,y:u.y-40,t:0,life:1});
-   if((u.sickT-=dt)<=0){if(Math.random()<doom(ODDS.sickDeath,u)){const nm=CH[idOf(u)].name;kill(u);toast('The poisoned wine was too much. The '+nm+' has died.');continue}u.mood='happy';u.mt=1.5;say(u,'Phew. I feel better now.')}}
+   if((u.sickT-=dt)<=0){if(Math.random()<doom(ODDS.sickDeath,u)){const nm=CH[idOf(u)].name;kill(u);toast(u.plague?'The plague claims the '+nm+'.':'The poisoned wine was too much. The '+nm+' has died.');continue}u.plague=false;u.mood='happy';u.mt=1.5;say(u,'Phew. I feel better now.')}}
   if(u.tinyT>0&&(u.tinyT-=dt)<=0){poof(u.x,u.y-14,'#c890ff');say(u,'Back to normal size. Shame.')}
   if(u.beastT>0&&(u.beastT-=dt)<=0&&u.form==='beast'){u.form=null;setLabel(u);poof(u.x,u.y-24,'#7aff7a');u.mood='shock';u.mt=1.2;say(u,'Ugh... what happened? Why is there fur everywhere?')}if(u.lite!=null)u.lite+=dt;if(u.dark!=null)u.dark+=dt;
   if(u.und){u.und.t+=dt;if(u.und.blink>0)u.und.blink-=dt}
@@ -2334,7 +2341,7 @@ function infoText(k){const fl=flavorOf(k),note=NOTE[k]?' '+NOTE[k]:'',p=pctOf(k)
  if(WELL_PCT[k]){const sid2=(PAIR_WITH[k]||[])[0],tag=((PAIR_WITH[k]||[])[1]||'').slice(4),tg={mage:'Mage',fighter:'Fighter',merchant:'Merchant',monstrous:'Monstrous character'}[tag],nm=CNAME(sid2),sec=Object.keys(STRUCT_SECOND).find(q=>(STRUCT_ACTS[sid2]||{})[tag]&&STRUCT_ACTS[sid2][tag].includes(q));
   return 'Idle ('+WELL_PCT[k]+' chance): a '+tg+' next to the '+nm+' ('+Math.round(STRUCT_IDLE*100)+'% of their idle activities use the '+nm+'; with several tags, one is picked at random'+(sec?'; the rarer outcome happens '+Math.round(STRUCT_SECOND[sec]*100)+'% of the time':'')+'). '+fl+note}
  if(k==='grp:dragon')return 'Boss battle (a group event, checked every 5 minutes): once the dragon has been heard of and you have held 300 coins, with 3 Fighters, 2 Mages and a Merchant anywhere on the board (6 different characters). After 30 seconds its fire breath kills whoever lives on one random space, and it flies off; its 100 hit points carry over between battles. '+fl+note;
- if(k==='grp:plague')return 'Group event (checked every 5 minutes): with 6 or more characters on the board, but only when another group event could start at that moment too. One of them falls ill for 1 minute; whoever an ill character visits catches it for 30 seconds. After 3 minutes the plague is over. '+fl+note;
+ if(k==='grp:plague')return 'Group event (checked every 5 minutes): with 6 or more characters on the board, but only when another group event could start at that moment too. One of them is poisoned for 1 minute (the same sickness as poisoned wine: green bubbles, nobody visits them, and it kills 5% of the time when it wears off). A plague-sick character still goes visiting, and whoever they visit is poisoned for 30 seconds. After 3 minutes the plague is over and every case ends safely. '+fl+note;
  if(k.startsWith('grp:'))return 'Group event (checked every 5 minutes, it happens whenever the board allows): '+({'grp:market':'four Merchants in a 2x2 square','grp:feast':'any three characters side by side in a row','grp:wellchat':'characters on all four sides of the Well','grp:classic':'the Priest, Knight, Wizard and Rogue in the same row as the Tavern','grp:dragon':'3 Fighters, 2 Mages and a Merchant anywhere on the board (6 different characters), until it is beaten'}[k])+', at home and free'+', for 1 minute. '+fl+note;
  if(k.startsWith('rq:')){const q=k.slice(3);return 'Visit (his first visit to the Monarch; granted 80% by a generous one, 10% by a greedy one): '+(q==='paladin'?'a Paladin':'the '+CNAME(q))+' next to the Monarch, any side. '+fl}
  for(const kind in ITEM_KEY)for(const c in ITEM_KEY[kind])if(ITEM_KEY[kind][c]===k)return 'Item: '+ITEM_NAME[kind].toLowerCase()+' on '+(c==='*'?'anyone without the Fighter tag':'the '+CNAME(c))+'. '+fl+note;
@@ -2565,7 +2572,7 @@ function poofTile(c,x,y,k,col){const s=Math.max(1,7*(1-k));c.fillStyle=col||'#6a
 const flash=(on,tt)=>on&&Math.floor(tt*14)%2?.2:1;
 // Compendium tiles for the Dragon's neighbors: who stands in its lair (s), whether it wakes, mood when it does (m), fire aimed at (fx,fy), a coin, notes, running off
 const DRAGON_TILE={dstudy:{s:'wizard_blue'},dscale:{s:'wizard_blue',wake:1,m:'shock'},dbottle:{s:'wizard_blue',wake:1,m:'happy',fire:[44,40]},dsteal:{s:'merchant',coin:1},
- dlullaby:{s:'merchant',wake:1,m:'happy',notes:1},dfight:{s:'knight',wake:1,m:'shock',fire:[34,46],fall:1},dslay:{s:'knight',wake:1,m:'mad',fire:[40,4]},dpeek:{s:'goblin',wake:1,m:'shock',flee:1}};
+ dlullaby:{s:'merchant',wake:1,m:'happy',notes:1},dretreat:{s:'knight',wake:1,m:'shock',flee:1},dfight:{s:'knight',wake:1,m:'shock',fire:[34,46],fall:1},dslay:{s:'knight',wake:1,m:'mad',fire:[40,4]},dpeek:{s:'goblin',wake:1,m:'shock',flee:1}};
 function idleTile(kind,wp){
  const wide=kind==='grp:market'||kind==='grp:feast'||kind==='grp:dragon'||kind==='grp:plague'||kind==='fireball'||kind==='raise'||kind==='nscroll'||kind==='wave'||kind==='alcpotion'||kind in DRAGON_TILE,[c,x]=mkc(wide?192:96,96,NAMES[kind]+(wp?' ('+wp+')':''));
  anim.push(t=>{x.clearRect(0,0,wide?192:96,96);

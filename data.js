@@ -1035,6 +1035,7 @@ const HINTS={
  dbottle:'Anyone who works magic, beside the hoard-sleeper, may try to keep some of its fire.',
  dsteal:'Anyone with something to sell, beside the hoard-sleeper, will notice all that gold.',
  dlullaby:'Anyone with something to sell, beside the hoard-sleeper, had better hope it stays asleep. If not, a soft voice helps.',
+ dretreat:'Anyone handy with a weapon, beside the hoard-sleeper, may wake it, then remember an urgent appointment elsewhere.',
  dfight:'Anyone handy with a weapon, beside the hoard-sleeper, may be brave enough to wake it. Bravery is not always rewarded.',
  dslay:'Anyone handy with a weapon, beside the hoard-sleeper... this is how legends are made.',
  dpeek:'Anything monstrous beside the hoard-sleeper will want a look at its den.'};
@@ -1408,30 +1409,31 @@ Object.assign(FLAVOR,{drumor:'"A dragon, I tell you! Big as a barn, breathes fir
 // ---------- the Dragon's neighbors (it works like a structure for them: STRUCT_IDLE of their idle rolls, by one of their tags; DRAGON_ACTS has the tiers) ----------
 // Mage: study it C, take a scale U, bottle some of its fire R. Merchant: steal a coin C (+1), the dragon wakes and they sing it back to sleep U.
 // Fighter: provoke it and die in its fire C, or slay it L (+DRAGON_SLAY_GOLD coins; the Dragon goes back to the shelf and can't be placed for DRAGON_REST_TIME seconds). Monstrous: a peek, then flee C.
-const DRAGON_ACTS={mage:[['dstudy','c'],['dscale','u'],['dbottle','r']],merchant:[['dsteal','c'],['dlullaby','u']],fighter:[['dfight','c'],['dslay','l']],monstrous:[['dpeek','c']]};
+const DRAGON_ACTS={mage:[['dstudy','c'],['dscale','u'],['dbottle','r']],merchant:[['dsteal','c'],['dlullaby','u']],fighter:[['dretreat','c'],['dfight','c'],['dslay','l']],monstrous:[['dpeek','c']]};
 const DRAGON_SLAY_GOLD=500,DRAGON_REST_TIME=300;
 STRUCT_ACTS.dragon=Object.fromEntries(Object.keys(DRAGON_ACTS).map(t=>[t,DRAGON_ACTS[t].map(e=>e[0])]));
-{const dt=COMP_TABS.find(t=>t.id==='dragon');dt.pairs.push('dstudy','dscale','dbottle','dsteal','dlullaby','dfight','dslay','dpeek')}
-Object.assign(PAIR_WITH,{dstudy:['dragon','tag:mage'],dscale:['dragon','tag:mage'],dbottle:['dragon','tag:mage'],dsteal:['dragon','tag:merchant'],dlullaby:['dragon','tag:merchant'],dfight:['dragon','tag:fighter'],dslay:['dragon','tag:fighter'],dpeek:['dragon','tag:monstrous']});
-Object.assign(NAMES,{dstudy:'Studying the dragon',dscale:'A dragon scale',dbottle:'Fire in a bottle',dsteal:'A coin from the hoard',dlullaby:'A dragon lullaby',dfight:'Provoking the dragon',dslay:'Dragonslayer',dpeek:'A peek into the den'});
-Object.assign(TITLES,{dstudy:'Field Notes',dscale:'One Scale Lighter',dbottle:'Bottled Fury',dsteal:'Finders Keepers, Dragon Edition',dlullaby:'Hush, Little Dragon',dfight:'A Very Bad Idea',dslay:'Dragonslayer',dpeek:'Nope'});
+{const dt=COMP_TABS.find(t=>t.id==='dragon');dt.pairs.push('dstudy','dscale','dbottle','dsteal','dlullaby','dretreat','dfight','dslay','dpeek')}
+Object.assign(PAIR_WITH,{dstudy:['dragon','tag:mage'],dscale:['dragon','tag:mage'],dbottle:['dragon','tag:mage'],dsteal:['dragon','tag:merchant'],dlullaby:['dragon','tag:merchant'],dretreat:['dragon','tag:fighter'],dfight:['dragon','tag:fighter'],dslay:['dragon','tag:fighter'],dpeek:['dragon','tag:monstrous']});
+Object.assign(NAMES,{dstudy:'Studying the dragon',dscale:'A dragon scale',dbottle:'Fire in a bottle',dsteal:'A coin from the hoard',dlullaby:'A dragon lullaby',dretreat:'A tactical retreat',dfight:'Provoking the dragon',dslay:'Dragonslayer',dpeek:'A peek into the den'});
+Object.assign(TITLES,{dstudy:'Field Notes',dscale:'One Scale Lighter',dbottle:'Bottled Fury',dsteal:'Finders Keepers, Dragon Edition',dlullaby:'Hush, Little Dragon',dretreat:'Strategic Withdrawal',dfight:'A Very Bad Idea',dslay:'Dragonslayer',dpeek:'Nope'});
 Object.assign(DESC,{dstudy:'A Mage next to the Dragon tiptoes into its lair and studies it while it sleeps.',dscale:'A Mage next to the Dragon carefully plucks one of its scales to study.',
  dbottle:'A Mage next to the Dragon pokes it awake and catches some of its fire breath in a glass bottle.',dsteal:'A Merchant next to the Dragon quietly takes a coin from its hoard. +1 coin.',
  dlullaby:'A Merchant next to the Dragon goes for a coin, the Dragon wakes, and the Merchant sings it back to sleep.',
+ dretreat:'A Fighter next to the Dragon provokes it, sees it wake up, and wisely runs home.',
  dfight:'A Fighter next to the Dragon provokes it to a fight. The Dragon wins: the Fighter dies in its fire.',
  dslay:'A Fighter next to the Dragon provokes it to a fight and slays it! +500 coins. The Dragon goes back to the shelf and can\'t be placed again for 5 minutes.',
  dpeek:'Something Monstrous next to the Dragon peeks into its den and flees in terror.'});
 Object.assign(FLAVOR,{dstudy:'"Scales like rubies... breathing like a forge..." Furious note-taking, very quietly.',dscale:'One scale, plucked like a loose tooth. The dragon twitches. Nobody breathes.',
  dbottle:'One poke, one roar, one cork. Fire, bottled, for science.',dsteal:'One coin. It will never miss one coin. Probably.',dlullaby:'The eye opens. The merchant sings. Very, very softly.',
- dfight:'"Wake up, beast!" It did.',dslay:'Against all odds, the dragon falls. The hoard is yours: five hundred coins!',dpeek:'Two eyes peek in. One huge yellow eye opens. Footsteps, running.'});
+ dretreat:'"Wake up, beast!" It did. "...On second thought, carry on sleeping!"', dfight:'"Wake up, beast!" It did.',dslay:'Against all odds, the dragon falls. The hoard is yours: five hundred coins!',dpeek:'Two eyes peek in. One huge yellow eye opens. Footsteps, running.'});
 Object.assign(NOTE,{dsteal:'+1 coin.',dfight:'The Fighter dies.',dslay:'+500 coins; the Dragon rests for 5 minutes, off the board.'});
-Object.assign(WELL_PCT,{dstudy:structPct(.8),dscale:structPct(RARITY.u),dbottle:structPct(RARITY.r),dsteal:structPct(1-RARITY.u),dlullaby:structPct(RARITY.u),dfight:structPct(1-RARITY.l),dslay:structPct(RARITY.l),dpeek:structPct(1)});
+Object.assign(WELL_PCT,{dstudy:structPct(.8),dscale:structPct(RARITY.u),dbottle:structPct(RARITY.r),dsteal:structPct(1-RARITY.u),dlullaby:structPct(RARITY.u),dretreat:structPct((1-RARITY.l)/2),dfight:structPct((1-RARITY.l)/2),dslay:structPct(RARITY.l),dpeek:structPct(1)});
 DEADLY.dfight=1;
 // ---------- group event: the Plague (any 6 characters on the board; only offered when another group event could happen too) ----------
 // One character falls ill for PLAGUE_FIRST seconds; whoever an ill character visits catches it for PLAGUE_CATCH seconds; it all ends after PLAGUE_TIME. Looks and spreading only.
 const PLAGUE_MIN=6,PLAGUE_FIRST=60,PLAGUE_CATCH=30,PLAGUE_TIME=180;
 COMP_TABS.find(t=>t.id==='group').idle.push('grp:plague');
 NAMES['grp:plague']='The plague';TITLES['grp:plague']='Plague!';
-DESC['grp:plague']='With 6 or more characters on the board (and only when another group event could happen too): one of them falls ill for 1 minute. Whoever an ill character visits catches it for 30 seconds. After 3 minutes the plague is gone.';
+DESC['grp:plague']='With 6 or more characters on the board (and only when another group event could happen too): one of them is poisoned for 1 minute. Sick characters can still go visiting, and whoever they visit is poisoned for 30 seconds. Poisoned characters may die when it wears off, unless the Druid\'s Healing Word cures them first. After 3 minutes the plague is gone.';
 FLAVOR['grp:plague']='A cough, a sneeze, and soon half the kingdom is green around the gills.';
 const PLAGUE_SAY=['*cough* *cough*','I don\'t feel so good...','Achoo!','Ugh, my head...'];
