@@ -223,7 +223,7 @@ const COMP_TABS=[
  {id:'necromancer',name:'Necromancer',pairs:['sleep','dknight','horde','nchat','purge','debate','cleanse','duel','craft','golem','tomes','swap','forge'],idle:['spirits','candles','lightning','raise'],items:['sniff','skulls','relic']},
  {id:'merchant',name:'Fruit Merchant',pairs:['apple','slip','feast','fruitfall','starfruit','curse','banana','durian','jokes','murder','advertW','apgift','mtrade','farm'],idle:['advert','sell','mob'],items:['monkey','backwards']},
  {id:'apothecary',name:'Apothecary',pairs:['apgift','mtrade','farm'],idle:['trip','tripbreak','abrew','herbs'],items:['apoth','apcoins','appotion']}];
-const DISCOVER_EVERY=5,DISCOVER_REWARD=10; // every 5 different things discovered = +10 coins
+const DISCOVER_EVERY=5,DISCOVER_REWARD=5; // every 5 different things discovered = +5 coins
 const BOOST_MAX=2; // the Wizard's advertising: 1 coin every 30 s, stacking up to this many (there is no other passive coin gain)
 // Commoner customer who comes in to buy from the Fruit Merchant or the Apothecary
 const CM={body:'#9a7a5a',bodyD:'#7a5a40',pants:'#5a5a6a',boot:'#3a2a1a',belt:'#5a3a1e'};
@@ -465,7 +465,7 @@ const TAG_NAMES={'tag:mage':'a Mage','tag:merchant':'a Merchant','tag:fighter':'
 // tempt = the demon talks the Rogue into it; betray = the Necromancer's sacrifice works; sickDeath = poisoned wine kills when it wears off
 Object.assign(ODDS,{alcMage:.2,promo:.1,haste:.5,beast:.15,fourMage:.1,tempt:.05,sickDeath:.05,
  dungeon:{coins:.2,artifact:.1,scrolls:.25,potions:.25,secret:.2}});
-const SICK_TIME=60,TINY_TIME=120,DUNGEON_TIME=180,DUNGEON_GOLD=50,ROGUE_BUY=5,STEAL_SHARE=.05;
+const SICK_TIME=60,TINY_TIME=120,DUNGEON_TIME=180,DUNGEON_GOLD=50,ROGUE_BUY=5,STEAL_SHARE=.05,STEAL_MAX=30; // (the Rogue's light fingers take STEAL_SHARE of your coins, at most STEAL_MAX)
 // Rogue relative to each character. The Rogue is always the one who visits.
 PAIRS['rogue>apothecary']={right:'nefarious',left:'poisons',below:'wine',above:'rtrip'};
 PAIRS['rogue>merchant']={left:'pinch',right:'pinch',above:'pinch',below:'pinch'};
@@ -528,7 +528,7 @@ Object.assign(DESC,{
  rgossip:'Rogue above the Wizard. They gossip about the Knight.',
  spell:'Rogue below the Wizard. Lightning and frost! The Rogue is jealous, unless he has the Mage tag: then he is amazed.',
  dressup:'Rogue right of the Wizard. They try on disguises; afterwards the Wizard keeps a new robe color.',
- rsteal:'Rogue left of the Wizard. He steals from the Wizard: you lose 5% of your coins.',
+ rsteal:'Rogue left of the Wizard. He steals from the Wizard: you lose 5% of your coins (at most 30).',
  rritual:'Rogue above the Necromancer. He joins a dark ritual by candlelight.',
  betray:'Rogue below the Necromancer. A ritual invite... it is a trap! 80% he escapes; 20% he is sacrificed and the Necromancer gets a little skeleton follower.',
  rcandles:'Rogue right of the Necromancer. While the Necromancer runs errands, the Rogue pockets black candles and a skull.',
@@ -1437,3 +1437,18 @@ NAMES['grp:plague']='The plague';TITLES['grp:plague']='Plague!';
 DESC['grp:plague']='With 6 or more characters on the board (and only when another group event could happen too): one of them is poisoned for 1 minute. Sick characters can still go visiting, and whoever they visit is poisoned for 30 seconds. Poisoned characters may die when it wears off, unless the Druid\'s Healing Word cures them first. After 3 minutes the plague is gone.';
 FLAVOR['grp:plague']='A cough, a sneeze, and soon half the kingdom is green around the gills.';
 const PLAGUE_SAY=['*cough* *cough*','I don\'t feel so good...','Achoo!','Ugh, my head...'];
+// ---------- the economy: death cooldown, building costs, the Monarch's renown shop ----------
+// A character who dies goes back to the shelf greyed out for DEATH_COOLDOWN seconds of play (S.deadCD); REVIVE_COST coins bring them back at once.
+// Not for characters that already cost coins to place (the Apothecary, the Monarch) or the Dragon (its own rest, which coins can't shorten).
+const DEATH_COOLDOWN=300,REVIVE_COST=15,NO_COOLDOWN={apothecary:1,monarch:1,dragon:1};
+// Placing a building from the shelf costs coins (every time, like the Apothecary)
+const STRUCT_COST={well:10,tavern:50,library:50};
+// The Monarch's shop: RENOWN_PRICE coins for RENOWN_BUY renown
+const RENOWN_PRICE=100,RENOWN_BUY=5;
+// Room upgrades (dragging a box onto the upgrade slot; S.lvl): level 1, then level 2 (level 2's effects come later: UPGRADE_MAX)
+const UPGRADE_COST=[0,250,500],UPGRADE_MAX=1;
+const NECRO_SPARE=.1,TAVERN_CD=.8; // level 1: the Necromancer spares a fallen character the wait 10% of the time; the Tavern makes the wait 20% shorter
+COMP_TABS.find(t=>t.id==='monarch').items.push('rshop');
+NAMES.rshop='Coin in the throne room: renown for 100 coins';TITLES.rshop='A Gift to the Crown';
+DESC.rshop='Tap the coin in the Monarch\'s room to pay 100 coins into the royal treasury for +5 renown.';
+HINTS.rshop='The throne room has a gold coin in the corner too. The crown rewards generosity... with fame.';

@@ -58,6 +58,30 @@ function label(u){u.lb.style.left=(u.c*CELL+6)/W*100+'%';u.lb.style.top=(u.r*CEL
 const rogueOutfit=()=>{const o=ODDS.rogueOutfit;return pickW(Object.keys(o),k=>o[k])};
 // Spending coins (counted in S.spent: spending SMITH_UNLOCK coins in total unlocks the Blacksmith)
 function spend(n,shop){S.coins-=n;S.spent=(S.spent||0)+n;checkUnlocks();if(shop)questStat('spent',n)} // (shop = bought from a character: counts for the quest Big Spender)
+// ---- room upgrades: a character's level (S.lvl, for good, even through death; see UPGRADE_COST in data.js) ----
+const lvl=id=>(S.lvl&&S.lvl[isFarm(id)?'':id])||0;
+const lvlOn=id=>!!(U[id]&&!U[id].dead&&lvl(id)>=1); // an upgraded character (or building) on the board
+// ---- what it costs to set a box down from the shelf: the Apothecary, every Monarch after the first, buildings (STRUCT_COST) ----
+const placeCost=id=>id==='apothecary'?APOTH_PLACE_COST:id==='monarch'&&(S.monarchs||0)>=1?MONARCH_COST:STRUCT_COST[id]||0;
+// ---- death cooldown (DEATH_COOLDOWN in data.js): seconds of play left before a fallen character can go back on the board ----
+const cdLeft=id=>Math.max(0,((S.deadCD||{})[id]||0)-(S.playT||0));
+function deathCD(id){if(NO_COOLDOWN[id]||isFarm(id)||id==='tree'||!S.un[id]&&!SHELF_CHARS.includes(id))return;
+ if(id!=='necromancer'&&lvlOn('necromancer')&&Math.random()<NECRO_SPARE){markSeen('lv:necromancer');setTimeout(()=>toast('The Necromancer\'s dark arts send the '+CH[id].name+' straight back to the shelf. No waiting!'),1400);return} // (his level 1)
+ S.deadCD=S.deadCD||{};S.deadCD[id]=(S.playT||0)+DEATH_COOLDOWN*(lvlOn('tavern')?TAVERN_CD:1)} // (the Tavern's level 1: a shorter wait)
+function reviveEarly(id){const t=cdLeft(id);if(!t)return;if((S.coins||0)<REVIVE_COST){toast('Bringing the '+CH[id].name+' back early costs '+REVIVE_COST+' coins. You have '+(S.coins||0)+'.');return}
+ ask('Bring the '+CH[id].name+' back now for '+REVIVE_COST+' coins? (Otherwise they return in '+fmtTime(t)+'.)','Pay '+REVIVE_COST,()=>{if(!cdLeft(id)||S.coins<REVIVE_COST)return;spend(REVIVE_COST);showCoins();delete S.deadCD[id];shelfTimers();save()})}
+const fmtTime=s=>{s=Math.ceil(s);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+// the shelf: a fallen character's countdown and early-return price (once a second)
+function shelfTimers(){document.querySelectorAll('.it[data-id]').forEach(b=>{const id=b.dataset.id,t=cdLeft(id),el=b.querySelector('.cd');b.classList.toggle('cool',t>0);if(el)el.textContent=t>0?'Back in '+fmtTime(t):'';
+  const cost=b.querySelector('.cost');if(cost){const n=t>0?REVIVE_COST:placeCost(id);cost.hidden=!n||!!U[id];cost.lastChild.textContent=n}});
+ if(S.deadCD)for(const id in S.deadCD)if(!cdLeft(id))delete S.deadCD[id]}
+setInterval(shelfTimers,1000);
+// ---- the Monarch's shop: RENOWN_PRICE coins for RENOWN_BUY renown ----
+function buyRenown(m){if(mourning()){toast('The kingdom is in mourning. No shopping during the funeral.');return}
+ if(S.renownOff){toast('Renown is switched off in this game (Unlock all was used).');return}
+ if((S.coins||0)<RENOWN_PRICE){toast('A royal honor costs '+RENOWN_PRICE+' coins. You have '+(S.coins||0)+'.');return}
+ ask('Pay '+RENOWN_PRICE+' coins into the royal treasury for +'+RENOWN_BUY+' renown?','Pay '+RENOWN_PRICE,()=>{if(S.coins<RENOWN_PRICE||!U[m.id])return;spend(RENOWN_PRICE,true);showCoins();S.renownBonus=(S.renownBonus||0)+RENOWN_BUY;showRenown();markSeen('rshop');
+  m.hop=.5;m.mood='happy';m.mt=1.5;gest(m,'up',.8);say(m,pick(['The crown thanks you!','Your name shall be sung in the halls!','A generous gift. The kingdom will remember.']));parts.push({k:'txt',s:'+'+RENOWN_BUY+' renown',x:m.x,y:m.y-50,t:0,life:1.6});save()})}
 function addUnit(id,r,c,quiet,weapon,form,color,skin){
  const lb=document.createElement('div');lb.className='lb';$('#labels').appendChild(lb);
  U[id]={id,r,c,lb,skin:skin!=null?skin:SKIN_CHARS.includes(id)?Math.floor(Math.random()*SKINS.length):0, // skin tone (new Knights, Merchants, Priests: random)
@@ -138,6 +162,7 @@ function kill(v){
  if(v.id==='monarch'){royalFuneral(v);return}
  // the Traveling Merchant goes back to the shelf when he dies (not on the road)
  if(v.id==='traveler'){S.travelRoam=false;setTimeout(buildShelf,0)}
+ deathCD(v.id); // (back on the shelf, greyed out for a while: DEATH_COOLDOWN)
  dropBub(v);v.lb.remove();if(v.hoardEl)v.hoardEl.remove();delete U[v.id];
  // a fallen Priest may unlock the Necromancer (once)
  if(v.id==='priest'&&!S.un.necromancer&&Math.random()<ODDS.necro){S.un.necromancer=true;buildShelf();toast('Something dark stirs... a Necromancer box has appeared on the shelf.')}
@@ -1598,7 +1623,7 @@ function talk(u,dt){
   once('e',4.6,()=>{R.mood='happy';R.mt=1.2})}
  else if(k==='rsteal'){end=4.8;// light fingers: STEAL_SHARE of your coins
   once('a',.2,()=>{u.inv=true});
-  once('b',1.4,()=>{const n=Math.ceil((S.coins||0)*STEAL_SHARE);u.stole=n;if(n>0){S.coins-=n;showCoins();save();parts.push({k:'txt',s:'-'+n,x:R.x-4,y:R.y-50,t:0,life:1.4,icon:'coin'})}});
+  once('b',1.4,()=>{const n=Math.min(STEAL_MAX,Math.ceil((S.coins||0)*STEAL_SHARE));u.stole=n;if(n>0){S.coins-=n;showCoins();save();parts.push({k:'txt',s:'-'+n,x:R.x-4,y:R.y-50,t:0,life:1.4,icon:'coin'})}});
   once('c',2.2,()=>{u.inv=false;say(Wz,u.stole?'Has anyone seen my coin purse?':'Why are my pockets inside out?')});
   once('d',3.2,()=>{say(R,u.stole?'Nope. Never seen it.':'Empty pockets? A wizard? Tragic.');R.mood='happy';R.mt=1.2})}
  // ---------- Rogue + Necromancer ----------
@@ -2156,7 +2181,7 @@ function render(){
  bolts.forEach(b=>{const a=1-b.t/.5;g.fillStyle='rgba(255,255,255,'+(a*.6)+')';b.cells.forEach(q=>g.fillRect(q[0],q[1],CELL,CELL));
   [['rgba(140,210,255,'+a+')',6],['#fff',2]].forEach(s=>{g.strokeStyle=s[0];g.lineWidth=s[1];g.beginPath();b.p.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.stroke()})});
  // coin buttons on shop rooms (drawn on top so characters never hide them): tap to buy
- for(const id in U){const u=U[id];if(id!==dm&&(id==='apothecary'||id==='blacksmith'||id==='traveler'||deskOn(u)))drawShopCoin(g,u.c*CELL,u.r*CELL)}
+ for(const id in U){const u=U[id];if(id!==dm&&(id==='apothecary'||id==='blacksmith'||id==='traveler'||(id==='monarch'&&!u.dead)||deskOn(u)))drawShopCoin(g,u.c*CELL,u.r*CELL)}
  // bats and bee swarms fly on top of everything
  // the Druid's Overgrowth on board spaces (fades in and out)
  weathers.forEach(w=>{if(isOpen(w.r,w.c))drawWeather(g,w.c*CELL,w.r*CELL,w.k,w.t,cl(w.t/1,0,1)*cl((WEATHER_TIME+1-w.t)/1,0,1))});
@@ -2208,6 +2233,7 @@ cv.onpointerup=e=>{if(!drag){const p=pt(e);if(lockTap&&p.inb){const[r,c]=cellOf(
   if(u&&u.id==='apothecary'&&onShopCoin(u,p)){buyPotion(u);return}
   if(u&&u.id==='blacksmith'&&onShopCoin(u,p)){buyIngot(u);return}
   if(u&&u.id==='traveler'&&onShopCoin(u,p)){buyArtifact(u);return}
+  if(u&&u.id==='monarch'&&!u.dead&&onShopCoin(u,p)){buyRenown(u);return}
   if(u&&deskOn(u)&&onShopCoin(u,p)){writeScroll(u);return}
   if(u&&Math.hypot(p.x-u.x,p.y-(u.y-22))<30){u.hop=.5;u.mood='happy';u.mt=1;gest(u,'up',.6)}return}
  if(inRect(tray,e))sendToShelf(d.id);
@@ -2243,20 +2269,20 @@ function buildShelf(){
  const order=[...have.slice().sort((a,b)=>CH[a].name.localeCompare(CH[b].name)),...ALL_CHARS.filter(id=>!have.includes(id))];
  order.forEach(id=>{if(!have.includes(id)){const b=document.createElement('button');b.className='it locked';b.disabled=true;b.innerHTML='<canvas width="96" height="96"></canvas><span class="clue"></span>';b.lastChild.textContent=SHELF_CLUE[id]||'???';
    const t=b.firstChild.getContext('2d');t.fillStyle='#221e3c';t.fillRect(0,0,96,96);t.font='34px '+GAME_FONT;t.fillStyle='#4a4470';t.textAlign='center';t.fillText('?',48,62);tray.appendChild(b);return}
-  const b=document.createElement('button');b.className='it';b.dataset.id=id;b.innerHTML='<canvas width="96" height="96"></canvas>'+CH[id].name+tagImg(id);
+  const b=document.createElement('button');b.className='it';b.dataset.id=id;b.innerHTML='<canvas width="96" height="96"></canvas>'+CH[id].name+tagImg(id)+'<span class="cost" hidden><i></i><b></b></span><span class="cd"></span>'; // (cost: the coin price to set it down or bring it back early; cd: a fallen character's countdown)
   const t=b.firstChild.getContext('2d');t.imageSmoothingEnabled=false;if(id==='dragon'){t.fillStyle='#221e3c';t.fillRect(0,0,96,96);t.save();t.translate(0,24);t.scale(.5,.5);drawDragonLair(t,0,0,0);t.restore()}else{box(t,id,0,0,'longsword');if(!CLASS[id]||CLASS[id]!=='structure')spr(t,id,'ok',48,FY,1,0)} // (the Dragon's wide lair, at half size)
   // placing costs coins for the Apothecary, and for every Monarch after the first one of the game
   const place=(r,c,col)=>{if(id==='dragon'){const q=dragonSpot(r,c);if(!q){toast('The Dragon needs two open spaces side by side.');return}r=q[0];c=q[1]} // the Dragon takes 2 spaces
-   const cost=id==='apothecary'?APOTH_PLACE_COST:id==='monarch'&&(S.monarchs||0)>=1?MONARCH_COST:0;if(!cost){addUnit(id,r,c,false,null,null,col);return}
+   const cost=placeCost(id);if(!cost){addUnit(id,r,c,false,null,null,col);return}
    const nm=CH[id].name;if((S.coins||0)<cost){toast('Setting up the '+nm+' costs '+cost+' coins. You have '+(S.coins||0)+'.');return}
    ask('Set up the '+nm+' for '+cost+' coins?','Pay '+cost,()=>{if(at(r,c)||U[id]||S.coins<cost)return;spend(cost);showCoins();addUnit(id,r,c,false);parts.push({k:'txt',s:'-'+cost,x:c*CELL+48,y:r*CELL+30,t:0,life:1.4,icon:'coin'})})};
   const tap=()=>{if(boardLocked())return;const f=id==='dragon'?firstDragonSpot():firstFree();if(f)place(f[0],f[1],id==='wizard'?pick(WIZ_RANDOM):null);else toast('No free space. Tap a locked space to buy more room.')};
-  const free=()=>!U[id]&&!(id==='traveler'&&S.travelRoam)&&!(id==='dragon'&&dragonResting()); // not on the board (the Traveling Merchant: not on the road either)
+  const free=()=>!U[id]&&!(id==='traveler'&&S.travelRoam)&&!(id==='dragon'&&dragonResting())&&!cdLeft(id);b.addEventListener('click',()=>{if(cdLeft(id))reviveEarly(id)}); // (a fallen character: tap to bring them back early) // not on the board (the Traveling Merchant: not on the road either)
   draggable(b,free,(r,c)=>{if(!isOpen(r,c))toast('That space is locked. Tap it to buy it.');else if(id==='dragon')place(r,c);else if(!at(r,c))place(r,c)},tap,true);
   b.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&free()){e.preventDefault();tap()}};
   tray.appendChild(b);
  });
- ui();
+ ui();shelfTimers();
 }
 // Items (a counted inventory, S.inv): drag one onto a room; its owner must be at home.
 ITEMS.forEach(kind=>{
@@ -2800,6 +2826,7 @@ if(kind in DRAGON_TILE){const tt=t%4,d=DRAGON_TILE[kind],aw=d.wake&&tt>1.4&&tt<3
   else if(kind==='ss:alltags'){box(x,'alchemist',0,0);spr(x,'alchemist_mad','happy',48,FY,1,0,1,1,'both');['fighter','mage','merchant','monstrous'].forEach((g2,i)=>{TAG_ICON[g2].forEach(r=>{x.fillStyle=r[4];x.fillRect(6+r[0]*2,8+i*17+r[1]*2,r[2]*2,r[3]*2)})})}
   else if(kind==='dingot'){const tt=t%4;box(x,'druid',0,1);spr(x,'druid',tt>1&&tt<3?'roll':'ok',48,FY,Math.floor(tt*4)%2&&tt>1&&tt<2.2?-1:1,0,1,1,tt>1&&tt<2.4?'fwd':'none');if(tt<1)drawItem(x,'ingot',48,Math.round(10+tt*30),2);else if(tt<2.6)drawItem(x,'ingot',Math.round(62+(tt-1)*14),Math.round(FY-30-Math.sin((tt-1)*2)*14),2)}
   else if(kind==='court'){const tt=t%5;box(x,'monarch',0,0);drawRoomLife(x,'monarch',0,0,t);spr(x,Math.floor(t/5)%2?'monarch_f':'monarch_m','ok',36,FY,1,0,1,1,poseOf('court',tt))}
+  else if(kind==='rshop'){const tt=t%4;box(x,'monarch',0,0);drawRoomLife(x,'monarch',0,0,t);spr(x,'monarch_m',tt>1&&tt<2.6?'happy':'ok',40,FY,1,tt>1&&tt<1.4?-3:0,1,1,tt>1&&tt<2.2?'up':'none');if(tt>.4&&tt<1.2)drawItem(x,'coin',Math.round(84-(tt-.4)*40),Math.round(84-(tt-.4)*50),1);if(tt>1.2&&tt<2.8){x.fillStyle='#f2c84a';const sy=Math.round(30-(tt-1.2)*8);x.fillRect(58,sy,2,6);x.fillRect(56,sy+2,6,2)}drawShopCoin(x,0,0)}
   // ---- Blacksmith ----
   else if(kind==='forgework'||kind==='smelt'||kind==='coal'||kind==='pour'||kind==='leadgold'){const tt=t%5,hx=kind==='smelt'||kind==='coal'?44:52,u={act:kind,at:1+tt*.9,x:hx,y:FY,face:-1,smeltWhat:Math.floor(t/5)%2?'sword':'armor'};box(x,'blacksmith',0,0);drawRoomLife(x,'blacksmith',0,0,t);
    spr(x,kind==='smelt'?'blacksmith_f':'blacksmith_m',(kind==='pour'||kind==='leadgold')&&u.at>3.4?'happy':'ok',hx,FY,-1,0,1,1,poseOf(kind,u.at));drawAct(x,u)}
@@ -2884,7 +2911,7 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
   // Druid and Blacksmith
   grove:[I('grove'),ODDS.druid.grove],animals:[I('animals'),ODDS.druid.animals],weather:[I('weather'),ODDS.druid.weather],dburied:[I('dburied'),'on death'],
   dpotion:[I('dpotion')],dscroll:[I('dscroll')],drevive:[I('drevive')],spirit:[I('spirit'),'secret'],
-  forgework:[I('forgework'),ODDS.smith.forgework],smelt:[I('smelt'),ODDS.smith.smelt],coal:[I('coal'),ODDS.smith.coal],pour:[I('pour'),ODDS.smith.pour],bpotion:[I('bpotion')],bscroll:[I('bscroll')],leadgold:[I('leadgold'),'secret'],ingotshop:[I('ingotshop'),INGOT_COST+' coins'],reinforce:[I('reinforce')],paladin:[I('paladin'),'secret'],adventure:[I('adventure'),'20% (2+ Fighters)'],
+  forgework:[I('forgework'),ODDS.smith.forgework],smelt:[I('smelt'),ODDS.smith.smelt],coal:[I('coal'),ODDS.smith.coal],pour:[I('pour'),ODDS.smith.pour],bpotion:[I('bpotion')],bscroll:[I('bscroll')],leadgold:[I('leadgold'),'secret'],ingotshop:[I('ingotshop'),INGOT_COST+' coins'],rshop:[I('rshop'),RENOWN_PRICE+' coins'],reinforce:[I('reinforce')],paladin:[I('paladin'),'secret'],adventure:[I('adventure'),'20% (2+ Fighters)'],
   nscoff:[P('nscoff'),pv],smithk:[P('smithk'),pv*ODDS.smithtalk],reforge:[P('reforge'),pv*(1-ODDS.smithtalk)],metal:[P('metal'),pv],greenarmor:[P('greenarmor'),'4 Mages'],metaltalk:[P('metaltalk'),'armor'],
   awkjoke:[P('awkjoke'),pv],flirt:[P('flirt'),pv],childhood:[P('childhood'),pv],holyfire:[P('holyfire'),pv],rbuy:[P('rbuy'),pv],
   // the Druid's casts, familiars, Archdruid; the Monarch
@@ -3015,7 +3042,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=D
 
 // ---------- state ----------
 function ui(){document.querySelectorAll('.it[data-id]').forEach(b=>b.classList.toggle('used',!!U[b.dataset.id]||(b.dataset.id==='traveler'&&!!S.travelRoam)||(b.dataset.id==='dragon'&&dragonResting())))} // dimmed: on the board, or on the road
-function save(){if(resetting)return;try{const b={};for(const i in U)if(!isFarm(i)&&i!=='tree')b[i]=[U[i].r,U[i].c,U[i].weapon,TEMP_FORM[U[i].form]?null:U[i].form,U[i].color,U[i].backwards?1:0,U[i].skin||0,U[i].mageTag?1:0,U[i].dead?1:0,U[i].reinforced?1:0,U[i].paladin?1:0,U[i].armor?1:0,U[i].fam||0,U[i].arch?1:0,U[i].trait||0,extras(U[i])];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,spent:S.spent||0,inv:S.inv,seen:S.seen,rewarded:S.rewarded||0,cells:S.cells,bought:S.bought||0,revealed:S.revealed,goldCells:S.goldCells,ever:S.ever,tabDone:S.tabDone||{},bigRewarded:S.bigRewarded||0,monarchs:S.monarchs||0,travelRoam:!!S.travelRoam,qs:S.qs||{},qDone:S.qDone||{},wx:{k:bwx.k,t:Math.round(bwx.t)},elvenScroll:!!S.elvenScroll,goldBorder:!!S.goldBorder,bardMon:!!S.bardMon,dragonRumor:!!S.dragonRumor,dragonRest:S.dragonRest||0,dragonReady:!!S.dragonReady,dragonSlain:!!S.dragonSlain,dragonHP:S.dragonHP==null?DRAGON_HP:S.dragonHP,daily:S.daily||null,qShown:S.qShown||{},renownBonus:S.renownBonus||0,renownOff:!!S.renownOff,lastSeen:Date.now(),maxSeen:Math.max(S.maxSeen||0,Date.now()),playT:Math.round(S.playT||0),awayAt:S.awayAt==null?null:S.awayAt}))}catch(e){}}
+function save(){if(resetting)return;try{const b={};for(const i in U)if(!isFarm(i)&&i!=='tree')b[i]=[U[i].r,U[i].c,U[i].weapon,TEMP_FORM[U[i].form]?null:U[i].form,U[i].color,U[i].backwards?1:0,U[i].skin||0,U[i].mageTag?1:0,U[i].dead?1:0,U[i].reinforced?1:0,U[i].paladin?1:0,U[i].armor?1:0,U[i].fam||0,U[i].arch?1:0,U[i].trait||0,extras(U[i])];localStorage.setItem(KEY,JSON.stringify({boxes:b,un:S.un,coins:S.coins||0,spent:S.spent||0,inv:S.inv,seen:S.seen,rewarded:S.rewarded||0,cells:S.cells,bought:S.bought||0,revealed:S.revealed,goldCells:S.goldCells,ever:S.ever,tabDone:S.tabDone||{},bigRewarded:S.bigRewarded||0,monarchs:S.monarchs||0,travelRoam:!!S.travelRoam,qs:S.qs||{},qDone:S.qDone||{},wx:{k:bwx.k,t:Math.round(bwx.t)},elvenScroll:!!S.elvenScroll,goldBorder:!!S.goldBorder,bardMon:!!S.bardMon,dragonRumor:!!S.dragonRumor,dragonRest:S.dragonRest||0,deadCD:S.deadCD||{},lvl:S.lvl||{},dragonReady:!!S.dragonReady,dragonSlain:!!S.dragonSlain,dragonHP:S.dragonHP==null?DRAGON_HP:S.dragonHP,daily:S.daily||null,qShown:S.qShown||{},renownBonus:S.renownBonus||0,renownOff:!!S.renownOff,lastSeen:Date.now(),maxSeen:Math.max(S.maxSeen||0,Date.now()),playT:Math.round(S.playT||0),awayAt:S.awayAt==null?null:S.awayAt}))}catch(e){}}
 // [15] in a saved box: everything newer, by name (royal colors, requests made, grudges, the Monarch's gifts, the Traveling Merchant's time left)
 const EXTRA_KEYS=['pal','asked','grudge','sir','helper','staff','barrel','sacks','pine','minions','travelT','wcoins','inst','merchTag','fightTag','monTag','hoard','helm'];
 const extras=u=>{const o={};EXTRA_KEYS.forEach(k=>{if(u[k])o[k]=k==='travelT'?Math.round(u[k]):u[k]});return o};
@@ -3023,7 +3050,7 @@ function load(){let d=null;try{d=JSON.parse(localStorage.getItem(KEY))}catch(e){
  if(d){S.un=d.un||{};S.coins=d.coins||0;S.inv=Object.assign({scroll:0,potion:0,artifact:0,ingot:0},d.inv);S.spent=d.spent||0;S.seen=d.seen||{};S.rewarded=d.rewarded!=null?d.rewarded:Math.floor(ALL_KEYS.filter(k=>S.seen[k]).length/DISCOVER_EVERY)}
  // Bought board spaces. An older save made before spaces were locked: any space that already holds a box stays open, free.
  S.cells=(d&&d.cells)||[];S.bought=(d&&d.bought)||0;S.revealed=(d&&d.revealed)||{};S.goldCells=(d&&d.goldCells)||(d&&d.goldCell?[d.goldCell]:[]);S.ever=(d&&d.ever)||{};S.tabDone=(d&&d.tabDone)||{};S.bigRewarded=(d&&d.bigRewarded)||0;S.travelRoam=!!(d&&d.travelRoam);
- S.qs=(d&&d.qs)||{};S.qDone=(d&&d.qDone)||{};S.elvenScroll=!!(d&&d.elvenScroll);S.goldBorder=!!(d&&d.goldBorder);S.bardMon=!!(d&&d.bardMon);S.dragonRumor=!!(d&&d.dragonRumor);S.dragonRest=(d&&d.dragonRest)||0;S.dragonReady=!!(d&&d.dragonReady);if(S.dragonRumor)S.seen.drumor=1;S.dragonSlain=!!(d&&(d.dragonSlain||(d.un&&d.un.dragon)||(d.ever&&d.ever.dragon)));S.dragonHP=d&&d.dragonHP!=null?d.dragonHP:DRAGON_HP;S.daily=(d&&d.daily)||null;S.qShown=(d&&d.qShown)||{};S.renownBonus=(d&&d.renownBonus)||0;S.renownOff=!!(d&&d.renownOff);S.maxSeen=(d&&d.maxSeen)||0;S.playT=(d&&d.playT)||0;S.awayAt=d&&d.awayAt!=null?d.awayAt:null;showBorder();if(d&&d.wx&&BOARD_WX[d.wx.k])bwx={k:d.wx.k,t:d.wx.t||0};showWx(); // quests; the board's weather
+ S.qs=(d&&d.qs)||{};S.qDone=(d&&d.qDone)||{};S.elvenScroll=!!(d&&d.elvenScroll);S.goldBorder=!!(d&&d.goldBorder);S.bardMon=!!(d&&d.bardMon);S.dragonRumor=!!(d&&d.dragonRumor);S.dragonRest=(d&&d.dragonRest)||0;S.deadCD=(d&&d.deadCD)||{};S.lvl=(d&&d.lvl)||{};S.dragonReady=!!(d&&d.dragonReady);if(S.dragonRumor)S.seen.drumor=1;S.dragonSlain=!!(d&&(d.dragonSlain||(d.un&&d.un.dragon)||(d.ever&&d.ever.dragon)));S.dragonHP=d&&d.dragonHP!=null?d.dragonHP:DRAGON_HP;S.daily=(d&&d.daily)||null;S.qShown=(d&&d.qShown)||{};S.renownBonus=(d&&d.renownBonus)||0;S.renownOff=!!(d&&d.renownOff);S.maxSeen=(d&&d.maxSeen)||0;S.playT=(d&&d.playT)||0;S.awayAt=d&&d.awayAt!=null?d.awayAt:null;showBorder();if(d&&d.wx&&BOARD_WX[d.wx.k])bwx={k:d.wx.k,t:d.wx.t||0};showWx(); // quests; the board's weather
  S.monarchs=d&&d.monarchs!=null?d.monarchs:d&&d.boxes&&d.boxes.monarch?1:0; // (an older save with a Monarch on the board: that one was the free one)
  if(d&&d.boxes&&!d.cells)for(const i in d.boxes){const q=d.boxes[i],k=q[0]+','+q[1];if(!isOpen(q[0],q[1]))S.cells.push(k)}
  showCoins();showItems();checkUnlocks();

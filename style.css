@@ -158,3 +158,12 @@ h1 .ver{font-size:13px;color:#b8b0d8;text-shadow:2px 2px 0 #000;vertical-align:m
 #disc b{display:block;color:var(--amber);font-size:18px;letter-spacing:1px;text-shadow:2px 2px 0 #000;font-weight:normal}
 #disc span{display:block;font-size:14px;margin-top:2px}
 #disc.secret{outline-color:#c890ff}#disc.secret b{color:#c890ff}
+/* shelf: a coin price over the box (setting it down costs coins, or bringing a fallen character back early) and a fallen character's countdown */
+.it[data-id]{position:relative}
+.it .cost{position:absolute;top:3px;right:3px;display:flex;align-items:center;gap:3px;background:rgba(10,8,20,.85);border:2px solid #000;outline:1px solid #f2c84a;padding:1px 4px 1px 3px;font-family:"Tiny5",ui-monospace,monospace;font-size:12px;color:#f2c84a;line-height:1}
+.it .cost[hidden]{display:none}
+.it .cost i{width:8px;height:8px;background:#f2c84a;box-shadow:inset -2px -2px 0 #c8922a;border:1px solid #000}
+.it .cd{display:block;font-size:10px;color:#f2a0a0;min-height:0}
+.it .cd:empty{display:none}
+.it.cool canvas{opacity:.3}
+.it.cool{cursor:pointer}
