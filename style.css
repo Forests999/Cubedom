@@ -167,3 +167,6 @@ h1 .ver{font-size:13px;color:#b8b0d8;text-shadow:2px 2px 0 #000;vertical-align:m
 .it .cd:empty{display:none}
 .it.cool canvas{opacity:.3}
 .it.cool{cursor:pointer}
+/* the upgrade slot (right of the coins): drop a box on it to upgrade that room */
+.it.upslot{cursor:default;border-style:dashed;border-color:#f2c84a}
+.it.upslot.over{background:#3a3560;outline:3px solid #f2c84a}

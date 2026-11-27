@@ -1452,3 +1452,23 @@ COMP_TABS.find(t=>t.id==='monarch').items.push('rshop');
 NAMES.rshop='Coin in the throne room: renown for 100 coins';TITLES.rshop='A Gift to the Crown';
 DESC.rshop='Tap the coin in the Monarch\'s room to pay 100 coins into the royal treasury for +5 renown.';
 HINTS.rshop='The throne room has a gold coin in the corner too. The crown rewards generosity... with fame.';
+// Level 1 of each room: its name, what you get (gain: the toast and the Compendium). Shown first in each character's Compendium page ('lv:<id>', not counted as discoveries).
+const UPGRADES={
+ knight:{name:'Training Yard',gain:'A training dummy, and the Knight is 5% less likely to die.'},
+ wizard:{name:'Orbs of Study',gain:'Three orbs circle his head, and his spell scrolls cost 10% less.'},
+ priest:{name:'The Podium',gain:'A podium for sermons: a new idle where he preaches to a few commoners.'},
+ necromancer:{name:'The Bone Sweeper',gain:'A skeleton sweeps his floor. While he is on the board, a fallen character skips the rest time 10% of the time.'},
+ merchant:{name:'The Melon Cart',gain:'A cart of melons, and his monkey form and rotten fruit last half as long.'},
+ apothecary:{name:'Drying Herbs',gain:'Herbs hang from the ceiling, and her brewing now and then makes you a potion.'},
+ alchemist:{name:'Brass Pipework',gain:'Brass and copper pipes, and his luck potion lasts 50% longer.'},
+ rogue:{name:'The Secret Vault',gain:'A painting hides a vault full of coins, and a new idle where he checks on it.'},
+ druid:{name:'Living Ground',gain:'Moss and flowers carpet his grove, and when he dies a Massive Tree always grows.'},
+ blacksmith:{name:'The Ingot Stack',gain:'A stack of steel ingots, and his ingots cost 10% less.'},
+ monarch:{name:'The Royal Guard',gain:'Guards and golden banners, and a new idle where a commoner asks for help.'},
+ bard:{name:'Woodland Friends',gain:'Woodland creatures gather while the elf plays, and Resonance grows from 10% to 15%.'},
+ goblin:{name:'The Warband',gain:'A new group event: next to two Fighters, a goblin horde may attack them.'},
+ dragon:{name:'Restless Wings',gain:'Now and then the Dragon takes off and circles the board, just for show.'},
+ well:{name:'Town Square',gain:'A well cover, flower pots and a quest board: one more daily quest every day.'},
+ tavern:{name:'The Regular',gain:'A regular who never leaves the bar, and while the Tavern is on the board, fallen characters rest 20% less.'},
+ library:{name:'The Restricted Section',gain:'A new idle for any visitor: once in a blue moon they find an undiscovered Compendium entry.'}};
+for(const id in UPGRADES){NAMES['lv:'+id]='Level 1: '+UPGRADES[id].name;TITLES['lv:'+id]='Level 1: '+UPGRADES[id].name;DESC['lv:'+id]=UPGRADES[id].gain+' Drag this box onto the upgrade slot next to your coins: '+UPGRADE_COST[1]+' coins. Upgrades last for the rest of the game, even if the character dies.'}

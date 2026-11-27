@@ -2088,7 +2088,7 @@ function render(){
   if(id==='merchant'&&u.goldT>0&&id!==dm&&!(u.rotT>0))drawGold(g,x,y,T); // golden apples
   if(id==='rogue'&&id!==dm&&graveyardOn(u))drawGraveyard(g,x,y,T); // secret: next to the Necromancer on the bottom row
   if(id==='goblin'){if(id!==dm)drawHoard(g,x,y,u.hoard||0);showHoard(u,id===dm)} // the Goblin's coin pile grows in his cave; the count in the corner
-  if(id!==dm)drawRoomLife(g,id,x,y,T)} // candle flames, clouds
+  if(id!==dm){drawRoomLife(g,id,x,y,T);if(lvl(id))drawLvLife(g,id,x,y,T,lvl(id))}} // candle flames, clouds (and an upgraded room's own: drawLvLife)
  unicorns.forEach(q=>{if(!isOpen(q.r,q.c))return;const bx=q.c*CELL,by=q.r*CELL,p=q.t/UNICORN_TIME,ux=q.face>0?bx+8+p*80:bx+88-p*80;g.save();g.beginPath();g.rect(bx+2,by+2,CELL-4,CELL-4);g.clip();drawUnicorn(g,ux,by+FY-14,q.face,cl(q.t/.6,0,1)*cl((UNICORN_TIME-q.t)/.6,0,1),q.t);g.restore()}); // a unicorn passing through a room's background (behind its characters)
  (S.goldCells||[]).forEach(q=>{if(isOpen(q[0],q[1]))drawGoldCell(g,q[1]*CELL,q[0]*CELL,T)}); // philosopher's stones: golden spaces
  if(grp)drawGroupBack(g,T); // a group event turns its rooms into one market square or feast hall
@@ -2130,6 +2130,7 @@ function render(){
   if(u.mins)u.mins.forEach(p=>spr(g,'skeleton','ok',p.x,p.y,p.face,0,u.al,.55*scl(u),'none',p.walk?stepOf(p.t):0)); // the skeletons from the Monarch's prisoners
   if(low>0||u.diveClip){g.save();g.beginPath();g.rect(u.x-30,u.y-80,60,(u.diveClip||u.y)-(u.y-80));g.clip()} // sinking through the floor, or kneeling
   const args=[sid(u),u.st==='sleep'?u.mood:blinkMood(u.mood,seedOf(u.id),T),u.x+actDx(u)+(u.drunkHome?Math.round(Math.sin(T*4)*2):0),u.y+low,u.face,(walking?Math.sin(u.t*14)*1:0)+hop-(u.jy||0),u.al*bl*(u.inv?.25:1),scl(u)*(u.tinyT>0?.6:1),poseNow(u),walking&&!u.kneel?stepOf(u.t):0];
+  if(lvl(u.id)&&!u.as&&!u.form)drawLvOwner(g,u,T,lvl(u.id)); // (what an upgraded character carries around, e.g. the Wizard's orbs)
   spr(g,...args);
   if(u.glow>0){g.globalCompositeOperation='lighter';args[6]=u.al*bl*(.25+.15*Math.sin(T*4));spr(g,...args);g.globalCompositeOperation='source-over';glowSparkles(g,u.x,u.y,T)}
   if(low>0||u.diveClip)g.restore()});
@@ -2181,7 +2182,7 @@ function render(){
  bolts.forEach(b=>{const a=1-b.t/.5;g.fillStyle='rgba(255,255,255,'+(a*.6)+')';b.cells.forEach(q=>g.fillRect(q[0],q[1],CELL,CELL));
   [['rgba(140,210,255,'+a+')',6],['#fff',2]].forEach(s=>{g.strokeStyle=s[0];g.lineWidth=s[1];g.beginPath();b.p.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.stroke()})});
  // coin buttons on shop rooms (drawn on top so characters never hide them): tap to buy
- for(const id in U){const u=U[id];if(id!==dm&&(id==='apothecary'||id==='blacksmith'||id==='traveler'||(id==='monarch'&&!u.dead)||deskOn(u)))drawShopCoin(g,u.c*CELL,u.r*CELL)}
+ for(const id in U){const u=U[id];if(id!==dm&&(id==='apothecary'||id==='blacksmith'||id==='traveler'||(id==='monarch'&&!u.dead)||deskOn(u)))drawShopCoin(g,u.c*CELL,u.r*CELL);if(id!==dm&&lvl(id)>0)drawStars(g,u.c*CELL+6,u.r*CELL+CELL-13,lvl(id))} // (an upgraded room: its stars in the bottom-left)
  // bats and bee swarms fly on top of everything
  // the Druid's Overgrowth on board spaces (fades in and out)
  weathers.forEach(w=>{if(isOpen(w.r,w.c))drawWeather(g,w.c*CELL,w.r*CELL,w.k,w.t,cl(w.t/1,0,1)*cl((WEATHER_TIME+1-w.t)/1,0,1))});
@@ -2225,7 +2226,7 @@ const onShopCoin=(u,p)=>p.x>=u.c*CELL+64&&p.x<u.c*CELL+CELL&&p.y>=u.r*CELL+64&&p
 cv.onpointermove=e=>{if(!drag)return;const p=pt(e);drag.p=p;
  if(Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>8)drag.moved=true;
  if(drag.moved&&grpBusy(drag.id)){drag=null;hover=null;return} // (in a group event: can't be dragged; taps still work, e.g. a shop coin)
- hover=drag.moved&&p.inb?cellOf(p):null;tray.classList.toggle('over',drag.moved&&inRect(tray,e))};
+ hover=drag.moved&&p.inb?cellOf(p):null;tray.classList.toggle('over',drag.moved&&inRect(tray,e));upBox.classList.toggle('over',drag.moved&&inRect(upBox,e))};
 cv.onpointerup=e=>{if(!drag){const p=pt(e);if(lockTap&&p.inb){const[r,c]=cellOf(p);if(r===lockTap[0]&&c===lockTap[1])buyCell(r,c)}lockTap=null;return}
  const d=drag,p=pt(e);drag=null;hover=null;tray.classList.remove('over');
  if(!d.moved){const u=U[d.id];
@@ -2236,6 +2237,7 @@ cv.onpointerup=e=>{if(!drag){const p=pt(e);if(lockTap&&p.inb){const[r,c]=cellOf(
   if(u&&u.id==='monarch'&&!u.dead&&onShopCoin(u,p)){buyRenown(u);return}
   if(u&&deskOn(u)&&onShopCoin(u,p)){writeScroll(u);return}
   if(u&&Math.hypot(p.x-u.x,p.y-(u.y-22))<30){u.hop=.5;u.mood='happy';u.mt=1;gest(u,'up',.6)}return}
+ if(inRect(upBox,e)){upBox.classList.remove('over');askUpgrade(d.id);return}
  if(inRect(tray,e))sendToShelf(d.id);
  else if(p.inb){const[r,c]=cellOf(p),u=U[d.id];if(!isOpen(r,c))toast('That space is locked. Tap it to buy it.');else if(d.id==='dragon'){const q=dragonSpot(r,c);if(!q)toast('The Dragon needs two open spaces side by side.');else if(q[0]!==u.r||q[1]!==u.c)moveDragon(q)}else if(at(r,c)&&at(r,c)!==d.id&&grpBusy(at(r,c))){}else if(at(r,c)==='dragon')toast('The Dragon is too big to swap with. Move it instead.');else if(at(r,c)==='tree')toast('The Massive Tree is rooted to the spot. Nothing can swap with it.');else if(r!==u.r||c!==u.c)relocate(d.id,r,c)}
  save()};
@@ -2253,9 +2255,9 @@ function draggable(b,canStart,onDrop,onTap,isBox){
  b.onpointerdown=e=>{if(!canStart()||boardLocked())return;b.setPointerCapture(e.pointerId);td={sx:e.clientX,sy:e.clientY,moved:false,box:!!isBox,dragon:b.dataset.id==='dragon'}};
  b.onpointermove=e=>{if(!td)return;
   if(!td.moved&&Math.hypot(e.clientX-td.sx,e.clientY-td.sy)>8){td.moved=true;gx.clearRect(0,0,96,96);gx.drawImage(b.firstChild,0,0);gh.style.display='block'}
-  if(td.moved){gh.style.left=e.clientX-42+'px';gh.style.top=e.clientY-42+'px';const p=pt(e);hover=p.inb?cellOf(p):null}};
+  if(td.moved){gh.style.left=e.clientX-42+'px';gh.style.top=e.clientY-42+'px';const p=pt(e);hover=p.inb?cellOf(p):null;if(td.box)upBox.classList.toggle('over',inRect(upBox,e))}};
  b.onpointerup=e=>{if(!td)return;const k=td;td=null;gh.style.display='none';hover=null;
-  if(!k.moved){if(onTap)onTap()}else{const p=pt(e);if(p.inb){const[r,c]=cellOf(p);onDrop(r,c)}}};
+  upBox.classList.remove('over');if(!k.moved){if(onTap)onTap()}else if(k.box&&inRect(upBox,e))askUpgrade(b.dataset.id);else{const p=pt(e);if(p.inb){const[r,c]=cellOf(p);onDrop(r,c)}}};
  b.onpointercancel=()=>{td=null;gh.style.display='none';hover=null};
 }
 // Character boxes on the shelf (the Necromancer only once unlocked)
@@ -2270,7 +2272,7 @@ function buildShelf(){
  order.forEach(id=>{if(!have.includes(id)){const b=document.createElement('button');b.className='it locked';b.disabled=true;b.innerHTML='<canvas width="96" height="96"></canvas><span class="clue"></span>';b.lastChild.textContent=SHELF_CLUE[id]||'???';
    const t=b.firstChild.getContext('2d');t.fillStyle='#221e3c';t.fillRect(0,0,96,96);t.font='34px '+GAME_FONT;t.fillStyle='#4a4470';t.textAlign='center';t.fillText('?',48,62);tray.appendChild(b);return}
   const b=document.createElement('button');b.className='it';b.dataset.id=id;b.innerHTML='<canvas width="96" height="96"></canvas>'+CH[id].name+tagImg(id)+'<span class="cost" hidden><i></i><b></b></span><span class="cd"></span>'; // (cost: the coin price to set it down or bring it back early; cd: a fallen character's countdown)
-  const t=b.firstChild.getContext('2d');t.imageSmoothingEnabled=false;if(id==='dragon'){t.fillStyle='#221e3c';t.fillRect(0,0,96,96);t.save();t.translate(0,24);t.scale(.5,.5);drawDragonLair(t,0,0,0);t.restore()}else{box(t,id,0,0,'longsword');if(!CLASS[id]||CLASS[id]!=='structure')spr(t,id,'ok',48,FY,1,0)} // (the Dragon's wide lair, at half size)
+  const t=b.firstChild.getContext('2d');t.imageSmoothingEnabled=false;if(id==='dragon'){t.fillStyle='#221e3c';t.fillRect(0,0,96,96);t.save();t.translate(0,24);t.scale(.5,.5);drawDragonLair(t,0,0,0);t.restore()}else{box(t,id,0,0,'longsword');if(!CLASS[id]||CLASS[id]!=='structure')spr(t,id,'ok',48,FY,1,0)}if(lvl(id))drawStars(t,6,83,lvl(id)); // (the Dragon's wide lair, at half size; an upgraded room's stars)
   // placing costs coins for the Apothecary, and for every Monarch after the first one of the game
   const place=(r,c,col)=>{if(id==='dragon'){const q=dragonSpot(r,c);if(!q){toast('The Dragon needs two open spaces side by side.');return}r=q[0];c=q[1]} // the Dragon takes 2 spaces
    const cost=placeCost(id);if(!cost){addUnit(id,r,c,false,null,null,col);return}
@@ -2296,6 +2298,17 @@ const coinBox=document.createElement('div');coinBox.className='it coins';coinBox
 {const t=coinBox.firstChild.getContext('2d');t.imageSmoothingEnabled=false;t.fillStyle='#221e3c';t.fillRect(0,0,96,96);drawItem(t,'coin',48,48,6)}
 itemsEl.appendChild(coinBox);
 function showCoins(){coinBox.lastChild.textContent=(S.coins||0)+' coins'}
+// The upgrade slot (right of the coins): drag a box from the board or the shelf onto it to upgrade that room (UPGRADES, UPGRADE_COST in data.js)
+const upBox=document.createElement('div');upBox.className='it upslot';upBox.innerHTML='<canvas width="96" height="96"></canvas><span>Upgrade a room</span>';
+{const t=upBox.firstChild.getContext('2d');t.imageSmoothingEnabled=false;t.fillStyle='#221e3c';t.fillRect(0,0,96,96);drawUpIcon(t,48,46)}
+itemsEl.appendChild(upBox);
+function askUpgrade(id){const nm=CH[id]?CH[id].name:'box';
+ if(!UPGRADES[id]){toast(isFarm(id)||id==='tree'?'The '+nm+' is only here for a little while. It cannot be upgraded.':'Upgrades for the '+nm+' come in a later update.');return}
+ const n=lvl(id)+1;if(n>2){toast('The '+nm+'\'s room is fully upgraded.');return}if(n>UPGRADE_MAX){toast('Level '+n+' upgrades come in a later update.');return}
+ const cost=UPGRADE_COST[n];if((S.coins||0)<cost){toast('Upgrading the '+nm+'\'s room to level '+n+' costs '+cost+' coins. You have '+(S.coins||0)+'.');return}
+ ask('Upgrade the '+nm+'\'s room to level '+n+' for '+cost+' coins?','Pay '+cost,()=>{if(lvl(id)+1!==n||S.coins<cost)return;spend(cost);showCoins();S.lvl=S.lvl||{};S.lvl[id]=n;markSeen('lv:'+id);onUpgrade(id);
+  const u=U[id];if(u){poof(u.c*CELL+20,u.r*CELL+80,'#f2c84a');poof(u.c*CELL+48,u.r*CELL+48,'#f2c84a');if(!isStruct(u)&&id!=='dragon'){u.hop=.6;u.mood='happy';u.mt=2}}
+  toast('The '+nm+'\'s room is now level '+n+'! '+UPGRADES[id].gain);buildShelf();if(!tabRef.hidden)buildRef(compTab);save()})}
 // Item counts on the tray buttons; an item you have none of is greyed out
 function showItems(){itemsEl.querySelectorAll('.item').forEach(b=>{const k=b.dataset.item,n=S.inv[k]||0;b.lastChild.textContent=NAMES[k]+' x'+n;b.classList.toggle('used',n<=0)})}
 // Reset: wipe the save and start a brand new game (default board, 0 coins, no items, nothing unlocked, Compendium cleared)
@@ -2599,6 +2612,11 @@ const flash=(on,tt)=>on&&Math.floor(tt*14)%2?.2:1;
 // Compendium tiles for the Dragon's neighbors: who stands in its lair (s), whether it wakes, mood when it does (m), fire aimed at (fx,fy), a coin, notes, running off
 const DRAGON_TILE={dstudy:{s:'wizard_blue'},dscale:{s:'wizard_blue',wake:1,m:'shock'},dbottle:{s:'wizard_blue',wake:1,m:'happy',fire:[44,40]},dsteal:{s:'merchant',coin:1},
  dlullaby:{s:'merchant',wake:1,m:'happy',notes:1},dretreat:{s:'knight',wake:1,m:'shock',flee:1},dfight:{s:'knight',wake:1,m:'shock',fire:[34,46],fall:1},dslay:{s:'knight',wake:1,m:'mad',fire:[40,4]},dpeek:{s:'goblin',wake:1,m:'shock',flee:1}};
+// The Compendium tile of a room's level 1: the upgraded room (LV_FORCE), its moving details, its owner, and the stars
+const LV_SPR={alchemist:'alchemist_m',bard:'bard_f',blacksmith:'blacksmith_m',monarch:'monarch_m',priest:'priest_m',wizard:'wizard_blue',goblin:'goblin'};
+function lvTile(x,id,t){if(id==='dragon'){drawDragonLair(x,0,0,t,0);drawStars(x,6,83,1);return}
+ box(x,id,0,0,id==='knight'?'longsword':id==='druid'?1:undefined);drawRoomLife(x,id,0,0,t);drawLvLife(x,id,0,0,t,1);
+ if(CLASS[id]!=='structure'){const p=fakeU(id);p.x=48;p.y=FY;p.face=1;drawLvOwner(x,p,t,1);spr(x,LV_SPR[id]||id,'ok',48,FY,1,0,1,id==='goblin'?GOBLIN_SCALE:1)}drawStars(x,6,83,1)}
 function idleTile(kind,wp){
  const wide=kind==='grp:market'||kind==='grp:feast'||kind==='grp:dragon'||kind==='grp:plague'||kind==='fireball'||kind==='raise'||kind==='nscroll'||kind==='wave'||kind==='alcpotion'||kind in DRAGON_TILE,[c,x]=mkc(wide?192:96,96,NAMES[kind]+(wp?' ('+wp+')':''));
  anim.push(t=>{x.clearRect(0,0,wide?192:96,96);
@@ -2954,6 +2972,13 @@ function buildRef(t){if(t)compTab=t;anim.length=0;hideTip();
    d.append(tile)});return d};
  const count=keys=>keys.filter(k=>S.seen[k]).length+' / '+keys.length;
  const head=(text,keys)=>{const h=document.createElement('h2');h.className='sec';h.textContent=text+'  '+count(keys);return h};
+ // Room upgrades: first of all (UPGRADES; 'lv:<id>' tiles, always shown, gold once bought; not counted as discoveries)
+ if(UPGRADES[tab.id]){const h=document.createElement('h2');h.className='sec';h.textContent='Room upgrades  '+lvl(tab.id)+' / 2';const ip=document.createElement('p');ip.className='cinfo';
+  ip.textContent='Drag this box onto the upgrade slot next to your coins. Level 1 costs '+UPGRADE_COST[1]+' coins, level 2 costs '+UPGRADE_COST[2]+' (level 2 comes in a later update). Upgrades last for the rest of the game, even if the character dies.';
+  const d=document.createElement('div');d.className='cg';const k='lv:'+tab.id,wide=tab.id==='dragon',[c,x]=mkc(wide?192:96,96,NAMES[k]),tile=document.createElement('div'),s=document.createElement('span');
+  tile.className='tile'+(lvl(tab.id)>=1?' seen':'');tile.dataset.k=k;tile.onpointerenter=e=>{if(e.pointerType==='mouse')showTip(tile,k)};tile.onpointerleave=e=>{if(e.pointerType==='mouse')hideTip()};
+  tile.onclick=e=>{e.stopPropagation();if(tipOn===tile&&e.pointerType!=='mouse')hideTip();else showTip(tile,k)};s.className='pct';s.textContent=lvl(tab.id)>=1?'owned':UPGRADE_COST[1]+' coins';
+  anim.push(t=>{x.clearRect(0,0,wide?192:96,96);LV_FORCE=1;try{lvTile(x,tab.id,t)}finally{LV_FORCE=null}});tile.append(c,s);d.append(tile);b.append(h,ip,d)}
  // Passive abilities: their own group at the top (PASSIVES)
  const pas=tab.items.filter(k=>PASSIVES.includes(k)&&!EGGS.includes(k));if(pas.length)b.append(head('Passive abilities',pas),grid(pas,1));
  // With neighbors: one sub-section per neighbor, in alphabetical order
@@ -2979,11 +3004,16 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
 const unlockedChars=()=>ALL_CHARS.filter(id=>CLASS[id]!=='structure'&&(SHELF_CHARS.includes(id)||S.un[id]||(S.ever&&S.ever[id])));
 const undiscoveredScenes=()=>[...new Set(COMP_TABS.filter(t=>compUnl(t.id)).flatMap(tabKeys))].filter(k=>!EGGS.includes(k)&&!k.startsWith('grp:')&&!S.seen[k]);
 const wizardAllShown=()=>{const t=COMP_TABS.find(x=>x.id==='wizard');return tabKeys(t).length===new Set([...t.pairs,...t.idle,...t.items]).size};
+// how many daily quests: DAILY_COUNT, one more once the Well is level 1 (its quest board)
+const dailyCount=()=>DAILY_COUNT+(lvl('well')>=1?1:0);
+// a room was just upgraded: anything that should happen right away
+function onUpgrade(id){
+ if(id==='well'&&S.daily){const pool=DAILY_QUESTS.filter(q=>{try{return q.avail()}catch(e){return false}}).map(q=>q.id).filter(q=>!S.daily.ids.includes(q));if(pool.length&&S.daily.ids.length<dailyCount()){S.daily.ids.push(pick(pool));setTimeout(()=>toast('The quest board has a new daily quest! Check the Quests tab.'),2600)}}}
 // The day's quests: picked once a day (local date), at random among the available ones; their counters start over each day
 // (days are counted as numbers, local time; a new set only comes on a LATER day, so moving the clock back never gives new quests)
 const dayOf=ts=>Math.floor((ts-new Date(ts).getTimezoneOffset()*60000)/86400000);
 function dailyRefresh(){const today=new Date().toDateString(),dn=dayOf(Date.now());if(S.daily&&S.daily.day==null)S.daily.day=dayOf(Date.parse(S.daily.date)||Date.now());if(S.daily&&dn<=S.daily.day)return false;
- const pool=DAILY_QUESTS.filter(q=>{try{return q.avail()}catch(e){return false}}).map(q=>q.id),ids=[];while(ids.length<DAILY_COUNT&&pool.length)ids.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+ const pool=DAILY_QUESTS.filter(q=>{try{return q.avail()}catch(e){return false}}).map(q=>q.id),ids=[];while(ids.length<dailyCount()&&pool.length)ids.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
  const first=!S.daily;S.daily={date:today,day:dn,ids,qs:{},done:{}};save();if(!first)setTimeout(()=>toast('A new day: new daily quests! Check the Quests tab.'),2500);return true}
 // A counter goes up: for story quests (S.qs, for good) and for today's daily quests (S.daily.qs)
 function questStat(stat,n){n=n||1;S.qs=S.qs||{};S.qs[stat]=(S.qs[stat]||0)+n;dailyRefresh();S.daily.qs[stat]=(S.daily.qs[stat]||0)+n;checkQuests();save();if(!$('#tab-quest').hidden)buildQuests()}

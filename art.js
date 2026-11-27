@@ -231,7 +231,7 @@ function poseOf(act,at){
  return 'none';
 }
 function box(c,id,x,y,w){id=swapRoom(id);if(isFarm(id))id='farmer'; // every Farmer box (farmer2, farmer3) looks the same
- const key=id+'|'+(w==null?'':w);let rc=ROOMC[key];if(!rc){rc=document.createElement('canvas');rc.width=rc.height=CELL;const q=rc.getContext('2d');q.imageSmoothingEnabled=false;paintRoom(q,id,w);ROOMC[key]=rc}c.drawImage(rc,x,y)} // each room is painted once (paintRoom) and reused
+ const L=LV_FORCE!=null?LV_FORCE:typeof lvl==='function'?lvl(id):0,key=id+'|'+(w==null?'':w)+'|'+L;let rc=ROOMC[key];if(!rc){rc=document.createElement('canvas');rc.width=rc.height=CELL;const q=rc.getContext('2d');q.imageSmoothingEnabled=false;paintRoom(q,id,w);if(L)paintLevel(q,id,w,L);ROOMC[key]=rc}c.drawImage(rc,x,y)} // each room is painted once (paintRoom, plus its upgrade: paintLevel) and reused
 // Extra 2px of frame on the sides of a box that have no neighbor box, so every edge on the board looks the same thickness
 // (two boxes side by side each draw their 2px, making 4px; a lone edge gets 2 + 2 = 4px too). sides = {t,b,l,r} true = add.
 function boxFrame(c,x,y,s){c.fillStyle='#000';if(s.t)c.fillRect(x,y+2,CELL,2);if(s.b)c.fillRect(x,y+CELL-4,CELL,2);if(s.l)c.fillRect(x+2,y,2,CELL);if(s.r)c.fillRect(x+CELL-4,y,2,CELL)}
@@ -1197,3 +1197,19 @@ function drawDragonRest(c,t,wk){const br=Math.sin(t*1.4)>0?1:0;if(!DRAGON_REST[b
  if(wk||(t%9)<1.2){c.fillStyle=O;c.fillRect(161,57,6,3);c.fillStyle='#ffd040';c.fillRect(162,58,4,1);c.fillStyle=O;c.fillRect(164,58,1,1)}else{c.fillStyle='#3a0c0a';c.fillRect(161,58,6,1);c.fillRect(162,59,4,1)} // asleep... or is it? (now and then an eye opens)
  for(let i=0;i<3;i++){const k=(t*.6+i/3)%1;c.fillStyle='rgba(170,160,160,'+((1-k)*.45).toFixed(2)+')';c.beginPath();c.arc(190+k*3,58-k*24,1.5+k*4,0,Math.PI*2);c.fill()} // smoke from its nose
  if(!wk)drawZ(c,170,32-Math.round((t*6)%8),.8);c.restore()} // (wk: awake, during a neighbor's scene)
+// ---------- room upgrades ----------
+// LV_FORCE: draw rooms at this level instead of the character's own (the Compendium's upgrade tiles)
+let LV_FORCE=null;
+// The upgrade slot's icon: a gold arrow pointing up over a little stone block
+function drawUpIcon(c,x,y){const R=[[-14,10,28,12,'#5a5590'],[-14,10,28,3,'#7a74b0'],[-4,-6,8,16,'#f2c84a'],[-12,-6,24,4,'#f2c84a'],[-8,-10,16,4,'#f2c84a'],[-4,-14,8,4,'#f2c84a'],[-2,-4,2,14,'#ffe9a0']];
+ c.fillStyle=O;R.forEach(r=>c.fillRect(x+r[0]-2,y+r[1]-2,r[2]+4,r[3]+4));R.forEach(r=>{c.fillStyle=r[4];c.fillRect(x+r[0],y+r[1],r[2],r[3])})}
+// A room's level: n little gold stars (bottom-left of the box)
+function drawStars(c,x,y,n){for(let i=0;i<n;i++){const sx=x+i*9;c.fillStyle=O;c.fillRect(sx+2,y-1,3,7);c.fillRect(sx-1,y+1,9,3);c.fillRect(sx,y+3,7,3);
+ c.fillStyle='#f2c84a';c.fillRect(sx+3,y,1,5);c.fillRect(sx,y+2,7,1);c.fillRect(sx+1,y+3,5,1);c.fillRect(sx+1,y+4,2,1);c.fillRect(sx+4,y+4,2,1);c.fillStyle='#fff3b0';c.fillRect(sx+3,y+2,1,1)}}
+// The look of an upgraded room, painted once into the room's picture (box): level 1 for now (L = level)
+function paintLevel(q,id,w,L){const R=LV_ROOM[id]?LV_ROOM[id](w):[];R.forEach(r=>{q.fillStyle=r[4];q.fillRect(r[0],r[1],r[2],r[3])})}
+const LV_ROOM={};
+// Moving details of an upgraded room (drawn with the room's other life, drawRoomLife), L = level
+function drawLvLife(c,id,bx,by,t,L){if(!L)return}
+// Things an upgraded character carries around (drawn just before the sprite), L = level
+function drawLvOwner(c,u,t,L){if(!L)return}
