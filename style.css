@@ -152,3 +152,9 @@ h1 .ver{font-size:13px;color:#b8b0d8;text-shadow:2px 2px 0 #000;vertical-align:m
 #away ul{margin:6px 0;padding-left:20px}#away li{margin:4px 0}#away .tot{color:#f2c84a;margin:8px 0 0}
 #away .mrow{display:flex;justify-content:center;margin-top:14px}
 #tab-quest h2.sec{margin-top:18px}
+/* the "New Discovery!" banner: slides down over the top of the board (discBanner in game.js); purple for secrets */
+#disc{position:absolute;left:50%;top:10px;z-index:6;transform:translate(-50%,-24px);opacity:0;transition:transform .3s steps(5),opacity .3s steps(5);background:#1a1733;border:3px solid #000;outline:3px solid var(--amber);padding:6px 18px 7px;text-align:center;font:inherit;font-family:"Tiny5",ui-monospace,monospace;color:var(--parch);cursor:pointer;min-width:190px;max-width:80%;box-shadow:4px 4px 0 #000}
+#disc.show{transform:translate(-50%,0);opacity:1}
+#disc b{display:block;color:var(--amber);font-size:18px;letter-spacing:1px;text-shadow:2px 2px 0 #000;font-weight:normal}
+#disc span{display:block;font-size:14px;margin-top:2px}
+#disc.secret{outline-color:#c890ff}#disc.secret b{color:#c890ff}

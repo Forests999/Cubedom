@@ -740,8 +740,15 @@ function checkUnlocks(){checkEggs();
  if(!S.un.blacksmith&&(S.spent||0)>=SMITH_UNLOCK){S.un.blacksmith=true;buildShelf();save();toast('All that spending caught the eye of a Blacksmith. A Blacksmith box has appeared on the shelf!')}if(!S.un.merchant&&(S.coins||0)>=MERCHANT_COINS){S.un.merchant=true;buildShelf();toast('Business is booming! A Fruit Merchant box has appeared on the shelf.')}
  if(!S.un.apothecary&&Object.values(U).some(m=>CLASS[m.id]==='merchant'&&Object.values(U).some(v=>v!==m&&CLASS[v.id]==='mage'&&rel(v,m)))){S.un.apothecary=true;buildShelf();save();toast('Word of trade reaches the mages... an Apothecary box has appeared on the shelf.')}}
 // ---- Compendium: remember every interaction/idle/item effect that has happened (gold border) ----
+// ---- the "New Discovery!" banner over the board: one at a time, queued (DISC_TIME seconds each, at most DISC_MAX waiting); tap it to open that Compendium page ----
+const DISC_TIME=2.8,DISC_MAX=5,discQ=[];let discBusy=false;
+function discBanner(k){if(!ALL_KEYS.includes(k)&&!EGGS.includes(k))return;if(discQ.length<DISC_MAX)discQ.push(k);if(!discBusy)nextDisc()}
+function nextDisc(){const k=discQ.shift(),el=$('#disc');if(!k){discBusy=false;return}discBusy=true;const sec=EGGS.includes(k);
+ el.className=sec?'secret':'';el.innerHTML='<b>'+(k.startsWith('ss:')?'Super Secret!':sec?'Secret Found!':'New Discovery!')+'</b><span></span>';el.lastChild.textContent=titleOf(k);el.dataset.k=k;
+ el.hidden=false;void el.offsetWidth;el.classList.add('show');setTimeout(()=>{el.classList.remove('show');setTimeout(()=>{el.hidden=true;nextDisc()},350)},DISC_TIME*1000)}
+$('#disc').onclick=()=>{const k=$('#disc').dataset.k,t=COMP_TABS.find(t=>tabKeys(t).includes(k));if(t)compTab=t.id;document.querySelector('.tab[data-t="ref"]').click()};
 const SEEN_ALIAS={sleepc:'sleep',swapc:'swap',fruitdrop:'fruitfall',winegift:'wine'};
-function markSeen(k){k=SEEN_ALIAS[k]||k;if(!k||S.seen[k])return;S.seen[k]=1;save();if(ALL_KEYS.includes(k)&&!k.startsWith('grp:')&&!EGGS.includes(k))questStat('discover');showRenown();
+function markSeen(k){k=SEEN_ALIAS[k]||k;if(!k||S.seen[k])return;S.seen[k]=1;save();discBanner(k);if(ALL_KEYS.includes(k)&&!k.startsWith('grp:')&&!EGGS.includes(k))questStat('discover');showRenown();
  document.querySelectorAll('.tile[data-k="'+k+'"]').forEach(t=>t.classList.add('seen'));checkDiscoveries();
  if(!tabRef.hidden&&(EGGS.includes(k)||ALL_KEYS.includes(k)))buildRef(compTab)} // refresh the open Compendium (counts, newly found easter eggs)
 // Every DISCOVER_EVERY different things discovered (easter eggs included) pays DISCOVER_REWARD coins
