@@ -897,29 +897,155 @@ COMP_TABS.find(t=>t.id==='druid').items.splice(3,0,'dingot');
 // ---------- clues ----------
 // Shelf: a locked character shows a blank box with this cryptic clue (no name)
 const SHELF_CLUE={}; // (the clues are filled in further down)
-// Compendium: unlock hints written by hand (the rest are made from the rules, unlockHint in game.js)
-const HINTS={};
-Object.assign(HINTS,{cleanse:'A Death Knight on the board, and a Priest beside the Necromancer, might set things right.',
- haste:'Fighters living beside the Alchemist seem to be in an awful hurry.',adventure:'The Blacksmith with two or more Fighters for neighbors gets restless.',
- greenarmor:'A Blacksmith surrounded by magic on every side can work wonders for a Wizard.',metaltalk:'Once the Wizard wears the green armor, he will not stop talking about it.',
- desk:'A Wizard with a shopkeeper and a fellow spellcaster next door sets up a desk.',slip:'Apples on the floor of the Fruit Merchant\'s shop, a Priest to the west... watch your step.',
- massprayer:'A Priest with all four neighbors at home might call them in.',funeral:'When a Fighter beside the Priest falls, he will honor them.',
- apoth:'Look for a gold coin in a certain shop.',ingotshop:'The forge has a gold coin in the corner too.',tshop:'The wagon\'s stand takes coins as well.',
- stone:'Hand the Alchemist something truly ancient.',elixir:'Not every ancient thing the Alchemist touches becomes gold...',
- twopot:'Buying potions with the Alchemist next door to the Apothecary can be a bargain.',fourmage:'Surround the Alchemist with magic on all four sides.',
- madsci:'The Alchemist in the far south-east corner gets... ideas.',tiny:'A Rogue with a little magic of his own might fit a shrinking potion.',
- graveyard:'A Rogue beside the Necromancer, both down on the bottom row.',dburied:'Even Druids are not forever.',drevive:'A buried Druid\'s sapling answers to a spell scroll.',
- ddiscount:'The Druid\'s herbs make the Apothecary\'s prices friendlier, side by side.',
- bronze:'Some Knights simply shine differently. Keep placing them.',
- paladin:'Holy fire at the forge, with the Knight right next door.',blackwiz:'A brand new Wizard in the far north-west corner dresses darker.',
- skulls:'The Necromancer feels at home deep down, on the bottom row.',royalpatron:'A generous ruler beside the forge rewards brave adventurers.',
- royalfuneral:'Kings and Queens fall too.',regicide:'A refused request is never forgotten.',rqdeny:'Not every ruler says yes.',
- troad:'Wait for the Traveling Merchant to move on, and he will be back someday.'});
-['paladin','blacksmith','wizard','priest','alchemist','rogue','merchant','apothecary','necromancer','druid'].forEach(q=>{HINTS['rq:'+q]=(q==='paladin'?'A Paladin':'The '+(NAMES[q]||q[0].toUpperCase()+q.slice(1)))+' living next to the Monarch may ask for a favor.'});
+// Compendium clues: what an undiscovered tile says after its story. They speak in riddles, always with the same words:
+// each character has one epithet (EPITHET), each tag one phrase (TAG_EPITHET), sides go by the sun and the stairs (SIDE_WORD:
+// left = the sunset side, right = the sunrise side, above = upstairs, below = downstairs), items by ITEM_RIDDLE,
+// and one fixed phrase per rarity (added by unlockHint in game.js). Once found, the tile's text says it plainly.
+const EPITHET={knight:'the sworn sword',wizard:'the robed scholar',priest:'the faithful one',necromancer:'the grave-caller',merchant:'the fruit seller',apothecary:'the herbalist',
+ alchemist:'the flask-mixer',rogue:'the shadow',druid:'the grove-keeper',blacksmith:'the forge-hand',monarch:'the crown',traveler:'the wagon wanderer',bard:'the elven minstrel',
+ goblin:'the little green thief',dragon:'the hoard-sleeper',well:'the old well',tavern:'the tavern',library:'the library',tree:'the great tree',farmer:'the farmhand',anyone:'anyone at all'};
+const TAG_EPITHET={mage:'anyone who works magic',fighter:'anyone handy with a weapon',merchant:'anyone with something to sell',monstrous:'anything monstrous'};
+const SIDE_WORD={left:'on the sunset side of',right:'on the sunrise side of',above:'upstairs from',below:'downstairs from'};
+const ITEM_RIDDLE={scroll:'some written magic',potion:'something bottled',artifact:'something ancient',ingot:'a bar of good metal'};
+const RARE_WORD={u:'Not every time.',r:'A rare sight.',l:'Once in a blue moon.'};
+// Hand-written clues (the rest are made from the rules by unlockHint, in the same words)
+const HINTS={
+ // Knight
+ cleanse:'A knight lost to darkness can still be saved, if the faithful one and the grave-caller ever share a wall.',
+ drumor:'Some of the fruit seller\'s gossip is about something much, much bigger.',
+ haste:'Anyone handy with a weapon, living beside the flask-mixer, seems to be in an awful hurry.',
+ adventure:'The forge-hand, with two or more fighters for neighbors, starts planning a trip.',
+ gknight:'The little green thief and the sworn sword, neighbors on any side, are bound to come to blows.',
+ gknightdie:'The little green thief and the sworn sword again. This time the thief should have stayed home.',
+ gmob:'The little green thief beside the sworn sword. Where there is one goblin, there may be many more.',
+ bronze:'Some knights simply shine differently. Keep placing new ones.',
+ paladin:'Holy fire at the forge, with the sworn sword close enough to feel the heat.',
+ // Wizard
+ greenarmor:'Surround the forge-hand with magic on all four sides, and the robed scholar may get a new suit.',
+ metaltalk:'Once the robed scholar wears the forge\'s green armor, there is no stopping the talk.',
+ gtrinket:'The little green thief beside the robed scholar. Magic trinkets are tempting, and unpredictable.',
+ desk:'Give the robed scholar a shopkeeper and a fellow spellcaster for neighbors, and he may open for business.',
+ blackwiz:'A brand new robed scholar, set down in the highest sunset corner, dresses darker.',
+ // Priest
+ slip:'Apples roll across the fruit seller\'s floor toward the sunset side. Whoever stands there should watch their step.',
+ massprayer:'The faithful one, with a neighbor on every side, might call them all to prayer.',
+ funeral:'When anyone handy with a weapon falls beside the faithful one, they will be honored.',
+ gpriest:'The little green thief beside the faithful one. Holy light and goblins do not get along.',
+ gbite:'The little green thief beside the faithful one. Never turn your back on a goblin.',
+ // Necromancer
+ gskulls:'The little green thief beside the grave-caller. A fellow collector, of sorts.',
+ skulls:'The grave-caller feels at home deep down, on the lowest row.',
+ // Fruit Merchant
+ promo:'Anyone with something to sell, living beside the flask-mixer, may try selling his potions too.',
+ gapples:'The little green thief beside the fruit seller. Fruit next door is never safe.',
+ // Apothecary
+ gherbs:'The little green thief beside the herbalist. When she steps out, someone steps in.',
+ gherbcoin:'The little green thief beside the herbalist again. Sometimes the herb pot hides more than herbs.',
+ aretire:'Even the busiest herbalist dreams of a quiet garden.',
+ apoth:'Look for a gold coin in the corner of the herbalist\'s shop.',
+ // Alchemist
+ galch:'The little green thief beside the flask-mixer. Goblins and fragile glass do not mix.',
+ stone:'Hand the flask-mixer something truly ancient.',
+ elixir:'Not everything ancient the flask-mixer touches turns to gold...',
+ twopot:'Shop at the herbalist\'s while the flask-mixer lives next door. Sometimes it is a bargain.',
+ madsci:'The flask-mixer in the lowest sunrise corner gets... ideas.',
+ fourmage:'Surround the flask-mixer with magic on all four sides.',
+ // Rogue
+ tiny:'The shadow, with a little magic of his own, might fit into a shrinking potion.',
+ graveyard:'The shadow beside the grave-caller, both deep down on the lowest row.',
+ // Druid
+ gwild:'The little green thief beside the grove-keeper. Even a goblin can be charmed by nature.',
+ dburied:'Even the grove-keeper is not forever.',
+ 'wx:messenger':'The grove-keeper\'s animal friend runs errands.',
+ 'wx:heal':'When someone is sleepy or sick, the grove may lend a helping word.',
+ 'wx:fertile':'Now and then, business blooms all around the grove-keeper.',
+ 'wx:blessing':'The grove sometimes sends help for the fields.',
+ 'wx:tree':'Something very big and very old might grow from an empty space.',
+ 'wx:unicorn':'Keep your eyes on the background.',
+ drevive:'A buried grove-keeper\'s sapling answers to written magic.',
+ ddiscount:'The grove-keeper\'s herbs make the herbalist\'s prices friendlier, side by side.',
+ // Blacksmith
+ gsword:'The little green thief beside the forge-hand. A room full of swords is very tempting.',
+ ingotshop:'The forge has a gold coin in the corner too.',
+ royalpatron:'A generous crown beside the forge-hand rewards those who come home from adventure.',
+ // Monarch
+ rqdeny:'Not every crown says yes.',
+ groyal:'The little green thief beside the crown cannot resist a prank.',
+ royalfuneral:'Even a crown can fall.',
+ regicide:'A refused favor is never forgotten.',
+ // Traveling Merchant
+ troad:'Let the wagon wanderer move on. The road always brings him back.',
+ tshop:'The wagon wanderer\'s stand takes coins too.',
+ // Group events
+ 'grp:market':'Four with something to sell, in a tidy square, might throw a market day.',
+ 'grp:feast':'Three neighbors in a row might share one long table.',
+ 'grp:dragon':'A fruit seller\'s rumor, an old tale between friends and a heavy purse... something huge may come looking. It takes a kingdom united to bring it down.',
+ 'grp:plague':'A crowded kingdom catches more than gossip, but only when it is ready for some other gathering too.',
+ 'grp:wellchat':'Fill every side of the old well, and the neighbors may meet there for a chat.',
+ 'grp:classic':'The sworn sword, the robed scholar, the faithful one and the shadow, all in the tavern\'s row. A classic party.',
+ // the Well
+ welllook:'Anyone who works magic loves a quiet well next door.',
+ wellsplash:'Anyone who works magic, beside the old well... water and magic do not always mix.',
+ welljump:'Anyone handy with a weapon, beside the old well, likes to show off.',
+ wellwish:'Anyone with something to sell, beside the old well, is a superstitious sort.',
+ welldive:'Anything monstrous beside the old well might take a dip.',
+ wellsteal:'Coins wished into the old well are not safe from the shadow\'s light fingers.',
+ // the Tavern
+ tvfizz:'Anyone who works magic, beside the tavern, likes their drink with sparkle.',
+ tvbubbles:'Sometimes a magic drink at the tavern gets a little... out of hand.',
+ tvdrink:'Anyone handy with a weapon, beside the tavern, rarely stops at one.',
+ tvdeliver:'Anyone with something to sell, beside the tavern, keeps it stocked.',
+ tvwine:'A rare bottle could fetch a good price at the bar.',
+ tvshoo:'Anything monstrous beside the tavern may not be welcome at the bar.',
+ tvelven:'The wagon wanderer beside the tavern might bring something special from far away.',
+ // the Massive Tree
+ treeclimb:'Anyone beside the great tree might want a better view.',
+ treenap:'Anyone beside the great tree knows shade is the best place for a nap.',
+ treefruit:'A tree that big must have fruit for whoever lives next door.',
+ treeadmire:'Some beside the great tree just like to look.',
+ treebasket:'The fruit seller beside a fruit tree? He might get carried away.',
+ // Bard
+ bwisdom:'Anyone who works magic, beside the elven minstrel, will want to learn the elf\'s secrets.',
+ blisten:'Anyone handy with a weapon, beside the elven minstrel, has a soft heart for good music.',
+ bstory:'Anyone with something to sell, beside the elven minstrel, loves a good travel story.',
+ bsoothe:'Anything monstrous beside the elven minstrel can be calmed by a song.',
+ bdragon:'The robed scholar and the elven minstrel: old friends who once faced something enormous together.',
+ bfruit:'The fruit seller beside the elven minstrel might share something exotic.',
+ ginst:'The little green thief beside the elven minstrel might fancy an instrument. Music may change his mind.',
+ bplay:'The elven minstrel rarely sits in silence.',
+ bhum:'The elven minstrel hums, and the air listens.',
+ bspell:'Sometimes the elven minstrel\'s music becomes a spell.',
+ bresonance:'An elven minstrel who has picked up a tag or two plays with real power.',
+ // the Library
+ libread:'Anyone who works magic loves a library next door.',
+ libyawn:'Anyone with something to sell, beside the library, may not be much of a reader.',
+ libecon:'Now and then, someone with something to sell actually learns something at the library.',
+ libbrowse:'Anyone handy with a weapon, beside the library, may not find much to read.',
+ libbooks:'Some of the library\'s books do not like being disturbed by fighters.',
+ libfire:'Keep anything monstrous away from old paper.',
+ libmartial:'The elven minstrel might find more than poetry on the library\'s shelves.',
+ // Goblin
+ grummage:'The little green thief and his junk are never parted.',
+ gdagger:'The little green thief loves a pointy toy.',
+ gnap:'Even thieves need their sleep.',
+ gsteal:'Now and then, the little green thief goes shopping without paying.',
+ ghoard:'The little green thief\'s cave hides more than junk.',
+ gpotion:'The little green thief may not know what to do with something bottled.',
+ gscroll:'Can goblins read? Hand the little green thief some written magic and find out.',
+ // the Dragon's neighbors
+ dstudy:'Anyone who works magic, beside the hoard-sleeper, will want to take notes.',
+ dscale:'Anyone who works magic, beside the hoard-sleeper, may want a souvenir. Carefully.',
+ dbottle:'Anyone who works magic, beside the hoard-sleeper, may try to keep some of its fire.',
+ dsteal:'Anyone with something to sell, beside the hoard-sleeper, will notice all that gold.',
+ dlullaby:'Anyone with something to sell, beside the hoard-sleeper, had better hope it stays asleep. If not, a soft voice helps.',
+ dfight:'Anyone handy with a weapon, beside the hoard-sleeper, may be brave enough to wake it. Bravery is not always rewarded.',
+ dslay:'Anyone handy with a weapon, beside the hoard-sleeper... this is how legends are made.',
+ dpeek:'Anything monstrous beside the hoard-sleeper will want a look at its den.'};
+// The Monarch's favors: everyone who can ask gets the same clue
+['paladin','blacksmith','wizard','priest','alchemist','rogue','merchant','apothecary','necromancer','druid'].forEach(q=>{HINTS['rq:'+q]=(q==='paladin'?'A knight in holy armor':EPITHET[q][0].toUpperCase()+EPITHET[q].slice(1))+' with the crown for a neighbor may have a favor to ask.'});
 Object.assign(FLAVOR,{beast:'The formula works! He turns into a beast-man and goes after a neighbor.',spirit:'He communes with a nature spirit, who whispers him a secret.',
  'prac:shield':'A squire comes to spar with a wooden sword while the Knight blocks.','prac:spear':'Poke, poke, poke. Very serious poking.','prac:glaive':'Big sweeping swings. Stand back.',
  'prac:longsword':'Classic swordplay against an invisible foe.','prac:axe':'Big, heavy chops. Firewood for a week.'});
-HINTS.promo='A shopkeeper with the Alchemist next door sometimes sells his potions.';
 // ---------- two more tags: Monstrous and Structure (Structure has no members yet) ----------
 TAG_ICON.monstrous=[0,1,2].flatMap(k=>[[k*2,0,1,2,'#e04848'],[k*2+1,2,1,3,'#e04848'],[k*2+2,5,1,2,'#e04848']]); // three claw slashes
 TAG_ICON.structure=[[3,0,1,1,'#c8c0b8'],[2,1,3,1,'#c8c0b8'],[1,2,5,1,'#c8c0b8'],[0,3,7,1,'#c8c0b8'],[1,4,5,3,'#8a8494'],[3,5,1,2,'#3a2a1a']]; // a little house
@@ -944,7 +1070,6 @@ Object.assign(DESC,{'grp:market':'Four Merchants in a 2x2 square put up big tent
  'grp:feast':'Three characters side by side in a row: their rooms become one feast hall and they dine together at a long table for 1 minute. Nobody else joins.'});
 Object.assign(FLAVOR,{'grp:market':'Tents go up, a crowd pours in, and the merchants shout about their wares. The coins roll in at closing time.',
  'grp:feast':'Three rooms become one great hall, and three neighbors share a long table piled with food.'});
-Object.assign(HINTS,{'grp:market':'Four shopkeepers in a tidy square might throw a market day.','grp:feast':'Three neighbors in a row might share one long table.'});
 NOTE['grp:market']='2d10 coins at the end.';
 // ---------- Compendium titles: short, professional names shown in bold (TITLES wins over NAMES) ----------
 const TITLES={friend:'Old Friends',learn:'Eldritch Awakening',bolt:'Thunderstruck',chat:'Tales of Old',spar:'Friendly Sparring',zeal:'Zeal',crusade:'Holy Crusade',
@@ -1001,8 +1126,6 @@ Object.assign(DESC,{welllook:'A Mage next to the Well peers into it peacefully.'
 Object.assign(FLAVOR,{welllook:'They peer into the dark water and wonder how deep it goes.',wellsplash:'A peasant flings a bucket of well water. They melt into a puddle, the peasant runs, and they slowly pull themselves back together.',
  welljump:'A running start and a mighty leap right over the well. Show-off.',wellwish:'A coin plinks into the water. The wish stays a secret.',
  welldive:'In they go! Then two eyes peek over the rim before they climb back out.'});
-Object.assign(HINTS,{welllook:'Mages love a quiet well next door.',wellsplash:'Mages and water do not always mix... rarely, anyway.',welljump:'Fighters living by the well like to show off.',
- wellwish:'Shopkeepers by the well are a superstitious lot.',welldive:'Something monstrous living by the well might take a dip.'});
 // Compendium labels: the share of a neighbor's idle activities (STRUCT_IDLE x the outcome's share for that tag; with several tags it is shared)
 const structPct=f=>{const v=STRUCT_IDLE*f*100,d=v<1?100:10;return String(Math.floor(v*d+1e-6)/d)+'%'}; // (like fmtPct: one decimal, two below 1%)
 const WELL_PCT={welllook:structPct(1-WELL_SPLASH),wellsplash:structPct(WELL_SPLASH),welljump:structPct(1),wellwish:structPct(1),welldive:structPct(1)};
@@ -1045,8 +1168,6 @@ Object.assign(DESC,{tvfizz:'A Mage next to the Tavern orders a fizzy magic drink
 Object.assign(FLAVOR,{tvfizz:'One fizzy enchanted ale! It bubbles, it sparkles, it tickles the nose.',tvbubbles:'The drink fizzes over and the whole tavern fills with bubbles. Pop, pop, pop goes the magic.',
  tvdrink:'One ale, gulped. Another, gulped. Then a wobbly walk home and a long nap.',tvdeliver:'Crates of the good stuff, delivered right to the bar.',
  tvwine:'A dusty bottle of dwarven wine, aged under a mountain. The barkeep pays handsomely.',tvshoo:'The barkeep pulls an axe from under the counter. "OUT! No monsters in my tavern!"'});
-Object.assign(HINTS,{tvfizz:'Mages next to the tavern like their drinks with sparkle.',tvbubbles:'Sometimes a magic drink gets a little... out of hand.',tvdrink:'Fighters next to the tavern rarely stop at one.',
- tvdeliver:'Shopkeepers next door keep the tavern stocked.',tvwine:'A rare bottle could fetch a good price at the bar.',tvshoo:'Something monstrous next door might not be welcome at the bar.'});
 Object.assign(WELL_PCT,{tvfizz:structPct(1-STRUCT_SECOND.tvbubbles),tvbubbles:structPct(STRUCT_SECOND.tvbubbles),tvdrink:structPct(1),tvdeliver:structPct(1-STRUCT_SECOND.tvwine),tvwine:structPct(STRUCT_SECOND.tvwine),tvshoo:structPct(1)}); // share of a neighbor's idle activities (all structures)
 NOTE.tvwine='+20 coins.';NOTE.tvdrink='Asleep for 15 seconds once home.';
 // Story quests (QUESTS): shown once available (show), paid once. Daily quests (DAILY_QUESTS): DAILY_COUNT of them picked each real-world day
@@ -1081,9 +1202,6 @@ Object.assign(FLAVOR,{'wx:messenger':'His animal friend trots off with something
  'wx:heal':'A soft green word, and the sleepy wake and the sick feel fine.','wx:fertile':'The soil sighs, the grass leans in, and business is suddenly booming next door.',
  'wx:blessing':'The earth sends a farmer, hoe already in hand.','wx:tree':'Roots crack the ground and a tree older than kingdoms rises in a heartbeat.',
  'wx:unicorn':'For a moment, something white with a golden horn wanders past a window. Then it is gone.'});
-Object.assign(HINTS,{'wx:messenger':'The Druid\'s animal friend runs errands.','wx:heal':'Someone sleepy or sick might get a helping word from the grove.',
- 'wx:fertile':'Business blooms in the Druid\'s neighborhood, now and then.','wx:blessing':'The grove sometimes sends help for the fields.',
- 'wx:tree':'Something very big and very old might grow from an empty space.','wx:unicorn':'Keep your eyes on the background. Once in a blue moon...'});
 NOTE['wx:messenger']='Half the time a note, half the time +1 coin.';NOTE['wx:fertile']='+50% coins next to him for 30 s.';
 // ---------- the Massive Tree: a structure the Druid conjures (not on the shelf, never saved, can't be moved; gone after TREE_TIME) ----------
 CH.tree={name:'Massive Tree',eye:O,p:[]};CLASS.tree='structure';TR.tree={up:'fade',down:'fade'};NAMES.tree='Massive Tree';
@@ -1099,8 +1217,6 @@ Object.assign(DESC,{treeclimb:'A neighbor of the Massive Tree climbs up into its
 Object.assign(FLAVOR,{treeclimb:'Up, up, up the giant trunk, for the best view in the land.',treenap:'Cool shade, rustling leaves. Five minutes. Just five.',
  treefruit:'A fruit as big as a fist, sweet as honey.',treeadmire:'They stare up and up and up. It must be a thousand years old.',
  treebasket:'So. Much. Fruit. He keeps picking long after the basket is full.'});
-Object.assign(HINTS,{treeclimb:'Anyone next to a giant tree might want a better view.',treenap:'Shade is the best place for a nap.',treefruit:'A tree that big must have fruit.',
- treeadmire:'Some just like to look.',treebasket:'A fruit seller next to a fruit tree? He might get carried away.'});
 // ---------- Rogue at the Well, Traveling Merchant at the Tavern ----------
 // wellsteal: the Rogue fishes out a coin someone wished on (only after a Merchant tossed one in, h.wcoins); uncommon (RARITY.u) of his Well activities
 // tvelven: the Traveling Merchant's Tavern activity (instead of the usual Merchant delivery): a scroll of the ancient elves, kept by the barkeep
@@ -1111,7 +1227,6 @@ Object.assign(TITLES,{wellsteal:'Finders Keepers',tvelven:'The Elven Scroll'});
 Object.assign(DESC,{wellsteal:'The Rogue next to the Well fishes out a coin someone wished on. +1 coin. Only after a Merchant has tossed one in.',
  tvelven:'The Traveling Merchant next to the Tavern delivers a spell scroll of the ancient elves. The barkeep keeps it safe for the right adventurer to come along.'});
 Object.assign(FLAVOR,{wellsteal:'A hook, a string, and someone\'s wish comes up dripping. Finders keepers.',tvelven:'An old scroll in flowing elven script. "Keep it behind the bar," says the merchant. "The right hero will ask for it."'});
-Object.assign(HINTS,{wellsteal:'Wishes in a well are not always safe from light fingers.',tvelven:'A merchant from far away might bring the tavern something special.'});
 NOTE.wellsteal='+1 coin.';
 Object.assign(WELL_PCT,{treeclimb:structPct(.25),treenap:structPct(.25),treefruit:structPct(.25),treeadmire:structPct(.25),treebasket:structPct(.25),wellsteal:structPct(RARITY.u),tvelven:structPct(1)});
 // who does each of these (shown in the tile's description instead of a tag)
@@ -1121,7 +1236,6 @@ NAMES.aretire='The Apothecary retires';TITLES.aretire='Well-Earned Rest';
 COMP_TABS.find(t=>t.id==='apothecary').idle.push('aretire');
 DESC.aretire='The Apothecary decides she has brewed enough for one lifetime. She retires, and her box goes back to the shelf.';
 FLAVOR.aretire='She hangs up her apron. "Enough potions for one lifetime. I am off to grow tomatoes."';
-HINTS.aretire='Even the busiest shopkeeper dreams of a quiet garden.';
 // what someone says when the Druid's animal brings a note, when a healing word reaches them, when a unicorn passes their room
 const MSG_NOTES=['A note from the Druid: "The oaks say hello."','A note! "Water your plants. -D"','"The mushrooms are watching. In a nice way." Hm.','A pressed flower and a note. How sweet!'];
 const HEAL_SAY=['I feel wonderful!','Huh? I feel much better.','What a lovely green light.','Thank you, Druid!'];
@@ -1160,9 +1274,6 @@ Object.assign(FLAVOR,{bplay:'A bright tune drifts between the trees. Even the bi
  blisten:'They sit, they listen, and for once they forget about swords.',bstory:'"Tell me of the road!" The elf smiles and begins a tale.',
  bsoothe:'It came in snarling. It leaves yawning.',bdragon:'"Remember Mount Ember?" "How could I forget? Your beard caught fire."',
  bfruit:'A dragon fruit, bright pink and very rare. "For your travels, friend!"'});
-Object.assign(HINTS,{bplay:'An elf with an instrument rarely sits in silence.',bhum:'Elves hum, and the air listens.',bspell:'Sometimes the music itself becomes a spell.',
- bwisdom:'Magic folk next door will want to learn the elf\'s secrets.',blisten:'Warriors next door have soft hearts for good music.',bstory:'Traders next door love a good travel story.',
- bsoothe:'Even a monster next door can be calmed by a song.',bdragon:'Two old friends who once faced a dragon together.',bfruit:'A fruit seller next door might share something exotic.'});
 NOTE.bsoothe='It goes home and sleeps for 1 minute.';NOTE.bfruit='The Bard gains the Merchant tag.';
 const BARD_STORIES=[['I once crossed a desert of glass. Every step sang a different note.','I wrote a song with the desert. It was very crunchy.'],
  ['In the north, I played for a giant who could not sleep.','He snores now. The mountains shake every night. You are welcome.'],
@@ -1191,8 +1302,6 @@ Object.assign(DESC,{libread:'A Mage next to the Library goes in and reads for a 
 Object.assign(FLAVOR,{libread:'Old pages, a candle, and a long quiet afternoon.',libyawn:'"Seven hundred pages on moss? I... *yawn*... see."',libecon:'Supply, demand, and suddenly the coins add up.',
  libbrowse:'"Poetry. Herbs. More poetry. Nothing about swords." Out they go.',libbooks:'The books fly off the shelves, flapping and snapping. Chop chop!',
  libfire:'Smash, crash, and then... fire. So much fire.',libmartial:'"The Art of the Blade, by Someone Very Stabby." The elf reads it twice.'});
-Object.assign(HINTS,{libread:'Mages love a library next door.',libyawn:'Not every shopkeeper is a reader.',libecon:'A rare shopkeeper might actually learn something useful.',
- libbrowse:'Warriors next door may not find much to read.',libbooks:'Some books do not like to be disturbed.',libfire:'Keep monsters away from old paper.',libmartial:'An elf might find more than poetry on those shelves.'});
 NOTE.libecon='+1 coin every 30 s for 5 minutes.';NOTE.libfire='The Library goes back to the shelf.';
 Object.assign(WELL_PCT,{libread:structPct(1),libyawn:structPct(1-RARITY.r),libecon:structPct(RARITY.r),libbrowse:structPct(1-RARITY.r),libbooks:structPct(RARITY.r),libfire:structPct(1),libmartial:structPct(RARITY.u)});
 STRUCT_WHO.libmartial='the Bard';
@@ -1250,12 +1359,6 @@ Object.assign(FLAVOR,{grummage:'A spoon, a boot, half a sandwich. Treasures, all
  gknight:'Bite, scratch, CLANG. The goblin learns about armor the hard way.',gknightdie:'The goblin fought bravely. Briefly.',gmob:'One whistle, and the goblins pour in from everywhere.',
  groyal:'Through the throne room, cackling all the way. "Guards!"',gskulls:'"This one has nice teeth." The Necromancer is touched.',gpriest:'A flash of holy light. "HSSSS!"',
  gbite:'Chomp. "It BIT me!"',gtrinket:'Grab, zap, poof. Back home, very confused.'});
-Object.assign(HINTS,{grummage:'A goblin and his junk are never parted.',gdagger:'Goblins love a pointy toy.',gnap:'Even thieves need sleep.',gsteal:'Rarely, he goes shopping without paying.',
- ghoard:'His cave hides more than junk.',galch:'Goblins and fragile glass do not mix.',gherbs:'When the herbalist steps out, someone steps in.',gherbcoin:'Sometimes the herb pot hides more than herbs.',
- ginst:'A goblin might fancy an instrument. Music might change his mind.',gsword:'A forge full of swords is very tempting to a goblin.',gwild:'Nature can calm even a goblin.',
- gapples:'Fruit next door is not safe with a goblin around.',gknight:'Goblins and knights do not get along.',gknightdie:'A goblin should pick his fights more carefully.',
- gmob:'Where there is one goblin, there may be many more. Once in a blue moon.',groyal:'A goblin next to royalty cannot resist a prank.',gskulls:'A goblin and a skull collector might bond.',
- gpriest:'Holy light and goblins do not get along.',gbite:'Never turn your back on a goblin.',gtrinket:'Magic trinkets are tempting, and unpredictable.'});
 NOTE.gherbcoin='+5 coins to his stash.';NOTE.gknightdie='The Goblin dies.';NOTE.gmob='The Knight dies; the Goblin keeps the helmet.';NOTE.gsteal='+2 coins to his stash.';
 QUESTS.push({id:'rumorstrue',name:'The Rumors are True',text:'Hear the Fruit Merchant tell the Knight about goblins 5 times.',stat:'goblinRumors',goal:5,reward:{unlock:'goblin'},show:()=>compUnl('merchant')}); // (shown once the Fruit Merchant is unlocked)
 // ---------- the Bard's Resonance: for each tag the Bard has ----------
@@ -1263,7 +1366,7 @@ QUESTS.push({id:'rumorstrue',name:'The Rumors are True',text:'Hear the Fruit Mer
 const RES_DEATH=.1,RES_LEGEND=.1,RES_COIN_EVERY=300;
 COMP_TABS.find(t=>t.id==='bard').items.push('bresonance');NAMES.bresonance='Resonance';TITLES.bresonance='Resonance';
 DESC.bresonance='Passive, for each tag the Bard has: neighbors\' chances of dying are 10% lower, their legendary idle activities 10% more likely, and passers-by toss the Bard 1 coin every 5 minutes.';
-FLAVOR.bresonance='The more the elf has lived, the richer the music. The neighbors feel it too.';HINTS.bresonance='A Bard who has picked up a tag or two plays with real power.';
+FLAVOR.bresonance='The more the elf has lived, the richer the music. The neighbors feel it too.';
 // Deadly events (a death in the roll itself): the Bard's Resonance makes them less likely for neighbors
 const DEADLY={demon:1,murder:1,assassin:1,drain:1,gknightdie:1,gmob:1};
 // Passive abilities: shown in their own group at the top of a character's Compendium tab (not under Items and shops)
@@ -1283,7 +1386,6 @@ COMP_TABS.find(t=>t.id==='group').idle.push('grp:dragon');COMP_TABS.push({id:'dr
 NAMES['grp:dragon']='The dragon attacks!';TITLES['grp:dragon']='Dragon Attack!';
 DESC['grp:dragon']='Once the dragon has been heard of (the Fruit Merchant\'s rumor and the Wizard and Bard\'s story) and you have held 300 coins: with 3 Fighters, 2 Mages and a Merchant on the board (6 different characters), the dragon can swoop down. Everyone stops what they are doing and those six attack it, 1d6 damage each. After 30 seconds it breathes fire on a random space, killing whoever is there, and flies off. It has 100 hit points, and its wounds carry over to its next attack. When it is beaten, a Dragon box appears on the shelf.';
 FLAVOR['grp:dragon']='A shadow falls over the whole kingdom. Then a roar. Swords up, spells ready!';
-HINTS['grp:dragon']='A merchant\'s rumor, an old friends\' tale and a heavy purse... something huge may come looking. It takes a kingdom united to bring it down.';
 const DRAGON_SAY={fighter:['For the kingdom!','Have at you!','Take that, overgrown lizard!'],mage:['Feel my power!','Lightning, strike!','Arcane bolt!'],merchant:['Here, have some fruit! HARD fruit!','Catch this!','No refunds!'],other:['Run!','Hide!','A DRAGON?!','Eek!']};
 
 // ---------- the Goblin and items: a potion is poured out, a spell scroll ends up on his junk pile (both used up) ----------
@@ -1291,7 +1393,6 @@ COMP_TABS.find(t=>t.id==='goblin').items.push('gpotion','gscroll');
 Object.assign(NAMES,{gpotion:'Potion on Goblin: poured out',gscroll:'Scroll on Goblin: onto the junk pile'});Object.assign(TITLES,{gpotion:'Not Thirsty',gscroll:'Can\'t Read'});
 Object.assign(DESC,{gpotion:'Potion on the Goblin: he sniffs it, shakes it, looks very confused and pours it all out on the floor.',gscroll:'Spell scroll on the Goblin: he tries to read it, can\'t, and tosses it onto his junk pile.'});
 Object.assign(FLAVOR,{gpotion:'Sniff. Shake. Squint. Splash. "Bad juice."',gscroll:'He holds it upside down, then sideways, then gives up. "Pretty paper. Junk pile."'});
-Object.assign(HINTS,{gpotion:'A goblin might not know what to do with a potion.',gscroll:'Can goblins read? Give him something to find out.'});
 // ---------- Renown: your kingdom's score (renownOf in game.js): 1 per Compendium discovery, RENOWN_CHAR per character unlocked for the first time, plus quest rewards (S.renownBonus) ----------
 const RENOWN_CHAR=10;
 // ---------- Time away (awayReport in game.js): when you come back after AWAY_MIN seconds or more, up to AWAY_MAX seconds count ----------
@@ -1305,7 +1406,7 @@ const AWAY_LINES_MAX=4,AWAY_LINES={knight:'The Knight practiced with his weapon 
  traveler:'The Traveling Merchant rearranged the wares about {n} times.',bard:'The Bard played about {n} songs for nobody in particular.',goblin:'The Goblin rummaged through his junk about {n} times.',
  dragon:'The Dragon snored about {n} times. The cave shook.',farmer:'The Farmer hoed about {n} rows.',well:'Someone tossed a coin in the Well and made a wish.',tavern:'The Tavern served about {n} ales.',library:'The Library gathered a little more dust.'};
 const AWAY_IDLE=['Nobody noticed you were gone. Mostly.','The kingdom carried on without you, a little bored.','A cat wandered across the whole board and left again.'];
-Object.assign(FLAVOR,{drumor:'"A dragon, I tell you! Big as a barn, breathes fire!" The Knight polishes his sword a little faster.'});HINTS.drumor='Sometimes the merchant\'s rumors are about something much, much bigger.';
+Object.assign(FLAVOR,{drumor:'"A dragon, I tell you! Big as a barn, breathes fire!" The Knight polishes his sword a little faster.'});
 
 // ---------- the Dragon's neighbors (it works like a structure for them: STRUCT_IDLE of their idle rolls, by one of their tags; DRAGON_ACTS has the tiers) ----------
 // Mage: study it C, take a scale U, bottle some of its fire R. Merchant: steal a coin C (+1), the dragon wakes and they sing it back to sleep U.

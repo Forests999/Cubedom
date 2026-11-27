@@ -2339,20 +2339,22 @@ function infoText(k){const fl=flavorOf(k),note=NOTE[k]?' '+NOTE[k]:'',p=pctOf(k)
  if(k.startsWith('rq:')){const q=k.slice(3);return 'Visit (his first visit to the Monarch; granted 80% by a generous one, 10% by a greedy one): '+(q==='paladin'?'a Paladin':'the '+CNAME(q))+' next to the Monarch, any side. '+fl}
  for(const kind in ITEM_KEY)for(const c in ITEM_KEY[kind])if(ITEM_KEY[kind][c]===k)return 'Item: '+ITEM_NAME[kind].toLowerCase()+' on '+(c==='*'?'anyone without the Fighter tag':'the '+CNAME(c))+'. '+fl+note;
  return (EGGS.includes(k)?'Secret. ':'')+(DESC[k]||NAMES[k]||'')+(note&&!(DESC[k]||'').includes(NOTE[k])?note:'')}
-// A little nudge on how to make an undiscovered tile happen (shown in its clue). HINTS in data.js wins; otherwise it is made from the rules.
-const COMPASS={left:'west',right:'east',above:'north',below:'south'};
-const HINT_COND={nbr:' when a neighbor is around',noRight:' when there is open land to his east',eknight:' after a certain spellbook changes him',brew:' beside a shopkeeper, if your purse allows',
- alc:' while the Alchemist lives next door',madsci:' in one particular corner',mageTag:' with a little magic of his own',spirit:' with nothing but open land around him'};
-function unlockHint(k){if(HINTS[k])return HINTS[k];const p=pctOf(k),how=p==null?'':p<.01?' Once in a blue moon.':p<.06?' A rare sight.':p<.2?' Not every time, though.':'';
- if(k.startsWith('wx:'))return "One of the Druid's weather spells."+how;
- const ie=idleEntry(k);if(ie){const[id,e]=ie;if(id==='anyone')return '';if(k.startsWith('prac:'))return 'The Knight practices with whatever hangs on his wall.';
-  return 'Something the '+CNAME(id)+' does at home'+(HINT_COND[e[2]]||'')+'.'+how}
- const any=VISIT_ANY.find(e=>e[2]===k);if(any)return 'The '+CNAME(any[0])+' and '+(any[1]==='anyone'?'any neighbor':any[1].startsWith('tag:')?'any '+CNAME(any[1]):'the '+CNAME(any[1]))+', on any side.'+how;
- const w=sceneWhere(k)[0];if(w){const A=CNAME(w.a),B=CNAME(w.b),rs=w.rels,i=[...k].reduce((s,ch)=>s+ch.charCodeAt(0),0)%4;
-  if(rs.length===4)return ['Any side works for the '+A+' and the '+B+'.','The '+A+' and the '+B+', side by side, any which way.','Put the '+A+' anywhere beside the '+B+'.','The '+A+' and the '+B+' just need to be neighbors.'][i]+how;
-  const d=rs.map(r=>COMPASS[r]).join(' or ');
-  return ['Rumor says the '+A+' must live '+d+' of the '+B+'.','Try the '+A+' just '+d+' of the '+B+'.','The '+A+', settled '+d+' of the '+B+', might see this.','Neighbors whisper: the '+A+' to the '+d+', the '+B+' close by.'][i]+how}
- for(const kind in ITEM_KEY)for(const c in ITEM_KEY[kind])if(ITEM_KEY[kind][c]===k)return 'Try '+(kind==='ingot'||kind==='artifact'?'an ':'a ')+ITEM_NAME[kind].toLowerCase()+' on '+(c==='*'?'someone who is no Fighter':'the '+CNAME(c))+'.';
+// A clue on how to make an undiscovered tile happen (after its story): HINTS in data.js, else made from the rules, always in the same riddle words
+// (EPITHET, TAG_EPITHET, SIDE_WORD, ITEM_RIDDLE, RARE_WORD in data.js); i picks one of four phrasings so the page doesn't read like a form
+const HINT_COND={nbr:' while a neighbor is around',noRight:' when there is open land on his sunrise side',eknight:' after a certain spellbook changes him',brew:' beside anyone with something to sell, if your purse allows',
+ alc:' while the flask-mixer lives next door',madsci:' in one particular corner',mageTag:' with a little magic of his own',spirit:' with nothing but open land around him'};
+const epi=id=>id.startsWith('tag:')?TAG_EPITHET[id.slice(4)]:EPITHET[id]||'the '+CNAME(id);
+function sideOf(rs){const s=new Set(rs);if(s.size===2&&s.has('left')&&s.has('right'))return 'on the sunset or sunrise side of';if(s.size===2&&s.has('above')&&s.has('below'))return 'upstairs or downstairs from';return rs.map(r=>SIDE_WORD[r]).join(', or ')}
+function unlockHint(k){const p=pctOf(k),dt=Object.values(DRAGON_ACTS).flat().find(e=>e[0]===k),how=dt?(RARE_WORD[dt[1]]?' '+RARE_WORD[dt[1]]:''):p==null?'':p<.01?' '+RARE_WORD.l:p<.06?' '+RARE_WORD.r:p<.2?' '+RARE_WORD.u:'',i=[...k].reduce((s,ch)=>s+ch.charCodeAt(0),0)%4;
+ if(HINTS[k])return HINTS[k]+how;
+ if(k.startsWith('wx:'))return 'One of the grove-keeper\'s spells.'+how;
+ const ie=idleEntry(k);if(ie){const[id,e]=ie;if(id==='anyone')return '';if(k.startsWith('prac:'))return 'The sworn sword practices with whatever hangs on his wall.';
+  const A=epi(id),c=HINT_COND[e[2]]||'';return ['Watch '+A+' at home'+c+'.','It happens in '+A+'\'s own room'+c+'.',cap(A)+' keeps busy at home'+c+'.','A quiet moment for '+A+c+'.'][i]+how}
+ const any=VISIT_ANY.find(e=>e[2]===k);if(any)return cap(epi(any[0]))+' beside '+epi(any[1])+', on any side.'+how;
+ const w=sceneWhere(k)[0];if(w){const A=epi(w.a),B=epi(w.b),rs=w.rels;
+  if(rs.length===4)return [cap(A)+' and '+B+', neighbors on any side.','Put '+A+' anywhere beside '+B+'.',cap(A)+' and '+B+' just need to share a wall.','Any side will do for '+A+' and '+B+'.'][i]+how;
+  const d=sideOf(rs);return ['Seek '+A+' '+d+' '+B+'.',cap(A)+', settled '+d+' '+B+', might witness it.','It begins with '+A+' '+d+' '+B+'.','Neighbors whisper of '+A+' '+d+' '+B+'.'][i]+how}
+ for(const kind in ITEM_KEY)for(const c in ITEM_KEY[kind])if(ITEM_KEY[kind][c]===k){const A=c==='*'?'anyone who is no fighter':epi(c),it=ITEM_RIDDLE[kind];return ['Hand '+A+' '+it+'.','What would '+A+' do with '+it+'?','Try giving '+A+' '+it+'.','See what '+A+' makes of '+it+'.'][i]}
  return ''}
 function hintOf(k){const f=flavorOf(k),h=unlockHint(k);return 'Not discovered yet. '+(f||'Keep exploring!')+(h?' '+h:'')}
 // Top of each tab: how this character decides
